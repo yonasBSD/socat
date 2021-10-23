@@ -64,6 +64,9 @@ Documentation:
 	Added missing docu of OpenSSL options min-proto-version,
 	max-proto-version.
 
+	Added missing closing parenthesis in socat.yo.
+	Thanks to Emanuele Torre for reporting this issue.
+
 ####################### V 1.7.4.1:
 
 Corrections:
