@@ -3,6 +3,8 @@ Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow
 
+	Fixed in test.sh a few issues reported by shellcheck
+
 ####################### V 1.7.4.1:
 
 Corrections:

@@ -70,7 +70,7 @@ opts="$opt_t $OPTS"
 export SOCAT_OPTS="$opts"
 #debug="1"
 debug=
-TESTS="$@"; export TESTS
+TESTS="$*"; export TESTS
 if !  $SOCAT -V >/dev/null 2>&1; then
     echo "Failed to execute $SOCAT, exiting" >&2
     exit 1
@@ -101,7 +101,7 @@ MCINTERFACE=$INTERFACE
 #LOCALHOST=192.168.58.1
 LOCALHOST=localhost
 #LOCALHOST=127.0.0.1
-LOCALHOST6=[::1]
+LOCALHOST6="[::1]"
 #PROTO=$(awk '{print($2);}' /etc/protocols |sort -n |tail -n 1)
 #PROTO=$(($PROTO+1))
 PROTO=$((144+RANDOM/2048))
@@ -192,7 +192,7 @@ rm -f testcli6.{crt,key,pem}
 rm -f testsrv6.{crt,key,pem}
 rm -f testalt.{crt,key,pem}
 
-CAT=cat
+CAT="cat"
 OD_C="od -c"
 
 toupper () {
@@ -224,7 +224,7 @@ if ! type usleep >/dev/null 2>&1 ||
 	*???????) S="${n%??????}"; uS="${n:${#n}-6}" ;;
 	*) S=0; uS="00000$n"; uS="${uS:${#uS}-6}" ;;
 	esac
-	$SOCAT -T $S.$uS pipe pipe
+	$SOCAT -T "$S.$uS" pipe pipe
     }
 fi
 #USLEEP=usleep
@@ -251,7 +251,7 @@ SunOS)
     alias tr=/usr/xpg4/bin/tr
     ;;
 *)
-    CAT=cat
+    CAT="cat"
     ;;
 esac
 
@@ -332,18 +332,18 @@ esac
 if2addr4() {
     local IF="$1"
     if [ "$IP" ]; then
-	$IP address show dev $IF |grep "inet " |sed -e "s/.*inet //" -e "s/ .*//"
+	$IP address show dev "$IF" |grep "inet " |sed -e "s/.*inet //" -e "s/ .*//"
     else
-	$IFCONFIG $BROADCASTIF |grep 'inet ' |awk '{print($2);}' |cut -d: -f2
+	$IFCONFIG "$BROADCASTIF" |grep 'inet ' |awk '{print($2);}' |cut -d: -f2
     fi
 }
 
 if2bc4() {
     local IF="$1"
     if [ "$IP" ]; then
-	$IP address show dev $IF |grep ' inet .* brd ' |awk '{print($4);}'
+	$IP address show dev "$IF" |grep ' inet .* brd ' |awk '{print($4);}'
     else
-	$IFCONFIG $IF |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}'
+	$IFCONFIG "$IF" |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}'
     fi
 }
 
@@ -363,9 +363,9 @@ Linux)
 FreeBSD|NetBSD|OpenBSD)
     MAINIF=$($IFCONFIG -a |grep '^[a-z]' |grep -v '^lo0: ' |head -1 |cut -d: -f1)
     BROADCASTIF="$MAINIF"
-    SECONDADDR=$($IFCONFIG $BROADCASTIF |grep 'inet ' |awk '{print($2);}')
+    SECONDADDR=$($IFCONFIG "$BROADCASTIF" |grep 'inet ' |awk '{print($2);}')
     BCIFADDR="$SECONDADDR"
-    BCADDR=$($IFCONFIG $BROADCASTIF |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
+    BCADDR=$($IFCONFIG "$BROADCASTIF" |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
 HP-UX)
     MAINIF=lan0	# might use "netstat -ni" for this
     BROADCASTIF="$MAINIF"
@@ -384,9 +384,9 @@ SunOS)
 DragonFly)
     MAINIF=$($IFCONFIG -a |grep -v ^lp |grep '^[a-z]' |grep -v '^lo0: ' |head -1 |cut -d: -f1)
     BROADCASTIF="$MAINIF"
-    SECONDADDR=$($IFCONFIG $BROADCASTIF |grep 'inet ' |awk '{print($2);}')
+    SECONDADDR=$($IFCONFIG "$BROADCASTIF" |grep 'inet ' |awk '{print($2);}')
     BCIFADDR="$SECONDADDR"
-    BCADDR=$($IFCONFIG $BROADCASTIF |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
+    BCADDR=$($IFCONFIG "$BROADCASTIF" |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
 #AIX|FreeBSD|Solaris)
 *)
     SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 ' |head -n 1)" : '.*inet \([0-9.]*\) .*') 
@@ -394,8 +394,7 @@ DragonFly)
 esac
 # for generic sockets we need this address in hex form
 if [ "$SECONDADDR" ]; then
-    SECONDADDRHEX="$(printf "%02x%02x%02x%02x\n" $(echo "$SECONDADDR" |tr '.' '
-'))"
+    SECONDADDRHEX="$(printf "%02x%02x%02x%02x\n" $(echo "$SECONDADDR" |tr '.' ' '))"
 fi
 
 # for some tests we need a second local IPv6 address
@@ -433,7 +432,7 @@ case "$TERM" in
 vt100|vt320|linux|xterm|cons25|dtterm|aixterm|sun-color|xterm-color|xterm-256color|screen)
 	# there are different behaviours of printf (and echo)
 	# on some systems, echo behaves different than printf...
-	if [ $($PRINTF "\0101") = "A" ]; then
+	if [ "$($PRINTF "\0101")" = "A" ]; then
 		RED="\0033[31m"
 		GREEN="\0033[32m"
 		YELLOW="\0033[33m"
@@ -1776,7 +1775,7 @@ testecho () {
 	listFAIL="$listFAIL $N"
     elif echo "$da" |diff - "$tf" >"$tdiff" 2>&1; then
 	$PRINTF "$OK\n"
-	if [ "$verbose" ]; then echo "$SOCAT $opts $arg1 $arg2" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$SOCAT $opts $arg1 $arg2" >&2; fi
 	if [ -n "$debug" ]; then cat $te >&2; fi
 	numOK=$((numOK+1))
     else
@@ -1920,8 +1919,8 @@ childpids () {
     OpenBSD) l="$(ps -aj   |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
     SunOS)   l="$(ps -fade |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
     DragonFly)l="$(ps -faje |grep "^[^ ][^ ]*[ ][ ]*..... $(printf %5u $1)" |awk '{print($2);}')" ;;
-    CYGWIN*)  l="$(ps -pafe |grep "^[^ ]*[ ][ ]*[^ ][^ ]*[ ][ ]*$1[ ]" |awk '{print($2)';})" ;;
-    *)       l="$(ps -fade |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$(printf %5u $1) " |awk '{print($2)';})" ;;    esac
+    CYGWIN*)  l="$(ps -pafe |grep "^[^ ]*[ ][ ]*[^ ][^ ]*[ ][ ]*$1[ ]" |awk '{print($2);}')" ;;
+    *)       l="$(ps -fade |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$(printf %5u $1) " |awk '{print($2);}')" ;;    esac
     if [ -z "$l" ]; then
 	return 1;
     fi
@@ -2461,8 +2460,8 @@ waitfile () {
     [ "$logic" -eq 2 ] && crit=-s
     [ "$timeout" ] || timeout=5
     while [ $timeout -gt 0 ]; do
-	if [ \( \( $logic -ne 0 \) -a $crit "$file" \) -o \
-	    \( \( $logic -eq 0 \) -a ! $crit "$file" \) ]; then
+	if [ \( $logic -ne 0 -a $crit "$file" \) -o \
+	    \( $logic -eq 0 -a ! $crit "$file" \) ]; then
 	    set ${vx}vx
 	    return 0
 	fi
@@ -14078,7 +14077,7 @@ tdiff="$td/test$N.diff"
 #set -vx
 da="test$N $(date) $RANDOM"
 init_openssl_s_server
-CMD1="$TRACE openssl s_server $OPENSSL_S_SERVER_4 $OPENSSL_S_SERVER_DTLS -accept $PORT -quiet $S_SERVER_NO_IGN_EOF -cert testsrv.pem"
+CMD1="$TRACE openssl s_server $OPENSSL_S_SERVER_4 $OPENSSL_S_SERVER_DTLS -accept $PORT -quiet $OPENSSL_S_SERVER_NO_IGN_EOF -cert testsrv.pem"
 CMD="$TRACE $SOCAT $opts -T 1 - OPENSSL-DTLS-CLIENT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
 ( sleep 2; echo "$da"; sleep 1 ) |$CMD1 2>"${te}1" &
