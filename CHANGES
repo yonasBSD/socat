@@ -1,5 +1,13 @@
 ﻿
 Corrections:
+	The per address parameters for OpenSSL overlapped in memory with socket
+	parameters. Magically this did not seem to cause problems except on
+	MacOS Catalina that reported errors like:
+	socat[3458] E Select(7, &0x80, NULL, NULL, {140392884396544.000000}):
+	Invalid argument
+	Test: OPENSSL_PARA_OVERLAP
+	Thanks to Ryo Ota for reporting this bug.
+
 	Fixed a few minor coding issues
 
 Testing:

@@ -115,6 +115,23 @@ extern xioopts_t xioopts;
 
 #define MAXARGV 8
 
+#if _WITH_IP4 || _WITH_IP6
+struct para_ip {
+	unsigned int res_opts[2];	/* bits to be set in _res.options are
+					   at [0], bits to be cleared are at [1] */
+	bool     dosourceport; 	/* check the source port of incoming connection or packets */
+	uint16_t sourceport;		/* host byte order */
+	bool     lowport;
+#if (WITH_TCP || WITH_UDP) && WITH_LIBWRAP
+	bool   dolibwrap;
+	char    *libwrapname;
+	char    *tcpwrap_etc;
+	char    *hosts_allow_table;
+	char    *hosts_deny_table;
+#endif
+} ;
+#endif /* _WITH_IP4 || _WITH_IP6 */
+
 /* a non-dual file descriptor */ 
 typedef struct single {
    enum xiotag tag;	/* see  enum xiotag  */
@@ -181,6 +198,7 @@ typedef struct single {
       } bipipe;
 #if _WITH_SOCKET
       struct {
+	 /* keep a consistent copy in openssl part !!! */
 	 struct timeval connect_timeout; /* how long to hang in connect() */
 #if WITH_LISTEN
 	 struct timeval accept_timeout;  /* how long to wait for incoming connection */
@@ -190,21 +208,9 @@ typedef struct single {
 	 bool dorange;
 	 struct xiorange range;	/* restrictions for peer address */
 #if _WITH_IP4 || _WITH_IP6
-	 struct {
-	    unsigned int res_opts[2];	/* bits to be set in _res.options are
-				       at [0], bits to be cleared are at [1] */
-	    bool     dosourceport; 	/* check the source port of incoming connection or packets */
-	    uint16_t sourceport;	/* host byte order */
-	    bool     lowport;
-#if (WITH_TCP || WITH_UDP) && WITH_LIBWRAP
-	    bool   dolibwrap;
-	    char    *libwrapname;
-	    char    *tcpwrap_etc;
-	    char    *hosts_allow_table;
-	    char    *hosts_deny_table;
-#endif
-	 } ip;
+	 struct para_ip ip;
 #endif /* _WITH_IP4 || _WITH_IP6 */
+	 /* up to here, keep consistent copy in openssl part !!! */
 #if WITH_UNIX
 	 struct {
 	    bool     tight;
@@ -231,7 +237,19 @@ typedef struct single {
 #endif /* WITH_READLINE */
 #if WITH_OPENSSL
       struct {
+	 /* copy of the para.socket structure without un !!! */
 	 struct timeval connect_timeout; /* how long to hang in connect() */
+#if WITH_LISTEN
+	 struct timeval accept_timeout;  /* how long to wait for incoming connection */
+#endif
+	 union sockaddr_union la;	/* local socket address */
+	 bool null_eof;		/* with dgram: empty packet means EOF */
+	 bool dorange;
+	 struct xiorange range;	/* restrictions for peer address */
+#if _WITH_IP4 || _WITH_IP6
+	 struct para_ip ip;
+#endif /* _WITH_IP4 || _WITH_IP6 */
+	 /* end of the para.socket structure copy */
 	 SSL_CTX* ctx; 	/* for freeing on close */
 	 SSL *ssl;
 #if HAVE_SSL_CTX_set_min_proto_version || defined(SSL_CTX_set_min_proto_version)

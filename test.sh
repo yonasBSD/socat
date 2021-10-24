@@ -14980,6 +14980,66 @@ PORT=$((PORT+1))
 N=$((N+1))
 
 
+# Test if the problem with overlapping internal parameters of sockets and
+# openssl are fixed
+NAME=OPENSSL_PARA_OVERLAP
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%ip4%*|*%tcp%*|*%tcp4%*|*%openssl%*|*%$NAME%*)
+TEST="$NAME: test diverse of socket,openssl params"
+# That bug had not many effects; the simplest to use is possible SIGSEGV on
+# close when option accept-timeout with fractional seconds was applied
+if ! eval $NUMCOND; then :;
+elif ! testfeats openssl >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}OPENSSL not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! type openssl >/dev/null 2>&1; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}openssl executable not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! testfeats tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}TCP/IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+gentestcert testsrv
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+trc0="$td/test$N.rc0"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,accept-timeout=4.5,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
+CMD1="$TRACE $SOCAT $opts /dev/null OPENSSL-CONNECT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" || echo $? >$trc0 &
+pid0=$!
+waittcp4port $PORT 1
+$CMD1 >"${tf}1" 2>"${te}1"
+rc1=$?
+sleep 0.5
+kill $pid0 2>/dev/null; wait
+if [ $rc1 -ne 0 ]; then
+    $PRINTF "$CANT\n"
+    numCANT=$((numCANT+1))
+elif [ ! -e $trc0 ]; then
+    $PRINTF "$OK\n"
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &" >&2
+    cat "${te}0" >&2
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
 ##################################################################################
 #=================================================================================
 # here come tests that might affect your systems integrity. Put normal tests
