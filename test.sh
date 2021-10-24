@@ -5379,7 +5379,7 @@ mkfifo "$tpi"
 touch "$tpo"
 #
 # during development of this test, the following command line succeeded:
-# (sleep 1; $ECHO "user\n\c"; sleep 1; $ECHO "password\c"; sleep 1; $ECHO "\n\c"; sleep 1; $ECHO "test 1\n\c"; sleep 1; $ECHO "\003\c"; sleep 1; $ECHO "test 2\n\c"; sleep 1; $ECHO "exit\n\c"; sleep 1) |$TRACE $SOCAT -d -d -d -d -lf/tmp/gerhard/debug1 -v -x - exec:'./readline.sh ./readline-test.sh',pty,ctty,setsid,raw,echo=0,isig
+# (sleep 1; $ECHO "user\n\c"; sleep 1; $ECHO "password\c"; sleep 1; $ECHO "\n\c"; sleep 1; $ECHO "test 1\n\c"; sleep 1; $ECHO "\003\c"; sleep 1; $ECHO "test 2\n\c"; sleep 1; $ECHO "exit\n\c"; sleep 1) |$TRACE $SOCAT -d -d -d -d -lf/tmp/$USER/debug1 -v -x - exec:'./readline.sh ./readline-test.sh',pty,ctty,setsid,raw,echo=0,isig
 #
 PATH=${SOCAT%socat}:$PATH eval "$CMD 2>$te &"
 pid=$!	# background process id
@@ -13925,7 +13925,7 @@ CMD="$TRACE $SOCAT $opts - $tf,o-direct,ignoreeof!!$tf"
 echo "$da" |$CMD >"$to" 2>"$te"
 rc=$?
 if [ $rc -ne 0 ] && grep -q "Invalid argument" "$te" && [ $UNAME = Linux ]; then
-    case $(stat -f /tmp/gerhard/ |grep -o "Type: [^[:space:]]*" |cut -c 7-) in
+    case $(stat -f $tf |grep -o "Type: [^[:space:]]*" |cut -c 7-) in
 	ext2/ext3|xfs|reiserfs)
 	    $PRINTF "${FAILED}\n"
 	    echo "$CMD" >&2

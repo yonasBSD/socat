@@ -67,6 +67,9 @@ Documentation:
 	Added missing closing parenthesis in socat.yo.
 	Thanks to Emanuele Torre for reporting this issue.
 
+	Corrected more typos and added missing bug info to CHANGES, performed
+	some non functional corrections
+
 ####################### V 1.7.4.1:
 
 Corrections:
@@ -135,6 +138,7 @@ Corrections:
 	packet. The fix makes RECVFROM drop the packet when the second address
 	failed before reading it. Use retry or forever option with the second
 	address if you want to avoid data loss.
+	Fixes Red Hat bug 1907718
 	Thanks to Chunmei Xu for reporting this issue and proving the patch.
 
 	Socats DTLS implementation has been reworked and appears to work now
@@ -179,7 +183,7 @@ Porting:
 	ai_protocol=0 and try again
 	Test: SCTP_SERVICENAME
 
-	Per file filesystem options were still name ext2-* and depended on
+	Per file filesystem options were still named ext2-* and depended on
 	<linux/ext2_fs.h>. Now they are called fs-* and depend on <linux/fs.h>.
 	These fs-* options are also available on old systems with ext2_fs.h
 
@@ -384,7 +388,7 @@ Corrections:
 
 	Print a useful error message when single character options appear to be
 	merged in Socat invocation
-        Test: SOCCAT_OPT_HINT
+        Test: SOCAT_OPT_HINT
 
 	Fixed some docu typos.
 	Thanks to Travis Wellman, Thomas <tjps636>, Dan Kenigsberg,
