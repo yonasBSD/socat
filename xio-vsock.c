@@ -139,6 +139,16 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
       return ret;
    }
 
+   {
+      unsigned int cid;
+      if (Ioctl(xfd->fd, IOCTL_VM_SOCKETS_GET_LOCAL_CID, &cid) < 0) {
+	 Warn2("ioctl(%d, IOCTL_VM_SOCKETS_GET_LOCAL_CID, ...): %s",
+	       xfd->fd, strerror(errno));
+      } else {
+	 Notice1("VSOCK CID=%u", cid);
+      }
+   }
+
    opts0 = copyopts(opts, GROUP_ALL);
 
    ret = retropt_bind(opts, pf, socktype, protocol, (struct sockaddr *)&sa_bind,

@@ -10,6 +10,9 @@ Corrections:
 
 	Fixed a few minor coding issues
 
+	A VSOCK warning message was generated with all listening addresses
+	instead of only with VSOCK-LISTEN
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow
