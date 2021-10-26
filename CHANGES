@@ -13,6 +13,13 @@ Corrections:
 	A VSOCK warning message was generated with all listening addresses
 	instead of only with VSOCK-LISTEN
 
+	When an OPENSSL-CONNECT client presented a certificate with IPv6
+	subject alternate name and the OPENSSL-LISTEN server had no commonname
+	option, the server crashed with SIGSEGV in xioip6_pton().
+	Test: OPENSSL_CLIENT_IP6_CN
+	Red Hat bug 1981308
+	Thanks to Vlad Slepukhin for reporting this issue and providing a patch
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

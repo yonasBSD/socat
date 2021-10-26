@@ -15040,6 +15040,60 @@ PORT=$((PORT+1))
 N=$((N+1))
 
 
+# Bug fix, OpenSSL server could be crashed by client cert with IPv6 address in SubjectAltname
+NAME=OPENSSL_CLIENT_IP6_CN
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%openssl%*|*%ip6%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: Test if OpenSSL server may be crashed by client cert with IPv6 address"
+# Socat 1.7.4.1 had a bug that caused OpenSSL server to crash with SIGSEGV when
+# it checked a client certificate containing IPv6 address in SubjectAltName and
+# no openssl-commonname option was given
+if ! eval $NUMCOND; then :;
+elif ! testfeats openssl >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}OPENSSL not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! testfeats tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}TCP/IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+gentestcert testsrv
+gentestaltcert testalt
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts -u OPENSSL-LISTEN:$PORT,reuseaddr,cert=./testsrv.pem,cafile=./testalt.crt -"
+CMD1="$TRACE $SOCAT $opts -u - OPENSSL-CONNECT:localhost:$PORT,cafile=testsrv.crt,cert=testalt.pem,verify=0"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null >"${tf}0" 2>"${te}0" &
+pid0=$!
+waittcp4port $PORT 1
+echo "$da" |$CMD1 2>"${te}1"
+rc1=$?
+kill $pid0 2>/dev/null; wait
+if [ $rc1 -eq 0 ] && echo "$da" |diff - "${tf}0" >$tdiff; then
+    $PRINTF "$OK\n"
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &" >&2
+    cat "${te}0" >&2
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
+# end of common tests
+
 ##################################################################################
 #=================================================================================
 # here come tests that might affect your systems integrity. Put normal tests

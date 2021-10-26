@@ -1775,15 +1775,17 @@ static int openssl_handle_peer_certificate(struct single *xfd,
 #if WITH_IP6
 			case 16: /* IPv6 */
 			   inet_ntop(AF_INET6, data, aBuffer, sizeof(aBuffer));
-			   xioip6_pton(peername, &ip6bin);
-			   if (memcmp(data, &ip6bin, sizeof(ip6bin)) == 0) {
-			      Debug2("subjectAltName \"%s\" matches peername \"%s\"",
-				    aBuffer, peername);
-			      ok = 1;
-			   } else {
-			      Info2("subjectAltName \"%s\" does not match peername \"%s\"",
-				    aBuffer, peername);
-			   }			      
+			   if (peername != NULL) {
+			      xioip6_pton(peername, &ip6bin);
+			      if (memcmp(data, &ip6bin, sizeof(ip6bin)) == 0) {
+			         Debug2("subjectAltName \"%s\" matches peername \"%s\"",
+					aBuffer, peername);
+			         ok = 1;
+			      } else {
+			         Info2("subjectAltName \"%s\" does not match peername \"%s\"",
+				       aBuffer, peername);
+			      }
+			   }
 			   break;
 #endif
 			}
