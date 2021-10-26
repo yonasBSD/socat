@@ -92,6 +92,7 @@ int main(int argc, const char *argv[]) {
    char buff[10];
    double rto;
    int i, argc0, result;
+   bool isdash = false;
    struct utsname ubuf;
    int lockrc;
 
@@ -316,21 +317,22 @@ int main(int argc, const char *argv[]) {
 #endif /* WITH_IP4 || WITH_IP6 */
       case '\0':
       case ',':
-      case ':': break;	/* this "-" is a variation of STDIO */
+      case ':':
+	 isdash = true;
+	 break;	/* this "-" is a variation of STDIO */
       default:
-	 xioinqopt('p', buff, sizeof(buff));
+	 xioinqopt('p', buff, sizeof(buff)); 	/* fetch pipe separator char */
 	 if (arg1[0][1] == buff[0]) {
+	    isdash = true;
 	    break;
 	 }
 	 Error1("unknown option \"%s\"; use option \"-h\" for help", arg1[0]);
 	 Exit(1);
       }
-      /* the leading "-" might be a form of the first address */
-      xioinqopt('p', buff, sizeof(buff));
-      if (arg1[0][0] == '-' &&
-	  (arg1[0][1] == '\0' || arg1[0][1] == ':' ||
-	   arg1[0][1] == ',' || arg1[0][1] == buff[0]))
+      if (isdash) {
+	 /* the leading "-" is a form of the first address */
 	 break;
+      }
       ++arg1; --argc;
    }
    if (argc != 2) {

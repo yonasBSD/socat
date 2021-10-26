@@ -45,6 +45,9 @@ Corrections:
 	now opens the pipe in rw-Mode.
 	Thanks to Cody J.Soultz for sending a patch.
 
+	The call "socat -r - PIPE" traced to file ./- instead of issuing a
+	syntax error.
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow
