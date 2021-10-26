@@ -20,6 +20,9 @@ Corrections:
 	Red Hat bug 1981308
 	Thanks to Vlad Slepukhin for reporting this issue and providing a patch
 
+	Corrected a typo in configure.ac that broke option --enable-openssl-base
+	Thanks to john1doe for reporting this issue.
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

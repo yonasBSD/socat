@@ -519,7 +519,7 @@ if test -n "$WITH_OPENSSL"; then
       [sc_cv_have_openssl_ssl_h=yes; OPENSSL_BASE=""; ],
       [sc_cv_have_openssl_ssl_h=no
        if [ "$OPENSSL_BASE" ]; then
-	  s="$OPENSSL_BASE"
+	  Ds="$OPENSSL_BASE"
        else
           Ds="/sw /usr/local /opt/freeware /usr/sfw /usr/local/ssl"
        fi
