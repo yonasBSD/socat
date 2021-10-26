@@ -15092,6 +15092,44 @@ PORT=$((PORT+1))
 N=$((N+1))
 
 
+# Test if unknown service specs are handled properly
+NAME=BAD_SERVICE
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%tcp%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test if unknown service specs are handled properly"
+# Try to resolve an unspecified TCP service "
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT $opts - TCP:$LOCALHOST:zyxw"
+printf "test $F_n $TEST... " $N
+$CMD >/dev/null 2>"${te}" &
+pid=$!
+sleep 1
+kill -9 $pid 2>/dev/null;
+rc=$? 	# did process still exist?
+if [ $rc -ne 0 ]; then
+    $PRINTF "$OK\n"
+    if [" $VERBOSE" ]; then
+	echo "$CMD &" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD &" >&2
+    cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -15215,6 +15253,10 @@ rc1=$?
 kill $pid0 2>/dev/null; wait
 if [ !!! ]; then
     $PRINTF "$OK\n"
+    if [" $VERBOSE" ]; then
+	echo "$CMD0 &" >&2
+	echo "$CMD1" >&2
+    fi
     numOK=$((numOK+1))
 else
     $PRINTF "$FAILED\n"

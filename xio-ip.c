@@ -238,6 +238,16 @@ int xiogetaddrinfo(const char *node, const char *service,
 	   continue;
 	}
 	if (error_num == EAI_SERVICE && protocol != 0) {
+	   if (hints.ai_protocol == 0) {
+	      Error7("getaddrinfo\"%s\", \"%s\", {%d,%d,%d,%d}, {}): %s",
+		     node?node:"NULL", service?service:"NULL",
+		     hints.ai_flags, hints.ai_family,
+		     hints.ai_socktype, hints.ai_protocol,
+		     gai_strerror(error_num));
+	      if (res != NULL)  freeaddrinfo(res);
+	      if (numnode)  free(numnode);
+	      return STAT_NORETRY;
+	   }
 	   hints.ai_protocol = 0;
 	   continue;
 	}

@@ -23,6 +23,10 @@ Corrections:
 	Corrected a typo in configure.ac that broke option --enable-openssl-base
 	Thanks to john1doe for reporting this issue.
 
+	Socat looped endlessly, not responding to SIGTERM, when a service name
+	(for port) could not be resolved.
+	Test: BAD_SERVICE
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow
