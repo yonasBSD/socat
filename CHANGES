@@ -35,6 +35,11 @@ Corrections:
 	Test: ABSTRACT_USER
 	Thanks to Andreas Fink for reporting this issue.
 
+	Option -R did not only dump ("sniff") right-to-left, but also
+	left-to-right traffic to the given file.
+	Test: SNIFF_RIGHT_TO_LEFT
+	Thanks to 1314 gsf for reporting this bug and sending a patch.
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

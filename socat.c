@@ -208,7 +208,7 @@ int main(int argc, const char *argv[]) {
 					   O_LARGEFILE|
 #endif
 					   O_NONBLOCK, 0664)) < 0)
-	    Error2("option -r \"%s\": %s", a, strerror(errno));
+	    Error2("option -R \"%s\": %s", a, strerror(errno));
 	 break;
       case 'b': if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -1303,7 +1303,7 @@ int xiotransfer(xiofile_t *inpipe, xiofile_t *outpipe,
 
 	    if (!righttoleft && socat_opts.sniffleft >= 0) {
 	       Write(socat_opts.sniffleft, buff, bytes);
-	    } else if (socat_opts.sniffright >= 0) {
+	    } else if (righttoleft && socat_opts.sniffright >= 0) {
 	       Write(socat_opts.sniffright, buff, bytes);
 	    }
 

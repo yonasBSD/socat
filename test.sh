@@ -15112,7 +15112,7 @@ kill -9 $pid 2>/dev/null;
 rc=$? 	# did process still exist?
 if [ $rc -ne 0 ]; then
     $PRINTF "$OK\n"
-    if [" $VERBOSE" ]; then
+    if [ "$VERBOSE" ]; then
 	echo "$CMD &" >&2
     fi
     numOK=$((numOK+1))
@@ -15162,6 +15162,50 @@ if [ $rc -eq 0 ]; then
 else
     $PRINTF "$FAILED\n"
     echo "$CMD" >&2
+    cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
+# Test if option -R does not "sniff" left-to-right traffic
+NAME=SNIFF_RIGHT_TO_LEFT
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%$NAME%*)
+TEST="$NAME: test if option -R does not "sniff" left-to-right traffic"
+# Use option -R, check if left-to-right traffic is not in output file
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+ts="$td/test$N.sniffed"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT $opts -R $ts - /dev/null"
+printf "test $F_n $TEST... " $N
+echo "$da" |$CMD >"${tf}" 2>"${te}"
+rc=$?
+if [ ! -f "$ts" ]; then
+    $PRINTF "$CANT\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD" >&2
+	cat "${te}" >&2
+    fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ ! -s "$ts" ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD &" >&2
     cat "${te}" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -15297,10 +15341,14 @@ kill $pid0 2>/dev/null; wait
 if [ !!! ]; then
     $PRINTF "$OK\n"
 <<<<<<< HEAD
+<<<<<<< HEAD
     if [" $VERBOSE" ]; then
 =======
     if [ "$VERBOSE" ]; then
 >>>>>>> 8e56329... ABSTEACT-LISTEN with option user calls fchown()
+=======
+    if [ "$VERBOSE" ]; then
+>>>>>>> 4927d33... Option -R did not only dump right-to-left, but also left-to-right traffic
 	echo "$CMD0 &" >&2
 	echo "$CMD1" >&2
     fi
