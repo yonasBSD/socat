@@ -116,7 +116,7 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 extern
 int xiodopacketinfo(struct msghdr *msgh, bool withlog, bool withenv);
 extern 
-int xiogetpacketsrc(int fd, struct msghdr *msgh);
+int xiogetpacketsrc(int fd, struct msghdr *msgh, int flags);
 extern
 int xiocheckpeer(xiosingle_t *xfd,
 		 union sockaddr_union *pa, union sockaddr_union *la);

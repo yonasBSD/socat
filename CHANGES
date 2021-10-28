@@ -50,6 +50,10 @@ Corrections:
 
 	Print a message when readbytes option causes EOF
 
+	The ip-recverr option had no effect. Corrected and improved its
+	handling of ancilliary messages, so it is able to analyze ICMP error
+	packets (Linux only?)
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

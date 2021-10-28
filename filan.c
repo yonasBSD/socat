@@ -35,6 +35,7 @@ bool filan_rawoutput;
 
 int sockoptan(int fd, const struct sockopt *optname, int socklay, FILE *outfile);
 int tcpan(int fd, FILE *outfile);
+int tcpan2(int fd, FILE *outfile);
 const char *getfiletypestring(int st_mode);
 
 static int printtime(FILE *outfile, time_t time);
@@ -895,8 +896,42 @@ int tcpan(int fd, FILE *outfile) {
       sockoptan(fd, optname, SOL_TCP, outfile);
       ++optname;
    }
+
+   tcpan2(fd, outfile);
    return 0;
 }
+#endif /* WITH_TCP */
+
+#if WITH_TCP
+
+int tcpan2(int fd, FILE *outfile) {
+   struct tcp_info tcpinfo;
+   socklen_t tcpinfolen = sizeof(tcpinfo);
+   int result;
+
+   result = Getsockopt(fd, SOL_TCP, TCP_INFO, &tcpinfo, &tcpinfolen);
+   if (result < 0) {
+      Debug4("getsockopt(%d, SOL_TCP, TCP_INFO, %p, {"F_socklen"}): %s",
+	     fd, &tcpinfo, sizeof(tcpinfo), strerror(errno));
+      return -1;
+   }
+   fprintf(outfile, "%s={%u}\t", "TCPI_STATE", 		tcpinfo.tcpi_state);
+#if 0  /* on BSD these components are prefixed with __ - I get tired... */
+   fprintf(outfile, "%s={%u}\t", "TCPI_CA_STATE", 	tcpinfo.tcpi_ca_state);
+   fprintf(outfile, "%s={%u}\t", "TCPI_RETRANSMITS", 	tcpinfo.tcpi_retransmits);
+   fprintf(outfile, "%s={%u}\t", "TCPI_PROBES", 	tcpinfo.tcpi_probes);
+   fprintf(outfile, "%s={%u}\t", "TCPI_BACKOFF", 	tcpinfo.tcpi_backoff);
+#endif
+   fprintf(outfile, "%s={%u}\t", "TCPI_OPTIONS", 	tcpinfo.tcpi_options);
+   fprintf(outfile, "%s={%u}\t", "TCPI_SND_WSCALE", 	tcpinfo.tcpi_snd_wscale);
+   fprintf(outfile, "%s={%u}\t", "TCPI_RCV_WSCALE", 	tcpinfo.tcpi_rcv_wscale);
+   //fprintf(outfile, "%s={%u}\t", "TCPI_DELIVERY_RATE_APP_LIMITED", tcpinfo.tcpi_delivery_rate_app_limited);
+   //fprintf(outfile, "%s={%u}\t", "TCPI_FASTOPEN_CLIENT_FAIL", tcpinfo.tcpi_fastopen_client_fail);
+   // fprintf(outfile, "%s={%u}\t", "TCPI_", tcpinfo.tcpi_);
+
+   return 0;
+}
+
 #endif /* WITH_TCP */
 
 

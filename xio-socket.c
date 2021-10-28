@@ -693,6 +693,49 @@ int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
 
 #endif /* WITH_GENERICSOCKET */
 
+int xiogetpacketinfo(int fd)
+{
+#if defined(MSG_ERRQUEUE)
+   int _errno = errno;
+   char peername[256];
+   union sockaddr_union _peername;
+   /* union sockaddr_union _sockname; */
+   union sockaddr_union *pa = &_peername;	/* peer address */
+   /* union sockaddr_union *la = &_sockname; */	/* local address */
+   socklen_t palen = sizeof(_peername);	/* peer address size */
+   char ctrlbuff[1024];			/* ancillary messages */
+   struct msghdr msgh = {0};
+
+   msgh.msg_name = pa;
+   msgh.msg_namelen = palen;
+#if HAVE_STRUCT_MSGHDR_MSGCONTROL
+   msgh.msg_control = ctrlbuff;
+#endif
+#if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
+   msgh.msg_controllen = sizeof(ctrlbuff);
+#endif
+   if (xiogetpacketsrc(fd,
+		       &msgh,
+		       MSG_ERRQUEUE
+#ifdef MSG_TRUNC
+		       |MSG_TRUNC
+#endif
+		       ) >= 0
+       ) {
+      palen = msgh.msg_namelen;
+
+      Notice1("receiving packet from %s"/*"src"*/,
+	      sockaddr_info(&pa->soa, palen, peername, sizeof(peername))/*,
+									  sockaddr_info(&la->soa, sockname, sizeof(sockname))*/);
+
+      xiodopacketinfo(&msgh, true, true);
+   }
+   errno = _errno;
+#endif /* defined(MSG_ERRQUEUE) */
+   return 0;
+}
+
+
 
 /* a subroutine that is common to all socket addresses that want to connect
    to a peer address.
@@ -919,6 +962,10 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 	 errno = _errno;
 	 return -1;
       } else {
+	 /* try to find details about error, especially from ICMP */
+	 xiogetpacketinfo(xfd->fd);
+
+	 /* continue mainstream */
 	 Msg4(level, "connect(%d, %s, "F_Zd"): %s",
 	      xfd->fd, sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
 	      themlen, strerror(errno));
@@ -1408,7 +1455,13 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 #if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
       msgh.msg_controllen = sizeof(ctrlbuff);
 #endif
-      if (xiogetpacketsrc(xfd->fd, &msgh) < 0) {
+      if (xiogetpacketsrc(xfd->fd,
+			  &msgh,
+			  MSG_PEEK
+#ifdef MSG_TRUNC
+			  |MSG_TRUNC
+#endif
+			  ) < 0) {
 	 return STAT_RETRYLATER;
       }
       palen = msgh.msg_namelen;
@@ -1626,7 +1679,7 @@ int retropt_socket_pf(struct opt *opts, int *pf) {
 /* this function calls recvmsg(..., MSG_PEEK, ...) to obtain information about
    the arriving packet. in msgh the msg_name pointer must refer to an (empty)
    sockaddr storage. */
-int xiogetpacketsrc(int fd, struct msghdr *msgh) {
+int xiogetpacketsrc(int fd, struct msghdr *msgh, int flags) {
    char peekbuff[1];
 #if HAVE_STRUCT_IOVEC
    struct iovec iovec;
@@ -1641,11 +1694,7 @@ int xiogetpacketsrc(int fd, struct msghdr *msgh) {
 #if HAVE_STRUCT_MSGHDR_MSGFLAGS
    msgh->msg_flags = 0;
 #endif
-   if (Recvmsg(fd, msgh, MSG_PEEK
-#ifdef MSG_TRUNC
-		 |MSG_TRUNC
-#endif
-	       ) < 0) {
+   if (Recvmsg(fd, msgh, flags) < 0) {
       Warn1("recvmsg(): %s", strerror(errno));
       return STAT_RETRYLATER;
    }
