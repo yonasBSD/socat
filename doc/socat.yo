@@ -514,6 +514,7 @@ label(ADDRESS_OPENSSL_CONNECT)dit(bf(tt(OPENSSL:<host>:<port>)))
    certificate are supported.nl() 
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(TCP)(GROUP_TCP),link(OPENSSL)(GROUP_OPENSSL),link(RETRY)(GROUP_RETRY) nl()
    Useful options:
+   link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION),
    link(cipher)(OPTION_OPENSSL_CIPHERLIST),
    link(verify)(OPTION_OPENSSL_VERIFY),
    link(commonname)(OPTION_OPENSSL_COMMONNAME),
@@ -543,6 +544,7 @@ label(ADDRESS_OPENSSL_LISTEN)dit(bf(tt(OPENSSL-LISTEN:<port>)))
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(TCP)(GROUP_TCP),link(LISTEN)(GROUP_LISTEN),link(OPENSSL)(GROUP_OPENSSL),link(CHILD)(GROUP_CHILD),link(RANGE)(GROUP_RANGE),link(RETRY)(GROUP_RETRY) nl()
    Useful options:
    link(pf)(OPTION_PROTOCOL_FAMILY),
+   link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION),
    link(cipher)(OPTION_OPENSSL_CIPHERLIST),
    link(verify)(OPTION_OPENSSL_VERIFY),
    link(commonname)(OPTION_OPENSSL_COMMONNAME),
@@ -575,6 +577,7 @@ label(ADDRESS_OPENSSL_DTLS_CLIENT)dit(bf(tt(OPENSSL-DTLS-CLIENT:<host>:<port>)))
    on the network. Use option link(-T)(option_T) to prevent indefinite hanging when peer went down quietly.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),COMMENT(link(UDP)(GROUP_UDP),)link(OPENSSL)(GROUP_OPENSSL),link(RETRY)(GROUP_RETRY) nl()
    Useful options:
+   link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION),
    link(cipher)(OPTION_OPENSSL_CIPHERLIST),
    link(verify)(OPTION_OPENSSL_VERIFY),
    link(commonname)(OPTION_OPENSSL_COMMONNAME),
@@ -606,6 +609,7 @@ label(ADDRESS_OPENSSL_DTLS_SERVER)dit(bf(tt(OPENSSL-DTLS-SERVER:<port>)))
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),COMMENT(link(UDP)(GROUP_UDP),)link(LISTEN)(GROUP_LISTEN),link(OPENSSL)(GROUP_OPENSSL),link(CHILD)(GROUP_CHILD),link(RANGE)(GROUP_RANGE),link(RETRY)(GROUP_RETRY) nl()
    Useful options:
    link(pf)(OPTION_PROTOCOL_FAMILY),
+   link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION),
    link(cipher)(OPTION_OPENSSL_CIPHERLIST),
    link(verify)(OPTION_OPENSSL_VERIFY),
    link(commonname)(OPTION_OPENSSL_COMMONNAME),
@@ -2764,7 +2768,7 @@ link(openssl-listen)(ADDRESS_OPENSSL_LISTEN) address types.
 
 startdit()
 label(OPTION_OPENSSL_CIPHERLIST)dit(bf(tt(cipher=<cipherlist>)))
-   Selects the list of ciphers that may be used for the connection.
+   Specifies the list of ciphers that may be used for the connection.
    See the man page of code(ciphers), section bf(CIPHER LIST FORMAT), for
    detailed information about syntax, values, and default of <cipherlist>.nl()
    Several cipher strings may be given, separated by ':'.
@@ -2781,6 +2785,9 @@ label(OPTION_OPENSSL_CIPHERLIST)dit(bf(tt(cipher=<cipherlist>)))
 label(OPTION_OPENSSL_METHOD)dit(bf(tt(method=<ssl-method>)))
    This option is based on deprecated functions and is only available when
    socat() was build with option tt(--with-openssl-method).
+   Use option link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION)
+   and maybe link(max-proto-version)(OPTION_OPENSSL_MAX_PROTO_VERSION)
+   instead.
    Sets the protocol version to be used. Valid strings (not case sensitive)
    are:  
    startdit()
@@ -2793,6 +2800,21 @@ label(OPTION_OPENSSL_METHOD)dit(bf(tt(method=<ssl-method>)))
    When this option is not provided OpenSSL negotiates the mothod with its
    peer.
    enddit()
+label(OPTION_OPENSSL_MIN_PROTO_VERSION)dit(bf(tt(min-proto-version)))
+   This option tells OpenSSL to use this or a later SSL/TLS protocol version
+   and refuses to accept a lower/older protocol. Valid syntax is:
+   startdit()
+   dit(tt(SSL2)) Select SSL protocol version 2.
+   dit(tt(SSL3)) Select SSL protocol version 3.
+   dit(tt(TLS1)) dit(tt(TLS1.0)) Select TLS protocol version 1.
+   dit(tt(TLS1.1)) Select TLS protocol version 1.1.
+   dit(tt(TLS1.2)) Select TLS protocol version 1.2.
+   dit(tt(TLS1.3)) Select TLS protocol version 1.3.
+   enddit()
+label(OPTION_OPENSSL_MAX_PROTO_VERSION)dit(bf(tt(openssl-max-proto-version)))
+   This option is similar to link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION),
+   however, it disallows use of a higher protocol version. Useful for testing
+   the peer.
 label(OPTION_OPENSSL_VERIFY)dit(bf(tt(verify=<bool>)))
    Controls check of the peer's certificate. Default is 1 (true). Disabling
    verify might open your socket for everyone, making the encryption useless!

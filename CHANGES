@@ -60,6 +60,10 @@ Testing:
 
 	Fixed in test.sh a few issues reported by shellcheck
 
+Documentation:
+	Added missing docu of OpenSSL options min-proto-version,
+	max-proto-version.
+
 ####################### V 1.7.4.1:
 
 Corrections:
