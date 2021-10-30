@@ -40,6 +40,11 @@ Corrections:
 	Test: SNIFF_RIGHT_TO_LEFT
 	Thanks to 1314 gsf for reporting this bug and sending a patch.
 
+	Options -r and -R, when opening a named pipe that has no actual reader,
+	failed with "No such device or address". To solve this problem, Socat
+	now opens the pipe in rw-Mode.
+	Thanks to Cody J.Soultz for sending a patch.
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

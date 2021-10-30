@@ -191,8 +191,17 @@ int main(int argc, const char *argv[]) {
 #ifdef O_LARGEFILE
 					  O_LARGEFILE|
 #endif
-					  O_NONBLOCK, 0664)) < 0)
+					  O_NONBLOCK, 0664)) < 0) {
+	    if (errno == ENXIO) {
+	       if ((socat_opts.sniffleft = Open(a, O_CREAT|O_RDWR|O_APPEND|
+#ifdef O_LARGEFILE
+						O_LARGEFILE|
+#endif
+						O_NONBLOCK, 0664)) > 0)
+		  break; 	/* try to open pipe rdwr */
+	    }
 	    Error2("option -r \"%s\": %s", a, strerror(errno));
+         }
 	 break;
       case 'R': if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -207,8 +216,17 @@ int main(int argc, const char *argv[]) {
 #ifdef O_LARGEFILE
 					   O_LARGEFILE|
 #endif
-					   O_NONBLOCK, 0664)) < 0)
+					   O_NONBLOCK, 0664)) < 0) {
+	    if (errno == ENXIO) {
+	       if ((socat_opts.sniffright = Open(a, O_CREAT|O_RDWR|O_APPEND|
+#ifdef O_LARGEFILE
+						O_LARGEFILE|
+#endif
+						O_NONBLOCK, 0664)) > 0)
+		  break; 	/* try to open pipe rdwr */
+	    }
 	    Error2("option -R \"%s\": %s", a, strerror(errno));
+         }
 	 break;
       case 'b': if (arg1[0][2]) {
 	    a = *arg1+2;
