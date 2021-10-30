@@ -1,4 +1,8 @@
 ﻿
+Testing:
+	Prevent the TIMESTAMP tests from sporadically failing due do seconds
+	overflow
+
 ####################### V 1.7.4.1:
 
 Corrections:

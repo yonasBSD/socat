@@ -10361,7 +10361,15 @@ CMD0="$TRACE $SOCAT $opts -d -d -d -u $KEYW-RECV:$tra,reuseaddr,$SCM_RECV -"
 CMD1="$TRACE $SOCAT $opts -u - $KEYW-SENDTO:$tsa,$SCM_ENABLE"
 printf "test $F_n $TEST... " $N
 # is this option supported?
-if $TRACE $SOCAT -hhh |grep "[[:space:]]$SCM_RECV[[:space:]]" >/dev/null; then
+if $SOCAT -hhh |grep "[[:space:]]$SCM_RECV[[:space:]]" >/dev/null; then
+  if [ "$SCM_VALUE" = "timestamp" ]; then
+    secs="$(date '+%S')"
+    if [ "$secs" -ge 58 -a "$secs" -le 59 ]; then
+      dsecs=$((60-secs))
+      #echo "Sleeping $dsecs seconds to avoid minute change in timestamp" >/dev/tty
+      sleep $dsecs
+    fi
+  fi
 $CMD0 >"$tf" 2>"${te}0" &
 pid0="$!"
 wait${proto}port $tra 1
@@ -10615,6 +10623,14 @@ CMD1="$TRACE $SOCAT $opts -u - $KEYW-SENDTO:$tsa,$SCM_ENABLE"
 printf "test $F_n $TEST... " $N
 # is this option supported?
 if $SOCAT -hhh |grep "[[:space:]]$SCM_RECV[[:space:]]" >/dev/null; then
+  if [ "$SCM_VALUE" = "timestamp" ]; then
+    secs="$(date '+%S')"
+    if [ "$secs" -ge 58 -a "$secs" -le 59 ]; then
+      dsecs=$((60-secs))
+      #echo "Sleeping $dsecs seconds to avoid minute change in timestamp" >/dev/tty
+      sleep $dsecs
+    fi
+  fi
 eval "$CMD0 >\"$tf\" 2>\"${te}0\" &"
 pid0="$!"
 wait${proto}port $tra 1
