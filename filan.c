@@ -911,7 +911,7 @@ int tcpan2(int fd, FILE *outfile) {
 
    result = Getsockopt(fd, SOL_TCP, TCP_INFO, &tcpinfo, &tcpinfolen);
    if (result < 0) {
-      Debug4("getsockopt(%d, SOL_TCP, TCP_INFO, %p, {"F_socklen"}): %s",
+      Debug4("getsockopt(%d, SOL_TCP, TCP_INFO, %p, {"F_Zu"}): %s",
 	     fd, &tcpinfo, sizeof(tcpinfo), strerror(errno));
       return -1;
    }

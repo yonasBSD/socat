@@ -15340,15 +15340,7 @@ rc1=$?
 kill $pid0 2>/dev/null; wait
 if [ !!! ]; then
     $PRINTF "$OK\n"
-<<<<<<< HEAD
-<<<<<<< HEAD
-    if [" $VERBOSE" ]; then
-=======
     if [ "$VERBOSE" ]; then
->>>>>>> 8e56329... ABSTEACT-LISTEN with option user calls fchown()
-=======
-    if [ "$VERBOSE" ]; then
->>>>>>> 4927d33... Option -R did not only dump right-to-left, but also left-to-right traffic
 	echo "$CMD0 &" >&2
 	echo "$CMD1" >&2
     fi
