@@ -42,6 +42,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 
    if (pipe->readbytes) {
       if (pipe->actbytes == 0) {
+	 Info("xioread(): readbytes consumed, inserting EOF");
 	 return 0;	/* EOF by count */
       }
 

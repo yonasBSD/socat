@@ -48,6 +48,8 @@ Corrections:
 	The call "socat -r - PIPE" traced to file ./- instead of issuing a
 	syntax error.
 
+	Print a message when readbytes option causes EOF
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow
