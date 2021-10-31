@@ -27,6 +27,14 @@ Corrections:
 	(for port) could not be resolved.
 	Test: BAD_SERVICE
 
+	Using options of NAMED group, e.g.chown, with abstract UNIX domain
+	sockets, produced errors because the function was applied with a normal
+	file system related call, e.g.chown(), using file "" (empty name). Instead of
+	chown(), Socat now uses fchown() on the file descriptor. However, such
+	a call usually has no real effect.	
+	Test: ABSTRACT_USER
+	Thanks to Andreas Fink for reporting this issue.
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

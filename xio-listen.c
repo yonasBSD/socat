@@ -164,7 +164,11 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
 
 #if WITH_UNIX
    if (us->sa_family == AF_UNIX) {
-      applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_FD);
+      if (((union sockaddr_union *)us)->un.sun_path[0] != '\0') {
+	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_FD);
+      } else {
+	 applyopts(xfd->fd, opts, PH_FD);
+      }
    }
 #endif
    /* under some circumstances (e.g., TCP listen on port 0) bind() fills empty
@@ -178,9 +182,14 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
    applyopts(xfd->fd, opts, PH_PASTBIND);
 #if WITH_UNIX
    if (us->sa_family == AF_UNIX) {
-      /*applyopts_early(((struct sockaddr_un *)us)->sun_path, opts);*/
-      applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_EARLY);
-      applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
+      if (((union sockaddr_union *)us)->un.sun_path[0] != '\0') {
+	 /*applyopts_early(((struct sockaddr_un *)us)->sun_path, opts);*/
+	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_EARLY);
+	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
+      } else {
+	 applyopts(xfd->fd, opts, PH_EARLY);
+	 applyopts(xfd->fd, opts, PH_PREOPEN);
+      }
    }
 #endif /* WITH_UNIX */
 

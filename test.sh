@@ -15130,6 +15130,49 @@ PORT=$((PORT+1))
 N=$((N+1))
 
 
+# Test if the user option with abstract UNIX domain socket is not applied to
+# file "" (empty name)
+NAME=ABSTRACT_USER
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%unix%*|*%abstract%*|*%$NAME%*)
+TEST="$NAME: Is the fs related user option on ABSTRACT socket applied to FD"
+# Apply the user option to an abstract socket; check if this produces an error.
+# No error should occur
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT ABSTRACT-LISTEN:temp,accept-timeout=0.1,user=$USER FILE:/dev/null"
+printf "test $F_n $TEST... " $N
+$CMD >/dev/null 2>"${te}"
+echo "$da" |$CMD >"${tf}1" 2>"${te}1"
+rc=$?
+if [ $rc -eq 0 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD" >&2
+    cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -15253,7 +15296,11 @@ rc1=$?
 kill $pid0 2>/dev/null; wait
 if [ !!! ]; then
     $PRINTF "$OK\n"
+<<<<<<< HEAD
     if [" $VERBOSE" ]; then
+=======
+    if [ "$VERBOSE" ]; then
+>>>>>>> 8e56329... ABSTEACT-LISTEN with option user calls fchown()
 	echo "$CMD0 &" >&2
 	echo "$CMD1" >&2
     fi
