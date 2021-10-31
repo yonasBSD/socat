@@ -1193,40 +1193,45 @@ int _socat(void) {
    returns 0 on success or -1 if an error occurred */
 int gettimestamp(char *timestamp) {
    size_t bytes;
-#if HAVE_GETTIMEOFDAY || 1
+#if HAVE_CLOCK_GETTIME
+   struct timespec now;
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
    struct timeval now;
-   int result;
+#endif /* !HAVE_PROTOTYPE_LIB_gettimeofday */
    time_t nowt;
-#else /* !HAVE_GETTIMEOFDAY */
-   time_t now;
-#endif /* !HAVE_GETTIMEOFDAY */
+   int result;
 
-#if HAVE_GETTIMEOFDAY || 1
-   result = gettimeofday(&now, NULL);
+#if HAVE_CLOCK_GETTIME
+   result = clock_gettime(CLOCK_REALTIME, &now);
    if (result < 0) {
       return result;
-   } else {
-      nowt = now.tv_sec;
-#if HAVE_STRFTIME
-      bytes = strftime(timestamp, 20, "%Y/%m/%d %H:%M:%S", localtime(&nowt));
-      bytes += sprintf(timestamp+19, "."F_tv_usec" ", now.tv_usec);
-#else
-      strcpy(timestamp, ctime(&nowt));
-      bytes = strlen(timestamp);
-#endif
    }
-#else /* !HAVE_GETTIMEOFDAY */
-   now = time(NULL);  if (now == (time_t)-1) {
+   nowt = now.tv_sec;
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
+   result = Gettimeofday(&now, NULL);
+   if (result < 0) {
+      return result;
+   }
+   nowt = now.tv_sec;
+#else
+   nowt = time(NULL);
+   if (nowt == (time_t)-1) {
       return -1;
-   } else {
-#if HAVE_STRFTIME
-      bytes = strftime(timestamp, 21, "%Y/%m/%d %H:%M:%S ", localtime(&now));
-#else
-      strcpy(timestamp, ctime(&now));
-      bytes = strlen(timestamp);
-#endif
    }
-#endif /* !HAVE_GETTIMEOFDAY */
+#endif
+#if HAVE_STRFTIME
+   bytes = strftime(timestamp, 20, "%Y/%m/%d %H:%M:%S", localtime(&nowt));
+#if HAVE_CLOCK_GETTIME
+   bytes += sprintf(timestamp+19, "."F_tv_usec" ", now.tv_nsec/1000);
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
+   bytes += sprintf(timestamp+19, "."F_tv_usec" ", now.tv_usec);
+#else
+   strncpy(&timestamp[bytes++], " ", 2);
+#endif
+#else
+   strcpy(timestamp, ctime(&nowt));
+   bytes = strlen(timestamp);
+#endif
    return 0;
 }
 

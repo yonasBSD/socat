@@ -68,7 +68,11 @@ Documentation:
 	Thanks to Emanuele Torre for reporting this issue.
 
 	Corrected more typos and added missing bug info to CHANGES, performed
-	some non functional corrections
+	some non functional corrections.
+
+Porting:
+	Corrected building when clock_gettime() not available, with or without
+	gettimeofday().
 
 ####################### V 1.7.4.1:
 

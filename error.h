@@ -217,7 +217,7 @@ struct diag_dgram {
    enum diag_op op;
 #if HAVE_CLOCK_GETTIME
    struct timespec now;
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
    struct timeval now;
 #else
    time_t now;

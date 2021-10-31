@@ -1,4 +1,4 @@
-dnl source: configure.in
+dnl source: configure.ac
 dnl Copyright Gerhard Rieger and contributors (see file CHANGES)
 dnl Published under the GNU General Public License V.2, see file COPYING
 
@@ -1490,6 +1490,8 @@ AC_CHECK_LIB(bsd, openpty,
 # Linux 2.4
 AC_CHECK_LIB(util, openpty,
   [LIBS="-lutil $LIBS"; AC_DEFINE(HAVE_OPENPTY)])
+
+AC_CHECK_PROTOTYPE_LIB(gettimeofday)
 
 AC_CHECK_LIB(rt, clock_gettime,
 		 [LIBS="-lrt $LIBS"; AC_DEFINE(HAVE_CLOCK_GETTIME)])

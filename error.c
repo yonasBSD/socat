@@ -49,7 +49,7 @@ struct diag_opts diagopts =
 static void msg2(
 #if HAVE_CLOCK_GETTIME
 		 struct timespec *now,
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
 		 struct timeval *now,
 #else
 		 time_t *now,
@@ -269,7 +269,7 @@ void msg(int level, const char *format, ...) {
    diag_dgram.op = DIAG_OP_MSG;
 #if HAVE_CLOCK_GETTIME
    clock_gettime(CLOCK_REALTIME, &diag_dgram.now);
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
    gettimeofday(&diag_dgram.now, NULL);
 #else
    diag_dgram.now = time(NULL);
@@ -295,7 +295,7 @@ void msg(int level, const char *format, ...) {
 void msg2(
 #if HAVE_CLOCK_GETTIME
 	  struct timespec *now,
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
 	  struct timeval *now,
 #else
 	  time_t *now,
@@ -315,7 +315,7 @@ void msg2(
 
 #if HAVE_CLOCK_GETTIME
    epoch = now->tv_sec;
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
    epoch = now->tv_sec;
 #else
    epoch = *now;
@@ -329,7 +329,7 @@ void msg2(
    if (diagopts.micros) {
 #if HAVE_CLOCK_GETTIME
       micros = now->tv_nsec/1000;
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
       micros = now->tv_usec;
 #else
       micros = 0;
@@ -387,7 +387,7 @@ void diag_flush(void) {
 	 /* we want the actual time, not when this dgram was sent */
 #if HAVE_CLOCK_GETTIME
 	 clock_gettime(CLOCK_REALTIME, &recv_dgram.now);
-#elif HAVE_GETTIMEOFDAY
+#elif HAVE_PROTOTYPE_LIB_gettimeofday
 	 gettimeofday(&recv_dgram.now, NULL);
 #else
 	 recv_dgram.now = time(NULL);
