@@ -1,4 +1,6 @@
 ﻿
+####################### V 1.7.4.2:
+
 Corrections:
 	The per address parameters for OpenSSL overlapped in memory with socket
 	parameters. Magically this did not seem to cause problems except on
