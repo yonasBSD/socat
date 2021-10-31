@@ -54,6 +54,8 @@ Corrections:
 	handling of ancilliary messages, so it is able to analyze ICMP error
 	packets (Linux only?)
 
+	Setgui(), Setuid() calls in xio-progcall.c were useless.
+
 Testing:
 	Prevent the TIMESTAMP tests from sporadically failing due do seconds
 	overflow

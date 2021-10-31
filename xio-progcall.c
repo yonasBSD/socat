@@ -417,9 +417,6 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       }
    }
    if (!withfork || pid == 0) {	/* child */
-      uid_t user;
-      gid_t group;
-
       if (withfork) {
 	 /* The child should have default handling for SIGCHLD. */
 	 /* In particular, it's not defined whether ignoring SIGCHLD is inheritable. */
@@ -548,13 +545,6 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	 applyopts(-1, *copts, PH_LATE2);
       }
       _xioopen_setdelayeduser();
-      /* set group before user - maybe you are not permitted afterwards */
-      if (retropt_gidt(*copts, OPT_SETGID, &group) >= 0) {
-	 Setgid(group);
-      }
-      if (retropt_uidt(*copts, OPT_SETUID, &user) >= 0) {
-	 Setuid(user);
-      }
       if (withstderr) {
 	 *duptostderr = fdo;
       } else {
