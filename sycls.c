@@ -357,8 +357,8 @@ int Gettimeofday(struct timeval *tv, struct timezone *tz) {
    }
 #endif /* WITH_MSGLEVEL <= E_DEBUG */
    result = gettimeofday(tv, tz);
-   _errno = errno;
 #if WITH_MSGLEVEL <= E_DEBUG
+   _errno = errno;
    if (tz) {
       Debug5("gettimeofday({%ld,%ld}, {%d,%d}) -> %d",
              tv->tv_sec, tv->tv_usec, tz->tz_minuteswest, tz->tz_dsttime,
@@ -367,8 +367,8 @@ int Gettimeofday(struct timeval *tv, struct timezone *tz) {
       Debug3("gettimeofday({%ld,%ld},) -> %d",
 	     tv->tv_sec, tv->tv_usec, result);
    }
-#endif /* WITH_MSGLEVEL <= E_DEBUG */
    errno = _errno;
+#endif /* WITH_MSGLEVEL <= E_DEBUG */
    return result;
 }
 
@@ -578,11 +578,11 @@ int Fcntl(int fd, int cmd) {
 #endif /* WITH_SYCLS */
    result = fcntl(fd, cmd);
    if (!diag_in_handler) diag_flush();
-   _errno = errno;
 #if WITH_SYCLS
+   _errno = errno;
    Debug1("fcntl() -> %d", result);
-#endif /* WITH_SYCLS */
    errno = _errno;
+#endif /* WITH_SYCLS */
    return result;
 }
 
@@ -1032,11 +1032,11 @@ int System(const char *string) {
    diag_immediate_exit = 1;
    result = system(string);
    diag_immediate_exit = 0;
-   _errno = errno;
 #if WITH_SYCLS
+   _errno = errno;
    Debug1("system() -> %d", result);
-#endif /* WITH_SYCLS */
    errno = _errno;
+#endif /* WITH_SYCLS */
    return result;
 }
 

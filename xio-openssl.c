@@ -560,7 +560,6 @@ static int
       return STAT_NORETRY;
    }
 
-   xfd->addr  = &xioaddr_openssl_listen;
    xfd->dtype = XIODATA_OPENSSL;
 
    while (true) {	/* loop over failed attempts */
@@ -930,7 +929,6 @@ int
 
    //*ipproto = IPPROTO_TCP;
 
-   xfd->addr  = &xioaddr_openssl;
    xfd->dtype = XIODATA_OPENSSL;
 
    retropt_bool(opts, OPT_OPENSSL_FIPS, &opt_fips);
