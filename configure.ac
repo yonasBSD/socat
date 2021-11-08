@@ -2123,7 +2123,11 @@ fi
 AC_MSG_RESULT($sc_cv_var_environ)
 
 # allow BUILD_DATE to be externally set for build reproducibility
-if test "$BUILD_DATE"; then
+if test "$SOURCE_DATE_EPOCH"; then
+  DATE_FMT="%d %b %Y %H:%M:%S"
+  BUILD_DATE=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT")
+  AC_DEFINE_UNQUOTED(BUILD_DATE, ["$BUILD_DATE"])
+elif test "$BUILD_DATE"; then
   AC_DEFINE_UNQUOTED(BUILD_DATE, ["$BUILD_DATE"])
 else
   AC_DEFINE(BUILD_DATE, [__DATE__" "__TIME__])

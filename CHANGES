@@ -10,7 +10,7 @@ Corrections:
 
 	Socat since 1.7.4.0 did not compile on Solaris and its derivatives
 	because the getprotobynumber_r() function prototype differ from the
-	Linux versino.
+	Linux version.
 	configure now checks for the variant.
 	Thanks to Robert Zybeck for reporting this issue.
 
@@ -30,12 +30,17 @@ Porting:
 	EPROTOTYPE on most other OSes).
 	Streams: Must not push ldterm when it is already active (hangs).
 
+Building:
+	Socats build date and time may now be set externally with environment
+	variable SOURCE_DATE_EPOCH.
+	Thanks to Viktor Kleinik for sending a patch.
+
 Testing:
 	test.sh: many corrections for AIX's older shell utilities, e.g.sleep(1)
 	does not allow fractions of seconds, grep does not understand '\<';
 	OpenIndiana/SunOS netstat format;
 	many more functional and cosmetic code corrections.
-	
+
 ####################### V 1.7.4.2:
 
 Corrections:
