@@ -1,4 +1,9 @@
 ﻿
+Corrections:
+	Socat 1.7.4.2 did not compile on OmniOS (and probably other OpenSolaris
+	distributions)
+	Thanks to Andy Fiddaman for sending a patch
+
 ####################### V 1.7.4.2:
 
 Corrections:

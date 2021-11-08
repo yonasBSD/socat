@@ -897,12 +897,14 @@ int tcpan(int fd, FILE *outfile) {
       ++optname;
    }
 
+#ifdef TCP_INFO
    tcpan2(fd, outfile);
+#endif
    return 0;
 }
 #endif /* WITH_TCP */
 
-#if WITH_TCP
+#if WITH_TCP && defined(TCP_INFO)
 
 int tcpan2(int fd, FILE *outfile) {
    struct tcp_info tcpinfo;
