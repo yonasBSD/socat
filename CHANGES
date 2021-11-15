@@ -14,6 +14,11 @@ Corrections:
 	configure now checks for the variant.
 	Thanks to Robert Zybeck for reporting this issue.
 
+	The variable for the no-sni option was not initialized and could thus
+	break OpenSSL certificate verification. E.g., test OPENSSL_SNI on some
+	platform succeeded with -g but failed with -O compiler option.
+	Thanks to valgrind for quickly finding the cause.
+
 Porting:
 	Again porting Socat to AIX (7.1) - Fixed configure and compile issues:
 	Adapted include requirements for IPv6
@@ -30,7 +35,7 @@ Testing:
 	does not allow fractions of seconds, grep does not understand '\<';
 	OpenIndiana/SunOS netstat format;
 	many more functional and cosmetic code corrections.
-
+	
 ####################### V 1.7.4.2:
 
 Corrections:

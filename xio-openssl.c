@@ -226,7 +226,7 @@ static int
    bool opt_ver = true;	/* verify peer certificate */
    char *opt_cert = NULL;	/* file name of client certificate */
    const char *opt_commonname = NULL;	/* for checking peer certificate */
-   bool        opt_no_sni;
+   bool        opt_no_sni = false;
    const char *opt_snihost = NULL;	/* for SNI host */
    int result;
 
