@@ -134,6 +134,23 @@ if test $sc_cv_have_prototype_hstrerror = yes; then
 fi
 AC_MSG_RESULT($sc_cv_have_prototype_hstrerror)
 
+# getprotobynumber_r() is not standardized
+AC_MSG_CHECKING(for getprotobynumber_r() variant)
+AC_CACHE_VAL(sc_cv_getprotobynumber_r,
+[AC_TRY_COMPILE([#include <stddef.h>
+#include <netdb.h>],[getprotobynumber_r(1,NULL,NULL,1024,NULL);],
+[sc_cv_getprotobynumber_r=1; tmp_bynum_variant=Linux],
+ [AC_TRY_COMPILE([#include <stddef.h>
+ #include <netdb.h>],[getprotobynumber_r(1,NULL,NULL,1024);],
+ [sc_cv_getprotobynumber_r=2; tmp_bynum_variant=Solaris],
+ # there is a 3 arg variant in AIX, but its doc is limited
+ [sc_cv_getprotobynumber_r=]
+)])])
+if test "$sc_cv_getprotobynumber_r"; then
+   AC_DEFINE_UNQUOTED(HAVE_GETPROTOBYNUMBER_R, $sc_cv_getprotobynumber_r)
+fi
+AC_MSG_RESULT($sc_cv_getprotobynumber_r /* $tmp_bynum_variant */)
+
 
 AC_MSG_CHECKING(whether to include help)
 AC_ARG_ENABLE(help, [  --disable-help          disable help],
@@ -811,7 +828,7 @@ AC_TYPE_SIGNAL
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS(putenv select pselect poll socket strtod strtol)
 AC_CHECK_FUNCS(strtoul uname getpgid getsid gethostbyname getaddrinfo)
-AC_CHECK_FUNCS(getprotobynumber getprotobynumber_r)
+AC_CHECK_FUNCS(getprotobynumber)
 AC_CHECK_FUNCS(setgroups inet_aton)
 
 AC_CHECK_FUNCS(grantpt unlockpt)

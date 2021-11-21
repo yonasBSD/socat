@@ -253,14 +253,14 @@ int sockname(int fd, FILE *outfile, char style) {
 #endif
 
 #if defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)
-#if HAVE_GETPROTOBYNUMBER_R
+#if HAVE_GETPROTOBYNUMBER_R==1 /* Linux */
    rc = getprotobynumber_r(proto, &protoent, protoname, sizeof(protoname), &protoentp);
    if (protoentp == NULL) {
       Warn2("sockname(): getprotobynumber_r(proto=%d, ...): %s",
 	    proto, strerror(rc));
    }
    strncpy(protoname, protoentp->p_name, sizeof(protoname));
-#elif HAVE_GETPROTOBYNUMBER
+#elif HAVE_GETPROTOBYNUMBER_R==2 /* Solaris */
    protoentp = getprotobynumber(proto);
    strncpy(protoname, protoentp->p_name, sizeof(protoname));
 #else

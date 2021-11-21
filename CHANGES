@@ -2,7 +2,13 @@
 Corrections:
 	Socat 1.7.4.2 did not compile on OmniOS (and probably other OpenSolaris
 	distributions)
-	Thanks to Andy Fiddaman for sending a patch
+	Thanks to Andy Fiddaman for sending a patch.
+
+	Socat since 1.7.4.0 did not compile on Solaris and its derivatives
+	because the getprotobynumber_r() function prototype differ from the
+	Linux versino.
+	configure now checks for the variant.
+	Thanks to Robert Zybeck for reporting this issue.
 
 ####################### V 1.7.4.2:
 
