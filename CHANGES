@@ -1,5 +1,9 @@
 ﻿
 Corrections:
+	Socat crashed with SIGSEGV when peer presented a certificate without
+	(or empty?) subject.
+	Thanks to Martin Dorey for reporting this issue and sending a patch.
+
 	Socat 1.7.4.2 did not compile on OmniOS (and probably other OpenSolaris
 	distributions)
 	Thanks to Andy Fiddaman for sending a patch.

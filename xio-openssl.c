@@ -1539,7 +1539,7 @@ static int openssl_setenv_cert_name(const char *field, X509_NAME *name) {
    }
    memcpy(str, buf, len);
    str[len] = '\0';
-   Info2("SSL peer cert %s: \"%s\"", field, buf);
+   Info2("SSL peer cert %s: \"%s\"", field, str);
    xiosetenv2("OPENSSL_X509", field, str, 1, NULL);
    free(str);
    BIO_free(bio);
