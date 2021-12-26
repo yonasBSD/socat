@@ -46,6 +46,10 @@ Testing:
 	OpenIndiana/SunOS netstat format;
 	many more functional and cosmetic code corrections.
 
+Documentation:
+	The socktype option was documented unspecifically as type option.
+	Thanks to Jonas Metzger for the hint.
+
 ####################### V 1.7.4.2:
 
 Corrections:

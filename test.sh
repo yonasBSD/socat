@@ -422,7 +422,7 @@ else
     SECONDIP6ADDR="[$SECONDIP6ADDR]"
 fi
 
-TRUE=$(type true)
+TRUE=$(which true)
 #E=-e	# Linux
 if   [ $(echo "x\c") = "x" ]; then E=""
 elif [ $(echo -e "x\c") = "x" ]; then E="-e"
@@ -4046,6 +4046,7 @@ TEST="$NAME: exec against address with ignoreeof"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
+# remark: diagnostics to null, no good style
 CMD="$TRACE $SOCAT $opts -lf /dev/null EXEC:$TRUE /dev/null,ignoreeof"
 printf "test $F_n $TEST... " $N
 $CMD >"$tf" 2>"$te"

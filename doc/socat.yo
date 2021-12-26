@@ -1982,12 +1982,12 @@ label(OPTION_PROTOCOL_FAMILY)dit(bf(tt(pf=<string>)))
    used as first argument to the code(socket()) or code(socketpair()) calls.
    This option affects address resolution and the required syntax of bind and
    range options.
-label(OPTION_SO_TYPE)dit(bf(tt(type=<type>)))
+label(OPTION_SO_TYPE)dit(bf(tt(socktype=<type>)))
    Sets the type of the socket, specified as second argument to the
    code(socket()) or code(socketpair()) calls, to <type>
    [link(int)(TYPE_INT)]. Address resolution is not affected by this option.
-   Under Linux, 1 means stream oriented socket, 2 means datagram socket, and 3
-   means raw socket.
+   Under Linux, 1 means stream oriented socket, 2 means datagram socket, 3
+   means raw socket, and 5 seqpacket (stream keeping packet boundaries).
 label(OPTION_SO_PROTOCOL)dit(bf(tt(protocol)))
    Sets the protocol of the socket, specified as third argument to the
    code(socket()) or code(socketpair()) calls, to <protocol>
