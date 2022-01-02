@@ -120,6 +120,10 @@ static int diag_sock_pair(void) {
    }
    diag_sock_send = handlersocks[1];
    diag_sock_recv = handlersocks[0];
+#if !defined(MSG_DONTWAIT)
+   fcntl(diag_sock_send, F_SETFL, O_NONBLOCK);
+   fcntl(diag_sock_recv, F_SETFL, O_NONBLOCK);
+#endif
    return 0;
 }
 
@@ -278,7 +282,11 @@ void msg(int level, const char *format, ...) {
    diag_dgram.exitcode = diagopts.exitstatus;
    vsnprintf_r(diag_dgram.text, sizeof(diag_dgram.text), format, ap);
    if (diag_in_handler && !diag_immediate_msg) {
-      send(diag_sock_send, &diag_dgram, sizeof(diag_dgram)-TEXTLEN + strlen(diag_dgram.text)+1, MSG_DONTWAIT
+      send(diag_sock_send, &diag_dgram, sizeof(diag_dgram)-TEXTLEN + strlen(diag_dgram.text)+1,
+	   0 	/* for canonical reasons */
+#ifdef MSG_DONTWAIT
+	   |MSG_DONTWAIT
+#endif
 #ifdef MSG_NOSIGNAL
 	   |MSG_NOSIGNAL
 #endif
@@ -380,7 +388,12 @@ static void _msg(int level, const char *buff, const char *syslp) {
 void diag_flush(void) {
    struct diag_dgram recv_dgram;
    char exitmsg[20];
-   while (recv(diag_sock_recv, &recv_dgram, sizeof(recv_dgram)-1, MSG_DONTWAIT) > 0) {
+   while (recv(diag_sock_recv, &recv_dgram, sizeof(recv_dgram)-1,
+	       0 	/* for canonical reasons */
+#ifdef MSG_DONTWAIT
+	       |MSG_DONTWAIT
+#endif
+	       ) > 0) {
       recv_dgram.text[TEXTLEN-1] = '\0';
       switch (recv_dgram.op) {
       case DIAG_OP_EXIT:
@@ -443,7 +456,11 @@ void diag_exit(int status) {
    if (diag_in_handler && !diag_immediate_exit) {
       diag_dgram.op = DIAG_OP_EXIT;
       diag_dgram.exitcode = status;
-      send(diag_sock_send, &diag_dgram, sizeof(diag_dgram)-TEXTLEN, MSG_DONTWAIT
+      send(diag_sock_send, &diag_dgram, sizeof(diag_dgram)-TEXTLEN,
+	   0 	/* for canonical reasons */
+#ifdef MSG_DONTWAIT
+	   |MSG_DONTWAIT
+#endif
 #ifdef MSG_NOSIGNAL
 	   |MSG_NOSIGNAL
 #endif

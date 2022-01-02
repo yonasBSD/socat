@@ -212,7 +212,7 @@ int sockname(int fd, FILE *outfile, char style) {
    struct protoent protoent, *protoentp;
 #endif
 #define PROTONAMEMAX 1024 
-   char protoname[PROTONAMEMAX];
+   char protoname[PROTONAMEMAX] = "";
 #if defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)
    int proto;
 #endif
@@ -263,6 +263,15 @@ int sockname(int fd, FILE *outfile, char style) {
 #elif HAVE_GETPROTOBYNUMBER_R==2 /* Solaris */
    protoentp = getprotobynumber(proto);
    strncpy(protoname, protoentp->p_name, sizeof(protoname));
+#elif HAVE_GETPROTOBYNUMBER_R==3 /* AIX */
+   {
+      struct protoent_data proto_data;
+      rc = getprotobynumber_r(proto, &protoent, &proto_data);
+      if (rc == 0) {
+	 strncpy(protoname, protoent.p_name, sizeof(protoname));
+	 endprotoent_r(&proto_data);
+      }
+   }
 #else
    switch (proto) {
    case IPPROTO_TCP:  strcpy(protoname, "tcp"); break; 

@@ -143,9 +143,12 @@ AC_CACHE_VAL(sc_cv_getprotobynumber_r,
  [AC_TRY_COMPILE([#include <stddef.h>
  #include <netdb.h>],[getprotobynumber_r(1,NULL,NULL,1024);],
  [sc_cv_getprotobynumber_r=2; tmp_bynum_variant=Solaris],
- # there is a 3 arg variant in AIX, but its doc is limited
- [sc_cv_getprotobynumber_r=]
-)])])
+  [AC_TRY_COMPILE([#include <stddef.h>
+  #include <netdb.h>],[getprotobynumber_r(1,NULL,NULL);],
+  [sc_cv_getprotobynumber_r=3; tmp_bynum_variant=AIX],
+
+  [sc_cv_getprotobynumber_r=]
+)])])])
 if test "$sc_cv_getprotobynumber_r"; then
    AC_DEFINE_UNQUOTED(HAVE_GETPROTOBYNUMBER_R, $sc_cv_getprotobynumber_r)
 fi
@@ -259,6 +262,9 @@ if test "$WITH_IP6"; then
     [AC_INCLUDES_DEFAULT
      #ifdef HAVE_NETINET_IN_H
      # include <netinet/in.h>
+     #endif
+     #ifdef HAVE_NETINET_IP_H
+     # include <netinet/ip.h>
      #endif])
   AC_CHECK_HEADERS(netinet6/in6.h)	# found on OpenBSD and Lion, used for IPV6_*
 

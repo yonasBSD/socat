@@ -39,10 +39,12 @@
 #  define WITH_IP4 1
 #endif
 
+#if 0
 #if WITH_IP6
 #  if !defined(HAVE_NETINET_IP6_H)
 #    undef WITH_IP6
 #  endif
+#endif
 #endif
 
 #if !WITH_IP4 && !WITH_IP6

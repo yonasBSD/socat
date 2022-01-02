@@ -10,6 +10,11 @@ Corrections:
 	configure now checks for the variant.
 	Thanks to Robert Zybeck for reporting this issue.
 
+Porting:
+	Again porting Socat to AIX (7.1) - Fixed configure and compile issues:
+	Adapted include requirements for IPv6
+	Guarded MSG_DONTWAIT
+
 ####################### V 1.7.4.2:
 
 Corrections:

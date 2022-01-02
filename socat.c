@@ -1222,7 +1222,7 @@ int gettimestamp(char *timestamp) {
 #if HAVE_STRFTIME
    bytes = strftime(timestamp, 20, "%Y/%m/%d %H:%M:%S", localtime(&nowt));
 #if HAVE_CLOCK_GETTIME
-   bytes += sprintf(timestamp+19, "."F_tv_usec" ", now.tv_nsec/1000);
+   bytes += sprintf(timestamp+19, "."F_tv_nsec" ", now.tv_nsec/1000);
 #elif HAVE_PROTOTYPE_LIB_gettimeofday
    bytes += sprintf(timestamp+19, "."F_tv_usec" ", now.tv_usec);
 #else
