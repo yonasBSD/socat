@@ -89,7 +89,7 @@ static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xio
       if ((result = _xioopen_open(filename, openflags, opts)) < 0)
 	 return result;
 #ifdef I_PUSH
-      if (S_ISCHR(st_mode)) {
+      if (S_ISCHR(st_mode) && Ioctl(result, I_FIND, "ldterm\0") == 0) {
 	 Ioctl(result, I_PUSH, "ptem\0\0\0");	/* pad string length ... */
 	 Ioctl(result, I_PUSH, "ldterm\0");	/* ... to requirements of ... */
 	 Ioctl(result, I_PUSH, "ttcompat");	/* ... AdressSanitizer */

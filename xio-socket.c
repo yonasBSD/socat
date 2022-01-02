@@ -2219,8 +2219,10 @@ xiosocket(struct opt *opts, int pf, int socktype, int proto, int msglevel) {
    retropt_int(opts, OPT_SO_PROTOTYPE, &proto);
    result = Socket(pf, socktype, proto);
    if (result < 0) {
+      int _errno = errno;
       Msg4(msglevel, "socket(%d, %d, %d): %s",
 	     pf, socktype, proto, strerror(errno));
+      errno = _errno;
       return -1;
    }
    return result;

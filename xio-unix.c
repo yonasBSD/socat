@@ -576,11 +576,11 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
       /* xfd->dtype = DATA_STREAM; // is default */
       /* this function handles AF_UNIX with EPROTOTYPE specially for us */
       if ((result =
-	xioopen_connect(xfd,
-			needbind?&us:NULL, uslen,
-			&them.soa, themlen,
-			opts, pf, socktype?socktype:SOCK_STREAM, protocol,
-			false)) == 0)
+	_xioopen_connect(xfd,
+			 needbind?&us:NULL, uslen,
+			 &them.soa, themlen,
+			 opts, pf, socktype?socktype:SOCK_STREAM, protocol,
+			 false, E_INFO)) == 0)
 	 break;
       if (errno != EPROTOTYPE || socktype != 0)
 	 break;
@@ -590,13 +590,13 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
 
       socktype = SOCK_SEQPACKET;
       if ((result =
-	xioopen_connect(xfd,
-			needbind?&us:NULL, uslen,
-			(struct sockaddr *)&them, themlen,
-			opts, pf, SOCK_SEQPACKET, protocol,
-			false)) == 0)
+	   _xioopen_connect(xfd,
+			    needbind?&us:NULL, uslen,
+			    (struct sockaddr *)&them, themlen,
+			    opts, pf, SOCK_SEQPACKET, protocol,
+			    false, E_INFO)) == 0)
 	 break;
-      if (errno != EPROTOTYPE)
+      if (errno != EPROTOTYPE && errno != EPROTONOSUPPORT/*AIX*/)
 	 break;
       if (needbind)
 	 Unlink(us.un.sun_path);

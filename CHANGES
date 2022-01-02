@@ -15,6 +15,12 @@ Porting:
 	Adapted include requirements for IPv6
 	Guarded MSG_DONTWAIT
 
+	Continued porting Socat to AIX-7.1 - Fixed some runtime errors:
+	UNIX domain sockets of type SEQPACKET are not available.
+	Connecting to UNIX datagram socket fails with EPROTONOSUPPORT (vs.
+	EPROTOTYPE on most other OSes).
+	Streams: Must not push ldterm when it is already active (hangs).
+
 ####################### V 1.7.4.2:
 
 Corrections:
