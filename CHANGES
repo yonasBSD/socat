@@ -21,6 +21,12 @@ Porting:
 	EPROTOTYPE on most other OSes).
 	Streams: Must not push ldterm when it is already active (hangs).
 
+Testing:
+	test.sh: many corrections for AIX's older shell utilities, e.g.sleep(1)
+	does not allow fractions of seconds, grep does not understand '\<';
+	OpenIndiana/SunOS netstat format;
+	many more functional and cosmetic code corrections.
+
 ####################### V 1.7.4.2:
 
 Corrections:
