@@ -35,6 +35,11 @@ Building:
 	variable SOURCE_DATE_EPOCH.
 	Thanks to Viktor Kleinik for sending a patch.
 
+	Building Socat in a sub directory failed.
+	Now the following works even for the docu parts:
+	mkdir -p myos; cd myos; ../configure && make; cd ..
+	Thanks to Jon Ringle for sending a patch.
+
 Testing:
 	test.sh: many corrections for AIX's older shell utilities, e.g.sleep(1)
 	does not allow fractions of seconds, grep does not understand '\<';
