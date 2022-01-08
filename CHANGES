@@ -1,4 +1,6 @@
 ﻿
+####################### V 1.7.4.3:
+
 Corrections:
 	Socat crashed with SIGSEGV when peer presented a certificate without
 	(or empty?) subject.
