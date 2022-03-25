@@ -15,7 +15,7 @@
 
 #if WITH_UNIX
 
-/* to avoid unneccessary "live" if () conditionals when no abstract support is
+/* to avoid unneccessary runtime if () conditionals when no abstract support is
    compiled in (or at least to give optimizing compilers a good chance) we need
    a constant that can be used in C expressions */ 
 #if WITH_ABSTRACT_UNIXSOCKET
@@ -218,6 +218,10 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
    socklen_t themlen, uslen = sizeof(us);
    bool needbind = false;
    bool opt_unlink_close = true;
+   bool dofork = false;
+   struct opt *opts0;
+   char infobuff[256];
+   int level;
    int result;
 
    if (argc != 2) {
@@ -258,13 +262,91 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
       xfd->opt_unlink_close = true;
    }
 
-   if ((result =
-	xioopen_connect(xfd,
+   retropt_bool(opts, OPT_FORK, &dofork);
+
+   opts0 = copyopts(opts, GROUP_ALL);
+
+   Notice1("opening connection to %s",
+	   sockaddr_info((struct sockaddr *)&them, themlen, infobuff, sizeof(infobuff)));
+
+   do {	/* loop over retries and forks */
+
+#if WITH_RETRY
+      if (xfd->forever || xfd->retry) {
+	 level = E_INFO;
+      } else
+#endif /* WITH_RETRY */
+	 level = E_ERROR;
+
+      result =
+	_xioopen_connect(xfd,
 			needbind?(union sockaddr_union *)&us:NULL, uslen,
 			(struct sockaddr *)&them, themlen,
-			opts, pf, socktype, protocol, false)) != 0) {
-      return result;
-   }
+			 opts, pf, socktype, protocol, false, level);
+      if (result != 0) {
+	 char infobuff[256];
+	 /* we caller must handle this */
+	 Msg3(level, "connect(, %s, "F_Zd"): %s",
+	      sockaddr_info((struct sockaddr *)&them, themlen, infobuff, sizeof(infobuff)),
+	      themlen, strerror(errno));
+      }
+      switch (result) {
+      case STAT_OK: break;
+#if WITH_RETRY
+      case STAT_RETRYLATER:
+	 if (xfd->forever || xfd->retry) {
+	    --xfd->retry;
+	    if (result == STAT_RETRYLATER) {
+	       Nanosleep(&xfd->intervall, NULL);
+	    }
+	    dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
+	    continue;
+	 }
+	 return STAT_NORETRY;
+#endif /* WITH_RETRY */
+      default:
+	 return result;
+      }
+
+      if (dofork) {
+	 xiosetchilddied();	/* set SIGCHLD handler */
+      }
+
+#if WITH_RETRY
+      if (dofork) {
+	 pid_t pid;
+	 int level = E_ERROR;
+	 if (xfd->forever || xfd->retry) {
+	    level = E_WARN;	/* most users won't expect a problem here,
+				   so Notice is too weak */
+	 }
+
+	 while ((pid = xio_fork(false, level)) < 0) {
+	    --xfd->retry;
+	    if (xfd->forever || xfd->retry) {
+	       dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
+	       Nanosleep(&xfd->intervall, NULL); continue;
+	    }
+	    return STAT_RETRYLATER;
+	 }
+
+	 if (pid == 0) {	/* child process */
+	    break;
+	 }
+
+	 /* parent process */
+	 Close(xfd->fd);
+	 /* with and without retry */
+	 Nanosleep(&xfd->intervall, NULL);
+	 dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
+	 continue;	/* with next socket() bind() connect() */
+      } else
+#endif /* WITH_RETRY */
+      {
+	 break;
+      }
+   } while (true);
+
    if ((result = _xio_openlate(xfd, opts)) < 0) {
       return result;
    }
@@ -500,6 +582,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
 }
 
 
+/* generic UNIX socket client, tries connect, SEQPACKET, send(to) */
 static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3) {
    /* we expect the form: filename */
    if (argc != 2) {
@@ -615,6 +698,7 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
    } while (0);
 
    if (result != 0) {
+      Error2("UNIX-CLIENT:%s: %s", name, strerror(errno));
       if (needbind) {
 	 Unlink(us.un.sun_path);
       }

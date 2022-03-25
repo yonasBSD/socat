@@ -15,6 +15,15 @@ Corrections:
 	Test: TCP_TIMEOUT_RETRY
 	Thanks to Kamil Holubicki for reporting this issue.
 
+	There were a couple of weaknesses and errors when accessing invalid or
+	incompatible file system entries with UNIX domain, file, and generic
+	addresses.
+	For example, UNIX-CONNECT, when using a non matching socktype, failed
+	with -1 and did not print an error message, instead of printing an
+	error message and exiting with rc=1.
+	Thanks to Paul Wise for reporting and analyzing the case of accessing
+	a left over socket entry with GOPEN.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty

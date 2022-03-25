@@ -738,14 +738,14 @@ int xiogetpacketinfo(int fd)
 
 
 
-/* a subroutine that is common to all socket addresses that want to connect
-   to a peer address.
-   might fork.
-   applies and consumes the following options: 
+/* A subroutine that is common to all socket addresses that want to connect()
+   a socket to a peer.
+   Applies and consumes the following options: 
    PH_PASTSOCKET, PH_FD, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_CONNECT,
    PH_CONNECTED, PH_LATE,
    OFUNC_OFFSET, 
    OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_USER, OPT_GROUP, OPT_CLOEXEC
+   Does not fork, does not retry.
    returns 0 on success.
 */
 int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
@@ -961,23 +961,19 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 		  xfd->fd, sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
 		  themlen, strerror(errno));
 	 }
-      } else if (pf == PF_UNIX && errno == EPROTOTYPE) {
+      } else if (pf == PF_UNIX) {
 	 /* this is for UNIX domain sockets: a connect attempt seems to be
-	    the only way to distinguish stream and datagram sockets */
+	    the only way to distinguish stream and datagram sockets.
+	    And no ancillary message expected
+	 */
 	 int _errno = errno;
 	 Info4("connect(%d, %s, "F_Zd"): %s",
 	       xfd->fd, sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
 	       themlen, strerror(errno));
-#if 0
-	 Info("assuming datagram socket");
-	 xfd->dtype = DATA_RECVFROM;
-	 xfd->salen = themlen;
-	 memcpy(&xfd->peersa.soa, them, xfd->salen);
-#endif
-	 /*!!! and remove bind socket */
+	 /* caller must handle this condition */
 	 Close(xfd->fd);  xfd->fd = -1;
 	 errno = _errno;
-	 return -1;
+	 return STAT_RETRYLATER;
       } else {
 	 /* try to find details about error, especially from ICMP */
 	 xiogetpacketinfo(xfd->fd);
