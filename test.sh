@@ -2486,6 +2486,12 @@ waitfile () {
     return 1
 }
 
+# system dependent values
+case "$UNAME" in
+    SunOS) SOCK_SEQPACKET=6 ;;
+    *)     SOCK_SEQPACKET=5 ;;
+esac
+
 # generate a test certificate and key
 gentestcert () {
     local name="$1"
@@ -3888,10 +3894,6 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%gopen%*|*%unix%*|*%listen%*|*%seqpacket%*|*%$NAME%*)
 TEST="$NAME: GOPEN on UNIX seqpacket socket"
 if ! eval $NUMCOND; then :; else
-    case "$UNAME" in
-	SunOS) SOCK_SEQPACKET=6 ;;
-	*)     SOCK_SEQPACKET=5 ;;
-    esac
 ts="$td/test$N.socket"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
@@ -15272,6 +15274,134 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
+
+# Socats access to different types of file system entries using various kinds
+# of addresses fails in a couple of useless combinations. These failures have
+# to print an error message and exit with return code 1.
+# Up to version 1.7.4.2 this desired behaviour was found for most combinations,
+# however some fix in 1.7.4.3 degraded the overall result.
+# This group of tests checks all known compinations.
+while read entry method; do
+if [ -z "$entry" ] || [[ "$entry" == \#* ]]; then continue; fi
+NAME=$(toupper $method)_TO_$(toupper $entry)
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%unix%*|*%$NAME%*)
+#set -vx
+TEST="$NAME: Failure handling on $method access to $entry"
+# Create some kind of system entry and try to access it with some improper
+# address. Check if Socat returns with rc 1 and prints an error message
+if ! eval $NUMCOND; then :; else
+ts="$td/test$N.socket"
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+printf "test $F_n $TEST... " $N
+# create an invalid or non-matching UNIX socket
+case "$entry" in
+    missing)     pid0=; rm -f $ts ;;
+    denied)      pid0=; rm -f $ts; touch $ts; chmod 000 $ts ;;
+    directory)   pid0=; mkdir -p $ts ;;
+    orphaned)    pid0= 	# the remainder of a UNIX socket in FS
+		 $SOCAT $opts UNIX-LISTEN:$ts,unlink-close=0 /dev/null >${tf}0 2>${te}0 &
+		 waitunixport $ts 1
+		 $SOCAT $opts /dev/null UNIX-CONNECT:$ts
+		 ;;
+    file)        pid0=; rm -f $ts; touch $ts ;;
+    stream)      CMD0="$SOCAT $opts UNIX-LISTEN:$ts /dev/null"
+		 $CMD0 >${tf}0 2>${te}0 &
+		 pid0=$! ;;
+    dgram)       CMD0="$SOCAT $opts -u UNIX-RECV:$ts /dev/null"
+		 $CMD0 >${tf}0 2>${te}0 &
+		 pid0=$! ;;
+    seqpacket)   CMD0="$SOCAT $opts UNIX-LISTEN:$ts,socktype=$SOCK_SEQPACKET= /dev/null"
+		 $CMD0 >${tf}0 2>${te}0 &
+		 pid0=$! ;;
+esac
+[ "$pid0" ] && waitunixport $ts 1
+# try to access this socket
+case "$method" in
+    connect)   CMD1="$TRACE $SOCAT $opts -u - UNIX-CONNECT:$ts" ;;
+    send)      CMD1="$TRACE $SOCAT $opts -u - UNIX-SEND:$ts" ;;
+    sendto)    CMD1="$TRACE $SOCAT $opts -u - UNIX-SENDTO:$ts" ;;
+    seqpacket) CMD1="$TRACE $SOCAT $opts -u - UNIX-CONNECT:$ts,socktype=$SOCK_SEQPACKET" ;;
+    unix)      CMD1="$TRACE $SOCAT $opts -u - UNIX-CLIENT:$ts" ;;
+    gopen)     CMD1="$TRACE $SOCAT $opts -u - GOPEN:$ts" ;;
+esac
+echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+rc1=$?
+[ "$pid0" ] && { kill $pid0 2>/dev/null; wait; }
+if [ $rc1 != 1 ]; then
+    $PRINTF "$FAILED (bad return code $rc1)\n"
+    if [ "$pid0" ]; then
+	echo "$CMD0 &" >&2
+	cat "${te}0" >&2
+    fi
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+elif nerr=$(grep ' E ' "${te}1" |wc -l); test "$nerr" -ne 1; then
+    $PRINTF "$FAILED ($nerr error message(s) instead of 1)\n"
+    if [ "$pid0" ]; then
+	echo "$CMD0 &" >&2
+	cat "${te}0" >&2
+    fi
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	if [ "$pid0" ]; then echo "$CMD0 &" >&2; fi
+	echo "$CMD1" >&2
+    fi
+    numOK=$((numOK+1))
+fi
+set +vx
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+done <<<"
+missing     connect
+denied      connect
+directory   connect
+orphaned    connect
+file        connect
+dgram       connect
+seqpacket   connect
+missing     send
+denied      send
+directory   send
+orphaned    send
+file        send
+stream      send
+seqpacket   send
+missing     sendto
+denied      sendto
+directory   sendto
+orphaned    sendto
+file        sendto
+stream      sendto
+seqpacket   sendto
+missing     seqpacket
+denied      seqpacket
+directory   seqpacket
+orphaned    seqpacket
+file        seqpacket
+stream      seqpacket
+dgram       seqpacket
+missing     unix
+denied      unix
+directory   unix
+file        unix
+orphaned    unix
+denied      gopen
+directory   gopen
+orphaned    gopen
+"
 
 # end of common tests
 
