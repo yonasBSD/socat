@@ -97,7 +97,7 @@ static size_t sanitize_char(char c, char *o, int style) {
    int hn;	/* high nibble */
    int ln;	/* low nibble */
    int n;	/* written chars */
-   if (isprint(c)) {
+   if (isprint((unsigned char)c)) {
       *o = c;
       return 1;
    }

@@ -745,7 +745,7 @@ int xiosetenv(const char *varname, const char *value, int overwrite, const char 
    progname = diag_get_string('p');
    envname[0] = '\0'; strncat(envname, progname, XIO_ENVNAMELEN-1);
    l = strlen(envname);
-   for (i = 0; i < l; ++i)  envname[i] = toupper(envname[i]);
+   for (i = 0; i < l; ++i)  envname[i] = toupper((unsigned char)envname[i]);
    strncat(envname+l, "_", XIO_ENVNAMELEN-l-1);
    l += 1;
    strncat(envname+l, varname, XIO_ENVNAMELEN-l-1);
@@ -771,7 +771,7 @@ int xiosetenv2(const char *varname, const char *varname2, const char *value,
    l += 1;
    strncat(envname+l, varname2, XIO_ENVNAMELEN-l-1);
    l += strlen(envname+l);
-   for (i = 0; i < l; ++i)  envname[i] = toupper(envname[i]);
+   for (i = 0; i < l; ++i)  envname[i] = toupper((unsigned char)envname[i]);
    return _xiosetenv(envname, value, overwrite, sep);
 #  undef XIO_ENVNAMELEN
 }
@@ -799,7 +799,7 @@ int xiosetenv3(const char *varname, const char *varname2, const char *varname3,
    l += 1;
    strncat(envname+l, varname3, XIO_ENVNAMELEN-l-1);
    l += strlen(envname+l);
-   for (i = 0; i < l; ++i)  envname[i] = toupper(envname[i]);
+   for (i = 0; i < l; ++i)  envname[i] = toupper((unsigned char)envname[i]);
    return _xiosetenv(envname, value, overwrite, sep);
 #  undef XIO_ENVNAMELEN
 }

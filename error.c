@@ -357,7 +357,7 @@ void msg2(
    syslp = bufp;
    *bufp++ = "DINWEF"[level];
 #if 0 /* only for debugging socat */
-   if (handler)  bufp[-1] = tolower(bufp[-1]); /* for debugging, low chars indicate messages from signal handlers */
+   if (handler)  bufp[-1] = tolower((unsigned char)bufp[-1]); /* for debugging, low chars indicate messages from signal handlers */
 #endif
    *bufp++ = ' ';
    strncpy(bufp, text, BUFLEN-(bufp-buff)-1);

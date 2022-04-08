@@ -404,7 +404,7 @@ int vsnprintf_r(char *str, size_t size, const char *format, va_list ap) {
 	    do {
 	       fsize = 10*fsize+(c-'0');
 	       c = *format++;
-	    } while (c && isdigit(c));
+	    } while (c && isdigit((unsigned char)c));
 	    break;
 	 }
 	 if (c == '\0')  { break; }

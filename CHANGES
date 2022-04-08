@@ -37,6 +37,9 @@ Corrections:
 	or have trailing garbage.
 	Test: INTEGER_GARBAGE
 
+	ctype(3) functions need there arguments to be unsigned char.
+	Thanks to Taylor R Campbell for sending a patch.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty
