@@ -494,6 +494,7 @@ static xiosingle_t *xioparse_single(const char **addr) {
    char token[512], *tokp;
    size_t len;
    int i;
+   int result;
 
    /* init */
    i = 0;
@@ -510,9 +511,12 @@ static xiosingle_t *xioparse_single(const char **addr) {
    sfd->argc = 0;
 
    len = sizeof(token); tokp = token;
-   if (nestlex(addr, &tokp, &len, ends, hquotes, squotes, nests,
-	       true, true, false) < 0) {
+   result = nestlex(addr, &tokp, &len, ends, hquotes, squotes, nests,
+		    true, true, false);
+   if (result < 0) {
       Error2("keyword too long, in address \"%s%s\"", token, *addr);
+   } else if (result > 0){
+      Error1("unexpected end of address \"%s\"", *addr);
    }
    *tokp = '\0';  /*! len? */
    ae = (struct addrname *)
@@ -564,9 +568,12 @@ static xiosingle_t *xioparse_single(const char **addr) {
    while (!strncmp(*addr, xioopts.paramsep, strlen(xioopts.paramsep))) {
       *addr += strlen(xioopts.paramsep);
       len = sizeof(token);  tokp = token;
-      if (nestlex(addr, &tokp, &len, ends, hquotes, squotes, nests,
-		  true, true, false) != 0) {
-	 Error1("syntax error in address \"%s\"", addr0);
+      result = nestlex(addr, &tokp, &len, ends, hquotes, squotes, nests,
+		       true, true, false);
+      if (result < 0) {
+	 Error1("address \"%s\" too long", addr0);
+      } else if (result > 0){
+	 Error1("unexpected end of address \"%s\"", addr0);
       }
       *tokp = '\0';
       if ((sfd->argv[sfd->argc++] = strdup(token)) == NULL) {

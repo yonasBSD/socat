@@ -31,6 +31,8 @@ Corrections:
 	instead of a free port in range 640..1023
 	Test: UDP_LOWPORT
 
+	Fixed bad parser error message on "socat /tmp/x\"x/x -"
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty
