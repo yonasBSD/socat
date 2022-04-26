@@ -903,6 +903,8 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 	     xfd->para.socket.connect_timeout.tv_usec != 0) {
 	    struct timeval timeout;
 	    struct pollfd writefd;
+	    int err;
+	    socklen_t errlen = sizeof(err);
 	    int result;
 
 	    Info4("connect(%d, %s, "F_Zd"): %s",
@@ -938,7 +940,21 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 #endif
 	       return STAT_RETRYLATER;
 	    }
-	    /* otherwise OK */
+	    /* otherwise OK or network error */
+	    result = Getsockopt(xfd->fd, SOL_SOCKET, SO_ERROR, &err, &errlen);
+	    if (result != 0) {
+	       Msg2(level, "getsockopt(%d, SOL_SOCKET, SO_ERROR, ...): %s",
+		    xfd->fd, strerror(err));
+	       return STAT_RETRYLATER;
+	    }
+	    Debug2("getsockopt(%d, SOL_SOCKET, SO_ERROR, { %d }) -> 0",
+		   xfd->fd, err);
+	    if (err != 0) {
+	       Msg4(level, "connect(%d, %s, "F_Zd"): %s",
+		     xfd->fd, sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
+		     themlen, strerror(err));
+	       return STAT_RETRYLATER;
+	    }
 	    Fcntl_l(xfd->fd, F_SETFL, fcntl_flags);
 	 } else {
 	    Warn4("connect(%d, %s, "F_Zd"): %s",

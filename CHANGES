@@ -9,6 +9,12 @@ Corrections:
 	Reason was not handling EAGAIN on recvmsg().
 	Thanks to Jamie McQuillan for reporting this issue.
 
+	Address TCP with options connect-timeout and retry terminated
+	immediately when a connection attempt failed on network error or
+	connection refused.
+	Test: TCP_TIMEOUT_RETRY
+	Thanks to Kamil Holubicki for reporting this issue.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty

@@ -15403,6 +15403,60 @@ directory   gopen
 orphaned    gopen
 "
 
+
+# Test TCP with options connect-timeout and retry.
+# Up to 1.7.4.3 this terminated immediately on connection refused
+NAME=TCP_TIMEOUT_RETRY
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%tcp%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: TCP with options connect-timeout and retry"
+# In background run a delayed echo server
+# In foreground start TCP with connect-timeout and retry. On first attempt the
+# server is not listening; when socat makes a second attempt that succeeds, the
+# bug is absent and the test succeeded.
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="sleep 1 && $TRACE $SOCAT $opts TCP-L:$PORT,reuseaddr PIPE"
+CMD1="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT,connect-timeout=2,retry=1,interval=2"
+printf "test $F_n $TEST... " $N
+eval "$CMD0" >/dev/null 2>"${te}0" &
+pid0=$!
+echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+rc1=$?
+kill $pid0 2>/dev/null; wait
+if [ $rc1 -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &" >&2
+    cat "${te}0" >&2
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+elif echo "$da" |diff - "${tf}1" >$tdiff; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD0 &" >&2
+	echo "$CMD1" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &" >&2
+    cat "${te}0" >&2
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
 # end of common tests
 
 ##################################################################################
