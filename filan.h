@@ -22,7 +22,8 @@ extern int filan_stat(
 #else
 		      struct stat *buf
 #endif /* !HAVE_STAT64 */
-		      , int statfd, int dynfd, FILE *outfile);
+		      , int statfd, int dynfd, FILE *outfile,
+		      const char *filename);
 
 extern int cdevan(int fd, FILE *outfile);
 

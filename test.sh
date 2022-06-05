@@ -6502,10 +6502,13 @@ esac
 N=$((N+1))
 
 
+# Test if Filan can determine UNIX domain socket in file system
 NAME=FILANSOCKET
 case "$TESTS" in
 *%$N%*|*%filan%*|*%$NAME%*)
 TEST="$NAME: capability to analyze named unix socket"
+# Run Filan on a listening UNIX domain socket.
+# When its output gives "socket" as type (2nd column), the test succeeded
 if ! eval $NUMCOND; then :; else
 ts="$td/test$N.socket"
 te1="$td/test$N.stderr1"	# socat
@@ -6517,10 +6520,16 @@ waitfile "$ts" 1
 type=$($FILAN -f "$ts" 2>$te2 |tail -n 1 |awk '{print($2);}')
 if [ "$type" = "socket" ]; then
     $PRINTF "$OK\n"
-   numOK=$((numOK+1))
+    if [ "$VERBOSE" ]; then
+	echo "$SOCAT $opts UNIX-LISTEN:\"$ts\" /dev/null </dev/null 2>\"$te1\""
+	echo "$FILAN -f "$ts" 2>$te2 |tail -n 1 |awk '{print(\$2);}'"
+    fi
+    numOK=$((numOK+1))
 else
     $PRINTF "$FAILED\n"
+    echo "$SOCAT $opts UNIX-LISTEN:\"$ts\" /dev/null </dev/null 2>\"$te1\"" >&2
     cat "$te1"
+    echo "$FILAN -f "$ts" 2>$te2 |tail -n 1 |awk '{print(\$2);}'" >&2
     cat "$te2"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -15598,6 +15607,46 @@ else
 fi
 fi # NUMCOND
  ;;
+esac
+N=$((N+1))
+
+
+# Test if Filan can print the target of symbolic links
+NAME=FILANSYMLINK
+case "$TESTS" in
+*%$N%*|*%filan%*|*%$NAME%*)
+TEST="$NAME: capability to display symlink target"
+# Run Filan on a symbolic link
+# When its output contains "LINKTARGET=<target>" the test succeeded
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.file"
+tl="$td/test$N.symlink"
+te1="$td/test$N.stderr1"	# socat
+te2="$td/test$N.stderr2"	# filan
+printf "test $F_n $TEST... " $N
+touch "$tf"
+ln -s "$tf" "$tl"
+target=$($FILAN -f "$tl" 2>$te |tail -n 1 |sed 's/.*LINKTARGET=\([^ ]*\)/\1/')
+if [ "$target" = "$tf" ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "touch \"$tf\""
+	echo "ln -s \"$tf\" \"$tl\""
+	echo "$FILAN -f "$tl" 2>$te |tail -n 1 |sed 's/.*LINKTARGET=\([^ ]*\)/\1/'"
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "touch \"$tf\"" >&2
+    echo "ln -s \"$tf\" \"$tl\"" >&2
+    echo "$FILAN -f "$tl" 2>$te |tail -n 1 |sed 's/.*LINKTARGET=\([^ ]*\)/\1/'" >&2
+    cat "$te"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+kill $spid 2>/dev/null
+wait
+fi ;; # NUMCOND
 esac
 N=$((N+1))
 

@@ -79,17 +79,20 @@ int filan_file(const char *filename, FILE *outfile) {
    default:
       if ((fd =
 	   Open(filename,  O_RDONLY|O_NOCTTY|O_NONBLOCK
+#ifdef O_NOFOLLOW		
+		|(filan_followsymlinks?0:O_NOFOLLOW)
+#endif
 #ifdef O_LARGEFILE
 		|O_LARGEFILE
 #endif
 		, 0700))
 	  < 0) {
-	 Warn2("open(\"%s\", O_RDONLY|O_NOCTTY|O_NONBLOCK|O_LARGEFILE, 0700): %s",
+	 Warn2("open(\"%s\", O_RDONLY|O_NOCTTY|O_NONBLOCK|O_NOFOLLOW|O_LARGEFILE, 0700): %s",
 	       filename, strerror(errno));
       }
    }
      
-   result = filan_stat(&buf, fd, -1, outfile);
+   result = filan_stat(&buf, fd, -1, outfile, filename);
    fputc('\n', outfile);
    return result;
 }
@@ -119,7 +122,7 @@ int filan_fd(int fd, FILE *outfile) {
    }
    Debug2("fd %d is a %s", fd, getfiletypestring(buf.st_mode));
 
-   result = filan_stat(&buf, fd, fd, outfile);
+   result = filan_stat(&buf, fd, fd, outfile, NULL);
 
    if (result >= 0) {
       /* even more dynamic info */
@@ -212,7 +215,12 @@ int filan_stat(
 #else
 	       struct stat *buf
 #endif /* !HAVE_STAT64 */
-	       , int statfd, int dynfd, FILE *outfile) {
+	       , int statfd, int dynfd, FILE *outfile,
+	       const char *filename 	/* Linux does not (yet) provide an
+					   freadlink system call, so we need
+					   the original name for readlink in
+					   case it is a symlink */
+	       ) {
    char stdevstr[8];
 
    /* print header */
@@ -380,7 +388,11 @@ int filan_stat(
       break;
    case (S_IFREG):	/* 8, regular file */
       break;
+#ifdef S_IFLNK
    case (S_IFLNK):	/* 10, symbolic link */
+      /* we wait for freadlink() sytem call */
+      break;
+#endif /* S_IFLNK */
       break;
 #ifdef S_IFSOCK
    case (S_IFSOCK): /* 12, socket */
@@ -393,6 +405,19 @@ int filan_stat(
       break;
 #endif /* S_IFSOCK */
    }
+  } else {
+     switch (buf->st_mode&S_IFMT) {
+#ifdef S_IFLNK
+     case (S_IFLNK):	/* 10, symbolic link */
+	{
+	   char linktarget[PATH_MAX+1];
+	   memset(linktarget, 0, PATH_MAX+1);
+	   Readlink(filename, linktarget, PATH_MAX);
+	   fprintf(outfile, "LINKTARGET=%s", linktarget);
+	}
+	break;
+#endif /* S_IFLNK */
+     }
   }
    /* ioctl() */
    return 0;

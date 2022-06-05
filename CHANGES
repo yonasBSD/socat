@@ -63,6 +63,10 @@ Porting:
 	Corrected message format when no strftime() is available; improved
 	handling of very long host or program names
 
+Features:
+	Filan prints target of symlink when appropriate
+	Test: FILANSYMLINK
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
