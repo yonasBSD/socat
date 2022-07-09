@@ -318,7 +318,7 @@ void msg2(
    struct tm struct_tm;
 #endif
 #define BUFLEN 512
-   char buff[BUFLEN], *bufp, *syslp;
+   char buff[BUFLEN+1], *bufp, *syslp;
    size_t bytes;
 
 #if HAVE_CLOCK_GETTIME

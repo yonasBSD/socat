@@ -1,4 +1,9 @@
 ﻿
+Corrections:
+	In error.c msg2() there was a stack overflow on long messages: The
+	terminating \0 Byte was written behind the last position.
+	Thanks to Martin Liška for sending the address sanitizer report.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty
