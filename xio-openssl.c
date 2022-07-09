@@ -959,11 +959,15 @@ int
    openssl_delete_cert_info();
 
    /* OpenSSL preparation */
-#if HAVE_OPENSSL_init_ssl
+#if HAVE_OPENSSL_INIT_SSL
    {
+      uint64_t opts = 0;
       OPENSSL_INIT_SETTINGS *settings;
       settings = OPENSSL_INIT_new();
-      sycOPENSSL_init_ssl(0, settings);
+#ifdef OPENSSL_INIT_NO_ATEXIT
+      opts |= OPENSSL_INIT_NO_ATEXIT;
+#endif
+      sycOPENSSL_init_ssl(opts, settings);
    }
 #else
    sycSSL_library_init();

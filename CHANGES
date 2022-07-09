@@ -1,4 +1,12 @@
 ﻿
+Porting:
+	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
+	conditions: client connection to server with certificate with empty
+	subject, and pressing ^C after successful connect.
+	This crash is now prevented by setting OPENSSL_INIT_NO_ATEXIT.
+	Thanks to Martin Dorey for reporting and analyzing this issue, and for
+	providing an environment for reproduction.
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 

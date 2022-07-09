@@ -8,7 +8,7 @@
 #if WITH_SYCLS
 #if WITH_OPENSSL
 
-#if HAVE_OPENSSL_init_ssl
+#if HAVE_OPENSSL_INIT_SSL
 int sycOPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings);
 #endif
 void sycSSL_load_error_strings(void);
