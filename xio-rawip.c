@@ -143,7 +143,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    }
    return
       _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
-			  opts, xioflags, xfd, groups, *pf, socktype, ipproto);
+			    opts, xioflags, xfd, groups, *pf, socktype, ipproto, 0);
 }
 
 

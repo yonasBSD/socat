@@ -410,26 +410,12 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
    }
 
    retropt_bool(opts, OPT_LOWPORT, &xfd->para.socket.ip.lowport);
-   if (xfd->para.socket.ip.lowport) {
-      switch (pf) {
-#if WITH_IP4
-      case PF_INET:
-	 /*!!! this is buggy */
-	 us.ip4.sin_port = htons(xfd->para.socket.ip.lowport); break;
-#endif
-#if WITH_IP6
-      case PF_INET6: 
-	 /*!!! this is buggy */
-	 us.ip6.sin6_port = htons(xfd->para.socket.ip.lowport); break;
-#endif
-      }
-      needbind = true;
-   }
 
    xfd->dtype = XIODATA_RECVFROM;
    return _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
 			      opts, xioflags, xfd, groups,
-			      pf, socktype, ipproto);
+				pf, socktype, ipproto,
+				xfd->para.socket.ip.lowport);
 }
 
 

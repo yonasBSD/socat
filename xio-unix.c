@@ -411,7 +411,7 @@ static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, i
    return
       _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
 			    opts, xioflags, xfd, groups,
-			    pf, socktype, protocol);
+			    pf, socktype, protocol, 0);
 }
 
 
@@ -690,7 +690,7 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
       if ((result =
 	      _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
 				    opts, xioflags, xfd, groups,
-				    pf, SOCK_DGRAM, protocol))
+				    pf, SOCK_DGRAM, protocol, 0))
 	  == 0) {
 	 xfd->dtype = XIODATA_RECVFROM;
 	 break;

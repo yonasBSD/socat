@@ -27,6 +27,10 @@ Corrections:
 	The rawer option failed because it tried to clear CREAD.
 	Test: RAWER
 
+	UDP-SEND and UPD-SENDTO with option lowport always bound to port 1
+	instead of a free port in range 640..1023
+	Test: UDP_LOWPORT
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty

@@ -69,7 +69,7 @@ int _xioopen_interface(const char *ifname,
 
    return
       _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
-			  opts, xioflags, xfd, groups, pf, socktype, 0);
+			    opts, xioflags, xfd, groups, pf, socktype, 0, 0);
 }
 
 static

@@ -63,6 +63,14 @@ xiolog_ancillary_socket(struct cmsghdr *cmsg, int *num,
 			char *nambuff, int namlen,
 			char *envbuff, int envlen,
 			char *valbuff, int vallen);
+static int xiobind(
+	struct single *xfd,
+	union sockaddr_union *us,
+	size_t uslen,
+	struct opt *opts,
+	int pf,
+	bool alt,
+	int level);
 
 
 #if WITH_GENERICSOCKET
@@ -457,7 +465,7 @@ int _xioopen_socket_sendto(const char *pfname, const char *type,
 
    return
       _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
-			  opts, xioflags, xfd, groups, pf, socktype, proto);
+			    opts, xioflags, xfd, groups, pf, socktype, proto, 0);
 }
 
 
@@ -775,111 +783,9 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 
    applyopts_cloexec(xfd->fd, opts);
 
-#if WITH_UNIX
-   if (pf == PF_UNIX && us != NULL) {
-      applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
+   if (xiobind(xfd, us, uslen, opts, pf, alt, level) < 0) {
+      return -1;
    }
-#endif
-   applyopts(xfd->fd, opts, PH_PREBIND);
-   applyopts(xfd->fd, opts, PH_BIND);
-#if WITH_TCP || WITH_UDP
-   if (alt) {
-      union sockaddr_union sin, *sinp;
-      unsigned short *port, i, N;
-      div_t dv;
-
-      /* prepare sockaddr for bind probing */
-      if (us) {
-	 sinp = us;
-      } else {
-	 if (them->sa_family == AF_INET) {
-	    socket_in_init(&sin.ip4);
-#if WITH_IP6
-	 } else {
-	    socket_in6_init(&sin.ip6);
-#endif
-	 }
-	 sinp = &sin;
-      }
-      if (them->sa_family == AF_INET) {
-	 port = &sin.ip4.sin_port;
-#if WITH_IP6
-      } else if (them->sa_family == AF_INET6) {
-	 port = &sin.ip6.sin6_port;
-#endif
-      } else {
-	 port = 0;	/* just to make compiler happy */
-      }
-      /* combine random+step variant to quickly find a free port when only
-	 few are in use, and certainly find a free port in defined time even
-	 if there are almost all in use */
-      /* dirt 1: having tcp/udp code in socket function */
-      /* dirt 2: using a time related system call for init of random */
-      {
-	 /* generate a random port, with millisecond random init */
-#if 0
-	 struct timeb tb;
-	 ftime(&tb);
-	 srandom(tb.time*1000+tb.millitm);
-#else
-	 struct timeval tv;
-	 struct timezone tz;
-	 tz.tz_minuteswest = 0;
-	 tz.tz_dsttime = 0;
-	 if ((result = Gettimeofday(&tv, &tz)) < 0) {
-	    Warn2("gettimeofday(%p, {0,0}): %s", &tv, strerror(errno));
-	 }
-	 srandom(tv.tv_sec*1000000+tv.tv_usec);
-#endif
-      }
-      dv = div(random(), IPPORT_RESERVED-XIO_IPPORT_LOWER);
-      i = N = XIO_IPPORT_LOWER + dv.rem;
-      do {	/* loop over lowport bind() attempts */
-	 *port = htons(i);
-	 if (Bind(xfd->fd, &sinp->soa, sizeof(*sinp)) < 0) {
-	    Msg4(errno==EADDRINUSE?E_INFO:level,
-		 "bind(%d, {%s}, "F_Zd"): %s", xfd->fd,
-		 sockaddr_info(&sinp->soa, sizeof(*sinp), infobuff, sizeof(infobuff)),
-		 sizeof(*sinp), strerror(errno));
-	    if (errno != EADDRINUSE) {
-	       Close(xfd->fd);
-	       return STAT_RETRYLATER;
-	    }
-	 } else {
-	    break;	/* could bind to port, good, continue past loop */
-	 }
-	 --i;  if (i < XIO_IPPORT_LOWER)  i = IPPORT_RESERVED-1;
-	 if (i == N) {
-	    Msg(level, "no low port available");
-	    /*errno = EADDRINUSE; still assigned */
-	    Close(xfd->fd);
-	    return STAT_RETRYLATER;
-	 }
-      } while (i != N);
-   } else
-#endif /* WITH_TCP || WITH_UDP */
-
-   if (us) {
-#if WITH_UNIX
-      if (pf == PF_UNIX && us != NULL) {
-	 applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
-      }
-#endif
-      if (Bind(xfd->fd, &us->soa, uslen) < 0) {
-	 Msg4(level, "bind(%d, {%s}, "F_Zd"): %s",
-	      xfd->fd, sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
-	      uslen, strerror(errno));
-	 Close(xfd->fd);
-	 return STAT_RETRYLATER;
-      }
-   }
-#if WITH_UNIX
-   if (pf == PF_UNIX && us != NULL) {
-      applyopts_named(us->un.sun_path, opts, PH_PASTOPEN);
-   }
-#endif
-
-   applyopts(xfd->fd, opts, PH_PASTBIND);
 
    applyopts(xfd->fd, opts, PH_CONNECT);
 
@@ -1116,7 +1022,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 			union sockaddr_union *us, socklen_t uslen,
 			struct opt *opts,
 			int xioflags, xiosingle_t *xfd, unsigned groups,
-			int pf, int socktype, int ipproto) {
+			int pf, int socktype, int ipproto, bool alt) {
    int level = E_ERROR;
    union sockaddr_union la; socklen_t lalen = sizeof(la);
    char infobuff[256];
@@ -1138,30 +1044,9 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 
    applyopts_cloexec(xfd->fd, opts);
 
-#if WITH_UNIX
-   if (pf == PF_UNIX && us != NULL) {
-      applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
+   if (xiobind(xfd, us, uslen, opts, pf, alt, level) < 0) {
+      return -1;
    }
-#endif
-   applyopts(xfd->fd, opts, PH_PREBIND);
-   applyopts(xfd->fd, opts, PH_BIND);
-
-   if (us) {
-      if (Bind(xfd->fd, &us->soa, uslen) < 0) {
-	 Msg4(level, "bind(%d, {%s}, "F_socklen"): %s",
-	      xfd->fd, sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
-	      uslen, strerror(errno));
-	 Close(xfd->fd);
-	 return STAT_RETRYLATER;
-      }
-   }
-#if WITH_UNIX
-   if (pf == PF_UNIX && us != NULL) {
-      applyopts_named(us->un.sun_path, opts, PH_PASTOPEN);
-   }
-#endif
-
-   applyopts(xfd->fd, opts, PH_PASTBIND);
 
    /*applyopts(xfd->fd, opts, PH_CONNECT);*/
 
@@ -1333,25 +1218,16 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 
    applyopts_cloexec(xfd->fd, opts);
 
-   applyopts(xfd->fd, opts, PH_PREBIND);
-   applyopts(xfd->fd, opts, PH_BIND);
-   if ((us != NULL) && Bind(xfd->fd, us, uslen) < 0) {
-      Msg4(level, "bind(%d, {%s}, "F_socklen"): %s", xfd->fd,
-	   sockaddr_info(us, uslen, infobuff, sizeof(infobuff)), uslen,
-	   strerror(errno));
-      Close(xfd->fd);
-      return STAT_RETRYLATER;
+   if (xiobind(xfd, (union sockaddr_union *)us, uslen,
+	       opts, pf, 0, level) < 0) {
+      return -1;
    }
+
+   applyopts(xfd->fd, opts, PH_PASTBIND);
 
 #if WITH_UNIX
    if (pf == AF_UNIX && us != NULL) {
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_FD);
-   }
-#endif
-
-   applyopts(xfd->fd, opts, PH_PASTBIND);
-#if WITH_UNIX
-   if (pf == AF_UNIX && us != NULL) {
       /*applyopts_early(((struct sockaddr_un *)us)->sun_path, opts);*/
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_EARLY);
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
@@ -1592,7 +1468,6 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 			struct opt *opts, int pf, int socktype, int proto,
 			int level) {
    char *rangename;
-   char infobuff[256];
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
 
@@ -1605,26 +1480,13 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 
    applyopts_cloexec(xfd->fd, opts);
 
-   applyopts(xfd->fd, opts, PH_PREBIND);
-   applyopts(xfd->fd, opts, PH_BIND);
-   if ((us != NULL) && Bind(xfd->fd, us, uslen) < 0) {
-      Msg4(level, "bind(%d, {%s}, "F_socklen"): %s", xfd->fd,
-	   sockaddr_info(us, uslen, infobuff, sizeof(infobuff)), uslen,
-	   strerror(errno));
-      Close(xfd->fd);
-      return STAT_RETRYLATER;
+   if (xiobind(xfd, (union sockaddr_union *)us, uslen, opts, pf, 0, level) < 0) {
+      return -1;
    }
 
 #if WITH_UNIX
    if (pf == AF_UNIX && us != NULL) {
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_FD);
-   }
-#endif
-
-   applyopts_single(xfd, opts, PH_PASTBIND);   
-   applyopts(xfd->fd, opts, PH_PASTBIND);
-#if WITH_UNIX
-   if (pf == AF_UNIX && us != NULL) {
       /*applyopts_early(((struct sockaddr_un *)us)->sun_path, opts);*/
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_EARLY);
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
@@ -2261,4 +2123,125 @@ xiosocketpair(struct opt *opts, int pf, int socktype, int proto, int sv[2]) {
       return -1;
    }
    return result;
+}
+
+int xiobind(
+	struct single *xfd,
+	union sockaddr_union *us,
+	size_t uslen,
+	struct opt *opts,
+	int pf,
+	bool alt,
+	int level)
+{
+   char infobuff[256];
+   int result;
+
+#if WITH_UNIX
+   if (pf == PF_UNIX && us != NULL) {
+      applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
+   }
+#endif
+   applyopts(xfd->fd, opts, PH_PREBIND);
+   applyopts(xfd->fd, opts, PH_BIND);
+#if WITH_TCP || WITH_UDP
+   if (alt) {
+      union sockaddr_union sin, *sinp;
+      unsigned short *port, i, N;
+      div_t dv;
+
+      /* prepare sockaddr for bind probing */
+      if (us) {
+	 sinp = us;
+      } else {
+	 if (pf == AF_INET) {
+	    socket_in_init(&sin.ip4);
+#if WITH_IP6
+	 } else {
+	    socket_in6_init(&sin.ip6);
+#endif
+	 }
+	 sinp = &sin;
+      }
+      if (pf == AF_INET) {
+	 port = &sin.ip4.sin_port;
+#if WITH_IP6
+      } else if (pf == AF_INET6) {
+	 port = &sin.ip6.sin6_port;
+#endif
+      } else {
+	 port = 0;	/* just to make compiler happy */
+      }
+      /* combine random+step variant to quickly find a free port when only
+	 few are in use, and certainly find a free port in defined time even
+	 if there are almost all in use */
+      /* dirt 1: having tcp/udp code in socket function */
+      /* dirt 2: using a time related system call for init of random */
+      {
+	 /* generate a random port, with millisecond random init */
+#if 0
+	 struct timeb tb;
+	 ftime(&tb);
+	 srandom(tb.time*1000+tb.millitm);
+#else
+	 struct timeval tv;
+	 struct timezone tz;
+	 tz.tz_minuteswest = 0;
+	 tz.tz_dsttime = 0;
+	 if ((result = Gettimeofday(&tv, &tz)) < 0) {
+	    Warn2("gettimeofday(%p, {0,0}): %s", &tv, strerror(errno));
+	 }
+	 srandom(tv.tv_sec*1000000+tv.tv_usec);
+#endif
+      }
+      /* Note: IPPORT_RESERVED is from includes, 1024 */
+      dv = div(random(), IPPORT_RESERVED-XIO_IPPORT_LOWER);
+      i = N = XIO_IPPORT_LOWER + dv.rem;
+      do {	/* loop over lowport bind() attempts */
+	 *port = htons(i);
+	 if (Bind(xfd->fd, &sinp->soa, sizeof(*sinp)) < 0) {
+	    Msg4(errno==EADDRINUSE?E_INFO:level,
+		 "bind(%d, {%s}, "F_Zd"): %s", xfd->fd,
+		 sockaddr_info(&sinp->soa, sizeof(*sinp), infobuff, sizeof(infobuff)),
+		 sizeof(*sinp), strerror(errno));
+	    if (errno != EADDRINUSE) {
+	       Close(xfd->fd);
+	       return STAT_RETRYLATER;
+	    }
+	 } else {
+	    break;	/* could bind to port, good, continue past loop */
+	 }
+	 --i;  if (i < XIO_IPPORT_LOWER)  i = IPPORT_RESERVED-1;
+	 if (i == N) {
+	    Msg(level, "no low port available");
+	    /*errno = EADDRINUSE; still assigned */
+	    Close(xfd->fd);
+	    return STAT_RETRYLATER;
+	 }
+      } while (i != N);
+   } else
+#endif /* WITH_TCP || WITH_UDP */
+
+   if (us) {
+#if WITH_UNIX
+      if (pf == PF_UNIX && us != NULL) {
+	 applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
+      }
+#endif
+      if (Bind(xfd->fd, &us->soa, uslen) < 0) {
+	 Msg4(level, "bind(%d, {%s}, "F_Zd"): %s",
+	      xfd->fd, sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
+	      uslen, strerror(errno));
+	 Close(xfd->fd);
+	 return STAT_RETRYLATER;
+      }
+   }
+#if WITH_UNIX
+   if (pf == PF_UNIX && us != NULL) {
+      applyopts_named(us->un.sun_path, opts, PH_PASTOPEN);
+   }
+#endif
+
+   applyopts(xfd->fd, opts, PH_PASTBIND);
+   return 0;
 }

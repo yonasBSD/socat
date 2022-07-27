@@ -15496,6 +15496,47 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
+# Up to 1.7.4.3 there was a bug with the lowport option:
+# Active addresses UDP-SEND, UDP-SENDTO always bound to port 1 instead of
+# 640..1023
+NAME=UDP_LOWPORT
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: UDP4-SEND with lowport"
+# Run Socat with UDP4-SEND:...,lowport and full logging and check the
+# parameters of bind() call. It port is in the range 640..1023 the test
+# succeeded.
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT $opts -d -d -d -d /dev/null UDP4-SENDTO:$LOCALHOST:$PORT,lowport"
+printf "test $F_n $TEST... " $N
+$CMD >/dev/null 2>"${te}"
+rc1=$?
+LOWPORT=$(grep 'D bind(.*:' $te |sed 's/.*:\([0-9][0-9]*\),.*/\1/')
+#echo "LOWPORT=\"$LOWPORT\"" >&2
+#type socat >&2
+if  [[ $LOWPORT =~ [0-9][0-9]* ]] && [ "$LOWPORT" -ge 640 -a "$LOWPORT" -le 1023 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD" >&2
+    cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
 # end of common tests
 
 ##################################################################################

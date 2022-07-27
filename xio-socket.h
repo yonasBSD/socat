@@ -102,7 +102,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 			union sockaddr_union *us, socklen_t uslen,
 			struct opt *opts,
 			int xioflags, xiosingle_t *xfd, unsigned groups,
-			int pf, int socktype, int ipproto);
+			int pf, int socktype, int ipproto, bool alt);
 extern
 int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 			    struct sockaddr *us, socklen_t uslen,
