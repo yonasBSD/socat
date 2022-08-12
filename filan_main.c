@@ -21,7 +21,7 @@ static void filan_usage(FILE *fd);
 
 
 int main(int argc, const char *argv[]) {
-   const char **arg1, *a;
+   const char **arg1, *a0, *a;
    const char *filename = NULL, *waittimetxt;
    unsigned int m = 0;		/* first FD (default) */
    unsigned int n = FD_SETSIZE;	/* last excl. */
@@ -50,27 +50,39 @@ int main(int argc, const char *argv[]) {
       case 'S': style = arg1[0][1]; break;
       case 'r': filan_rawoutput = true; break;
       case 'i':  if (arg1[0][2]) {
-	    a = *arg1+2;
+	    a = a0 = *arg1+2;
          } else {
 	    ++arg1, --argc;
-	    if ((a = *arg1) == NULL) {
+	    if ((a = a0 = *arg1) == NULL) {
 	       Error("option -i requires an argument");
 	       filan_usage(stderr); exit(1);
 	    }
 	 }
          m = strtoul(a, (char **)&a, 0);
+	 if (a == a0) {
+	    Error1("not a numerical arg in \"-b %s\"", a0);
+	 }
+	 if (*a != '\0') {
+	    Error1("trailing garbage in \"-b %s\"", a0);
+	 }
 	 n = m;
 	 break;
       case 'n': if (arg1[0][2]) {
-	    a = *arg1+2;
+	    a = a0 = *arg1+2;
 	 } else {
 	    ++arg1, --argc;
-	    if ((a = *arg1) == NULL) {
+	    if ((a = a0 = *arg1) == NULL) {
 	       Error("option -n requires an argument");
 	       filan_usage(stderr); exit(1);
 	    }
 	 }
          n = strtoul(a, (char **)&a, 0);
+	 if (a == a0) {
+	    Error1("not a numerical arg in \"-b %s\"", a0);
+	 }
+	 if (*a != '\0') {
+	    Error1("trailing garbage in \"-b %s\"", a0);
+	 }
 	 break;
       case 'f': if (arg1[0][2]) {
 	    filename = *arg1+2;
@@ -135,7 +147,7 @@ int main(int argc, const char *argv[]) {
       else if (!strcmp(outfname,"stderr")) { fdout=stderr; }
       /* file descriptor */
       else if (*outfname == '+') {
-	 a = outfname+1;
+	 a  = outfname+1;
 	 fildes = strtoul(a, (char **)&a, 0);
 	 if ((fdout = fdopen(fildes, "w")) == NULL) {
 	    Error2("can't fdopen file descriptor %lu: %s\n", fildes, strerror(errno));

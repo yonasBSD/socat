@@ -167,6 +167,8 @@ void Abort(void);
 int Mkstemp(char *template);
 int Setenv(const char *name, const char *value, int overwrite);
 void Unsetenv(const char *name);
+#endif /* WITH_SYCLS */
+#if WITH_SYCLS
 
 char *Readline(const char *prompt);
 void Using_history(void);

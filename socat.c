@@ -238,7 +238,7 @@ int main(int argc, const char *argv[]) {
 	       Exit(1);
 	    }
 	 }
-	 socat_opts.bufsiz = strtoul(a, (char **)&a, 0);
+	 socat_opts.bufsiz = Strtoul(a, (char **)&a, 0, "-b");
 	 break;
       case 's':  if (arg1[0][2])  { socat_opt_hint(stderr, arg1[0][1], arg1[0][2]); Exit(1); }
 	 diag_set_int('e', E_FATAL); break;
@@ -251,7 +251,7 @@ int main(int argc, const char *argv[]) {
 	       Exit(1);
 	    }
 	 }
-	 rto = strtod(a, (char **)&a);
+	 rto = Strtod(a, (char **)&a, "-t");
 	 socat_opts.closwait.tv_sec = rto;
 	 socat_opts.closwait.tv_usec =
 	    (rto-socat_opts.closwait.tv_sec) * 1000000; 
@@ -265,7 +265,7 @@ int main(int argc, const char *argv[]) {
 	       Exit(1);
 	    }
 	 }
-	 rto = strtod(a, (char **)&a);
+	 rto = Strtod(a, (char **)&a, "-T");
 	 socat_opts.total_timeout.tv_sec = rto;
 	 socat_opts.total_timeout.tv_usec =
 	    (rto-socat_opts.total_timeout.tv_sec) * 1000000; 

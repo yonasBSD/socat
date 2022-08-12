@@ -824,3 +824,45 @@ int xiosetenvushort(const char *varname, unsigned short value, int overwrite) {
    return xiosetenv(varname, envbuff, overwrite, NULL);
 #  undef XIO_SHORTLEN
 }
+
+
+unsigned long int Strtoul(const char *nptr, char **endptr, int base, const char *txt) {
+   unsigned long res;
+
+   res = strtoul(nptr, endptr, base);
+   if (nptr == *endptr) {
+      Error1("parseopts(): missing numerical value of option \"%s\"", txt);
+   }
+   if (**endptr != '\0') {
+      Error1("parseopts(): trailing garbage in numerical arg of option \"%s\"", txt);
+   }
+   return res;
+}
+
+#if HAVE_STRTOLL
+long long int Strtoll(const char *nptr, char **endptr, int base, const char *txt) {
+   long long int res;
+
+   res = strtoul(nptr, endptr, base);
+   if (nptr == *endptr) {
+      Error1("parseopts(): missing numerical value of option \"%s\"", txt);
+   }
+   if (**endptr != '\0') {
+      Error1("parseopts(): trailing garbage in numerical arg of option \"%s\"", txt);
+   }
+   return res;
+}
+#endif /* HAVE_STRTOLL */
+
+double Strtod(const char *nptr, char **endptr, const char *txt) {
+   double res;
+
+   res = strtod(nptr, endptr);
+   if (nptr == *endptr) {
+      Error1("parseopts(): missing numerical value of option \"%s\"", txt);
+   }
+   if (**endptr != '\0') {
+      Error1("parseopts(): trailing garbage in numerical arg of option \"%s\"", txt);
+   }
+   return res;
+}

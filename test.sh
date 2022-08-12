@@ -13886,7 +13886,7 @@ N=$((N+1))
 # Test if unbalanced quoting in Socat addresses is detected
 NAME=UNBALANCED_QUOTE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%bugs%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%syntax%*|*%bugs%*|*%$NAME%*)
 TEST="$NAME: Test fix of unbalanced quoting"
 # Invoke Socat with an address containing unbalanced quoting. If Socat prints
 # a "syntax error" message, the test succeeds
@@ -13900,6 +13900,8 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0"
 if grep -q "syntax error" "${te}0"; then
     $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0" >&2; fi
+    if [ "$debug" ]; then cat ${te} >&2; fi
     numOK=$((numOK+1))
 else
     $PRINTF "$FAILED\n"
@@ -15536,6 +15538,69 @@ fi # NUMCOND
 esac
 PORT=$((PORT+1))
 N=$((N+1))
+
+# Test if trailing garbage in integer type options gives error
+NAME=MISSING_INTEGER
+case "$TESTS" in
+*%$N%*|*%functions%*|*%syntax%*|*%bugs%*|*%$NAME%*)
+TEST="$NAME: Error on option that's missing integer value"
+# Invoke Socat with pty and option ispeed=b19200.
+# When socat terminates with error the test succeeded
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts - PTY,ispeed=b19200"
+printf "test $F_n $TEST... " $N
+$CMD0 </dev/null >/dev/null 2>"${te}0"
+if grep -q "missing numerical value" "${te}0"; then
+    $PRINTF "$OK\n"
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test if trailing garbage in integer type options gives error
+NAME=INTEGER_GARBAGE
+case "$TESTS" in
+*%$N%*|*%functions%*|*%syntax%*|*%bugs%*|*%$NAME%*)
+TEST="$NAME: Error on trailing garbabe"
+# Invoke Socat with pty and option ispeed=b19200.
+# When socat terminates with error the test succeeded
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts - PTY,ispeed=19200B"
+printf "test $F_n $TEST... " $N
+$CMD0 </dev/null >/dev/null 2>"${te}0"
+if grep -q "trailing garbage" "${te}0"; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0" >&2; fi
+    if [ "$debug" ]; then cat ${te} >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
 
 # end of common tests
 

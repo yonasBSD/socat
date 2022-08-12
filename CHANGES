@@ -33,6 +33,10 @@ Corrections:
 
 	Fixed bad parser error message on "socat /tmp/x\"x/x -"
 
+	Tightened syntax checks to detect numerical arguments that are missing
+	or have trailing garbage.
+	Test: INTEGER_GARBAGE
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty

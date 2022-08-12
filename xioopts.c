@@ -1926,7 +1926,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 nestlex(a, &tokp, &len, endkey, hquotes, squotes, nests,
 		 true, true, false);
       if (parsres < 0) {
-	 Error1("option too long:  \"%s\"", *a);
+	 Error1("option too long: \"%s\"", *a);
 	 return -1;
       } else if (parsres > 0) {
 	 Error1("syntax error in \"%s\"", *a);
@@ -2006,9 +2006,9 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 if (assign) {
 	  unsigned long ul;
 	  char *rest;
-	  ul = strtoul(token, &rest/*!*/, 0);
+	  ul = Strtoul(token, &rest, 0, a0);
 	  if (ul > UCHAR_MAX) {
-	    Error3("parseopts_table(%s): byte value exceeds limit (%lu vs. %u), using max",
+	    Error3("parseopts(): option \"%s\": byte value exceeds limit (%lu vs. %u), using max",
 		   a0, ul, UCHAR_MAX);
 	    (*opts)[i].value.u_byte = UCHAR_MAX;
 	  } else {
@@ -2026,7 +2026,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
       case TYPE_INT:
 	 if (assign) {
 	    char *rest;
-	    (*opts)[i].value.u_int = strtoul(token, &rest/*!*/, 0);
+	    (*opts)[i].value.u_int = Strtoul(token, &rest, 0, a0);
 	 } else {
 	    (*opts)[i].value.u_int = 1;
 	 }
@@ -2038,10 +2038,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    (*opts)[i].value.u_bool = 1;
 	 } else {
 	    char *rest;
-	    (*opts)[i].value.u_bool = strtoul(token, &rest, 0);
-	    if (rest && *rest) {
-	       Error1("error in option \"%s\": \"0\" or \"1\" required", a0);
-	    }
+	    (*opts)[i].value.u_bool = Strtoul(token, &rest, 0, a0);
 	 }
 	 Info2("setting option \"%s\" to %d", ent->desc->defname,
 	       (*opts)[i].value.u_bool);
@@ -2055,11 +2052,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    (*opts)[i].value.u_uint = 1;
 	 } else {
 	    char *rest;
-	    ulongval = strtoul(token, &rest/*!*/, 0);
-	    if (ulongval > UINT_MAX) {
-	       Error3("parseopts_table(%s): unsigned int value exceeds limit (%lu vs. %u), using max",
-		      a0, ulongval, UINT_MAX);
-	    }
+	    ulongval = Strtoul(token, &rest, 0, a0);
 	    (*opts)[i].value.u_uint = ulongval;
 	 }
 	 Info2("setting option \"%s\" to %u", ent->desc->defname,
@@ -2074,11 +2067,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    (*opts)[i].value.u_ushort = 1;
 	 } else {
 	    char *rest;
-	    ulongval = strtoul(token, &rest/*!*/, 0);
-	    if (ulongval > USHRT_MAX) {
-	       Error3("parseopts_table(%s): unsigned short value exceeds limit (%lu vs. %u), using max",
-		      a0, ulongval, USHRT_MAX);
-	    }
+	    ulongval = Strtoul(token, &rest, 0, a0);
 	    (*opts)[i].value.u_ushort = ulongval;
 	 }
 	 Info2("setting option \"%s\" to %u", ent->desc->defname,
@@ -2096,7 +2085,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    (*opts)[i].value.u_long = 1;
 	 } else {
 	    char *rest;
-	    slongval = strtol(token, &rest, 0);
+	    slongval = Strtoul(token, &rest, 0, a0);
 	    (*opts)[i].value.u_long = slongval;
 	 }
 	 Info2("setting option \"%s\" to %lu", ent->desc->defname,
@@ -2111,7 +2100,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    (*opts)[i].value.u_ulong = 1;
 	 } else {
 	    char *rest;
-	    ulongval = strtoul(token, &rest, 0);
+	    ulongval = Strtoul(token, &rest, 0, a0);
 	    (*opts)[i].value.u_ulong = ulongval;
 	 }
 	 Info2("setting option \"%s\" to %lu", ent->desc->defname,
@@ -2131,11 +2120,14 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 } else {
 	    char *rest;
 #  if HAVE_STRTOLL
-	    slonglongval = strtoll(token, &rest, 0);
+	    slonglongval = Strtoll(token, &rest, 0, a0);
 #  else
 	    /* in this case, input value range is limited */
-	    slonglongval = strtol(token, &rest, 0);
+	    slonglongval = Strtol(token, &rest, 0, a0);
 #  endif /* HAVE_STRTOLL */
+	    if (*rest != '\0') {
+	       Error1("parseopts(): trailing garbage in numerical arg of option \"%s\"", a0);
+	    }
 	    (*opts)[i].value.u_longlong = slonglongval;
 	 }
 	 Info2("setting option \"%s\" to %Lu", ent->desc->defname,
@@ -2150,7 +2142,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 }
 	 if (isdigit((*token)&0xff)) {
 	    char *rest;
-	    (*opts)[i].value.u_uidt = strtoul(token, &rest/*!*/, 0);
+	    (*opts)[i].value.u_uidt = Strtoul(token, &rest, 0, a0);
 	 } else {
 	    struct passwd *pwd;
 	    if ((pwd = getpwnam(token)) == NULL) {
@@ -2168,7 +2160,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    continue; }
 	 if (isdigit((token[0])&0xff)) {
 	    char *rest;
-	    (*opts)[i].value.u_gidt = strtoul(token, &rest/*!*/, 0);
+	    (*opts)[i].value.u_gidt = Strtoul(token, &rest, 0, a0);
 	 } else {
 	    struct group *grp;
 	    grp = getgrnam(token);
@@ -2188,7 +2180,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 }
 	 {
 	    char *rest;
-	    (*opts)[i].value.u_modet = strtoul(token, &rest/*!*/, 8);
+	    (*opts)[i].value.u_modet = Strtoul(token, &rest, 8, a0);
 	 }
 	 Info2("setting option \"%s\" to %u", ent->desc->defname,
 	       (*opts)[i].value.u_modet);
@@ -2229,7 +2221,8 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    continue;
 	 } else {
 	    double val;
-	    val = strtod(token, NULL);
+	    char *rest;
+	    val = Strtod(token, &rest, a0);
 	    if (val == HUGE_VAL || val == -HUGE_VAL ||
 		val == 0.0 && errno == ERANGE) {
 	       Error2("strtod(\"%s\", NULL): %s", token, strerror(errno));
@@ -2248,7 +2241,8 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    continue;
 	 } else {
 	    double val;
-	    val = strtod(token, NULL);
+	    char *rest;
+	    val = Strtod(token, &rest, a0);
 	    if (val == HUGE_VAL || val == -HUGE_VAL ||
 		val == 0.0 && errno == ERANGE) {
 	       Error2("strtod(\"%s\", NULL): %s", token, strerror(errno));
@@ -2270,7 +2264,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 (*opts)[i].value.u_linger.l_onoff = 1;
 	 {
 	    char *rest;
-	    (*opts)[i].value.u_linger.l_linger = strtoul(token, &rest/*!*/, 0);
+	    (*opts)[i].value.u_linger.l_linger = Strtoul(token, &rest, 0, a0);
 	 }
 	 Info3("setting option \"%s\" to {%d,%d}", ent->desc->defname,
 	       (*opts)[i].value.u_linger.l_onoff,
@@ -2287,12 +2281,15 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 {
 	    char *rest;
 	    (*opts)[i].value.u_int = strtoul(token, &rest, 0);
-	    if (*rest != ':') {
-	       Error1("option \"%s\": 2 arguments required",
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 2 arguments required",
 		      ent->desc->defname);
 	    }
 	    ++rest;
-	    (*opts)[i].value2.u_int = strtoul(rest, &rest, 0);
+	    (*opts)[i].value2.u_int = Strtoul(rest, &rest, 0, a0);
 	 }
 	 Info3("setting option \"%s\" to %d:%d", ent->desc->defname,
 	       (*opts)[i].value.u_int, (*opts)[i].value2.u_int);
@@ -2306,8 +2303,14 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 {
 	    char *rest;
 	    (*opts)[i].value.u_int = strtoul(token, &rest, 0);
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
 	    if (*rest != ':') {
-	       Error1("option \"%s\": 2 arguments required",
+	       Error1("parseopts(): trailing garbage in numerical arg of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 2 arguments required",
 		      ent->desc->defname);
 	    }
 	    ++rest;
@@ -2334,8 +2337,14 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 {
 	    char *rest;
 	    (*opts)[i].value.u_int = strtoul(token, &rest, 0);
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
 	    if (*rest != ':') {
-	       Error1("option \"%s\": 2 arguments required",
+	       Error1("parseopts(): trailing garbage in numerical arg of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 2 arguments required",
 		      ent->desc->defname);
 	    }
 	    ++rest;
@@ -2355,18 +2364,28 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 {
 	    char *rest;
 	    (*opts)[i].value.u_int = strtoul(token, &rest, 0);
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 3 arguments required", ent->desc->defname);
+	    }
 	    if (*rest != ':') {
-	       Error1("option \"%s\": 3 arguments required",
-		      ent->desc->defname);
+	       Error1("parseopts(): trailing garbage in 1st numerical arg of option \"%s\"", a0);
 	    }
 	    ++rest;
 	    (*opts)[i].value2.u_int = strtoul(rest, &rest, 0);
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 3 arguments required", ent->desc->defname);
+	    }
 	    if (*rest != ':') {
-	       Error1("option \"%s\": 3 arguments required",
-		      ent->desc->defname);
+	       Error1("parseopts(): trailing garbage in 2nd numerical arg of option \"%s\"", a0);
 	    }
 	    ++rest;
-	    (*opts)[i].value3.u_int = strtoul(rest, &rest, 0);
+	    (*opts)[i].value3.u_int = Strtoul(rest, &rest, 0, a0);
 	 }
 	 Info4("setting option \"%s\" to %d:%d:%d", ent->desc->defname,
 	       (*opts)[i].value.u_int, (*opts)[i].value2.u_int, (*opts)[i].value3.u_int);
@@ -2381,15 +2400,27 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 {
 	    char *rest;
 	    (*opts)[i].value.u_int = strtoul(token, &rest, 0);
-	    if (*rest != ':') {
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
 	       Error1("option \"%s\": 3 arguments required",
 		      ent->desc->defname);
 	    }
+	    if (*rest != ':') {
+	       Error1("parseopts(): trailing garbage in 1st numerical arg of option \"%s\"", a0);
+	    }
 	    ++rest;
 	    (*opts)[i].value2.u_int = strtoul(rest, &rest, 0);
-	    if (*rest != ':') {
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
 	       Error1("option \"%s\": 3 arguments required",
 		      ent->desc->defname);
+	    }
+	    if (*rest != ':') {
+	       Error1("parseopts(): trailing garbage in 2nd numerical arg of option \"%s\"", a0);
 	    }
 	    ++rest;
 	    optlen = 0;
@@ -2415,15 +2446,27 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 {
 	    char *rest;
 	    (*opts)[i].value.u_int = strtoul(token, &rest, 0);
-	    if (*rest != ':') {
-	       Error1("option \"%s\": 3 arguments required",
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 3 arguments required",
 		      ent->desc->defname);
+	    }
+	    if (*rest != ':') {
+	       Error1("parseopts(): trailing garbage in 1st numerical arg of option \"%s\"", a0);
 	    }
 	    ++rest;
 	    (*opts)[i].value2.u_int = strtoul(rest, &rest, 0);
-	    if (*rest != ':') {
-	       Error1("option \"%s\": 3 arguments required",
+	    if (token == rest) {
+	       Error1("parseopts(): missing numerical value of option \"%s\"", a0);
+	    }
+	    if (*rest == '\0') {
+	       Error1("parseopts(): option \"%s\": 3 arguments required",
 		      ent->desc->defname);
+	    }
+	    if (*rest != ':') {
+	       Error1("parseopts(): trailing garbage in 2nd numerical arg of option \"%s\"", a0);
 	    }
 	    ++rest;
 	    if (((*opts)[i].value3.u_string = strdup(rest)) == NULL) {
@@ -2873,9 +2916,14 @@ int retropt_int(struct opt *opts, int optcode, int *result) {
 
    while (opt->desc != ODESC_END) {
       if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+	 char *rest;
 	 switch (opt->desc->type) {
 	 case TYPE_INT: *result = opt->value.u_int; break;
-	 case TYPE_STRING: *result = strtol(opt->value.u_string, NULL, 0);
+	 case TYPE_STRING: *result = strtol(opt->value.u_string, &rest, 0);
+	    if (*rest != '\0') {
+	       Error1("retropts: trailing garbage in numerical arg of option \"%s\"",
+		      opt->desc->defname);
+	    }
 	    break;
 	 default: Error2("cannot convert type %d of option %s to int",
 			 opt->desc->type, opt->desc->defname);

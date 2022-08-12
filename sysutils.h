@@ -107,5 +107,8 @@ extern int xiosetenvulong(const char *varname, unsigned long value,
 			  int overwrite);
 extern int xiosetenvushort(const char *varname, unsigned short value,
 			   int overwrite);
+extern unsigned long int Strtoul(const char *nptr, char **endptr, int base, const char *txt);
+extern long long int Strtoll(const char *nptr, char **endptr, int base, const char *txt);
+extern double Strtod(const char *nptr, char **endptr, const char *txt);
 
 #endif /* !defined(__sysutils_h_included) */
