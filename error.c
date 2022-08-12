@@ -317,8 +317,8 @@ void msg2(
 #if HAVE_STRFTIME
    struct tm struct_tm;
 #endif
-#define BUFLEN 512
-   char buff[BUFLEN+1], *bufp, *syslp;
+#define MSGLEN 512
+   char buff[MSGLEN+2], *bufp = buff, *syslp;
    size_t bytes;
 
 #if HAVE_CLOCK_GETTIME
@@ -328,12 +328,14 @@ void msg2(
 #else
    epoch = *now;
 #endif
+   /*! consider caching instead of recalculating many times per second */
 #if HAVE_STRFTIME
-   bytes = strftime(buff, 20, "%Y/%m/%d %H:%M:%S", localtime_r(&epoch, &struct_tm));
-   buff[bytes] = '\0';
+   bytes = strftime(bufp, 20, "%Y/%m/%d %H:%M:%S", localtime_r(&epoch, &struct_tm));
 #else
-   bytes = snprintf(buff, 11, F_time, epoch);
+   bytes = snprintf(bufp, 11, F_time, epoch);
 #endif
+   bufp += bytes;
+   *bufp = '\0';
    if (diagopts.micros) {
 #if HAVE_CLOCK_GETTIME
       micros = now->tv_nsec/1000;
@@ -342,29 +344,38 @@ void msg2(
 #else
       micros = 0;
 #endif
-      bytes += sprintf(buff+19, ".%06lu ", micros);
+      bufp += sprintf(bufp, ".%06lu ", micros);
    } else {
-      buff[19] = ' '; buff[20] = '\0';
+      *bufp++ = ' ';
+      *bufp = '\0';
    }
-   bytes = strlen(buff);
 
-   bufp = buff + bytes;
    if (diagopts.withhostname) {
-      bytes = sprintf(bufp, "%s ", diagopts.hostname), bufp+=bytes;
+      bytes = snprintf(bufp, MSGLEN-(bufp-buff), "%s ", diagopts.hostname);
+      if (bytes >= MSGLEN-(bufp-buff))
+	 bytes = MSGLEN-(bufp-buff)-1;
+      bufp += bytes;
    }
-   bytes = sprintf(bufp, "%s["F_pid"] ", diagopts.progname, getpid());
+   bytes = snprintf(bufp, MSGLEN-(bufp-buff), "%s["F_pid"] ", diagopts.progname, getpid());
+   if (bytes >= MSGLEN-(bufp-buff))
+      bytes = MSGLEN-(bufp-buff)-1;
    bufp += bytes;
-   syslp = bufp;
-   *bufp++ = "DINWEF"[level];
+   syslp = bufp; 	/* syslog prefixes with time etc.itself */
+   if (bufp < buff+MSGLEN)
+      *bufp++ = "DINWEF"[level];
 #if 0 /* only for debugging socat */
    if (handler)  bufp[-1] = tolower((unsigned char)bufp[-1]); /* for debugging, low chars indicate messages from signal handlers */
 #endif
-   *bufp++ = ' ';
-   strncpy(bufp, text, BUFLEN-(bufp-buff)-1);
-   strcat(bufp, "\n");
+   if (bufp < buff+MSGLEN)
+      *bufp++ = ' ';
+   strncpy(bufp, text, MSGLEN-(bufp-buff));
+   bufp = strchr(bufp, '\0');
+   strcpy(bufp, "\n");
    _msg(level, buff, syslp);
    if (level >= diagopts.exitlevel) {
       if (E_NOTICE >= diagopts.msglevel) {
+	 if ((syslp - buff) + 16 > MSGLEN+1)
+	    syslp = buff + MSGLEN - 15;
 	 snprintf_r(syslp, 16, "N exit(%d)\n", exitcode?exitcode:(diagopts.exitstatus?diagopts.exitstatus:1));
 	 _msg(E_NOTICE, buff, syslp);
       }

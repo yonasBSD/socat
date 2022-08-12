@@ -56,6 +56,9 @@ Porting:
 	recognize if this function does not exist, e.g. on Musl libc.
 	Thanks to Alexander Kanavin and Baruch Siach for sending patches.
 
+	Corrected message format when no strftime() is available; improved
+	handling of very long host or program names
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
