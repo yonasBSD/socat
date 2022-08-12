@@ -32,6 +32,7 @@ int main(int argc, const char *argv[]) {
    const char *outfname = NULL;
    unsigned long fildes;
 
+   diag_set('I', false);
    diag_set('p', strchr(argv[0], '/') ? strrchr(argv[0], '/')+1 : argv[0]);
 
    arg1 = argv+1;  --argc;

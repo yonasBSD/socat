@@ -37,6 +37,7 @@ struct diag_opts {
    int exitstatus;	/* pass signal number to error exit */
    bool withhostname;	/* in custom logs add hostname */
    char *hostname;
+   bool signalsafe;
 } ;
 
 
@@ -44,7 +45,7 @@ static void _diag_exit(int status);
 
 
 struct diag_opts diagopts =
-  { NULL, E_ERROR, E_ERROR, 0, NULL, LOG_DAEMON, false, 0 } ;
+  { NULL, E_ERROR, E_ERROR, 0, NULL, LOG_DAEMON, false, 0, false, NULL, true } ;
 
 static void msg2(
 #if HAVE_CLOCK_GETTIME
@@ -134,8 +135,10 @@ static int diag_init(void) {
    diaginitialized = 1;
    /* gcc with GNU libc refuses to set this in the initializer */
    diagopts.logfile = stderr;
-   if (diag_sock_pair() < 0) {
-      return -1;
+   if (diagopts.signalsafe) {
+      if (diag_sock_pair() < 0) {
+	 return -1;
+      }
    }
    return 0;
 }
@@ -143,6 +146,16 @@ static int diag_init(void) {
 
 
 void diag_set(char what, const char *arg) {
+   switch (what) {
+   case 'I':
+      if (diagopts.signalsafe) {
+	 if (diag_sock_send >= 0) { Close(diag_sock_send); diag_sock_send = -1; }
+	 if (diag_sock_recv >= 0) { Close(diag_sock_recv); diag_sock_recv = -1; }
+      }
+      diagopts.signalsafe = false;
+      return;
+   }
+
    DIAG_INIT;
    switch (what) {
       const struct wordent *keywd;
@@ -240,7 +253,10 @@ int diag_reserve_fd(int fd) {
 int diag_fork() {
    Close(diag_sock_send);
    Close(diag_sock_recv);
-   return diag_sock_pair();
+   if (diagopts.signalsafe) {
+      return diag_sock_pair();
+   }
+   return 0;
 }
 
 /* Linux and AIX syslog format:
@@ -281,7 +297,7 @@ void msg(int level, const char *format, ...) {
    diag_dgram.level = level;
    diag_dgram.exitcode = diagopts.exitstatus;
    vsnprintf_r(diag_dgram.text, sizeof(diag_dgram.text), format, ap);
-   if (diag_in_handler && !diag_immediate_msg) {
+   if (diagopts.signalsafe && diag_in_handler && !diag_immediate_msg) {
       send(diag_sock_send, &diag_dgram, sizeof(diag_dgram)-TEXTLEN + strlen(diag_dgram.text)+1,
 	   0 	/* for canonical reasons */
 #ifdef MSG_DONTWAIT
@@ -399,6 +415,11 @@ static void _msg(int level, const char *buff, const char *syslp) {
 void diag_flush(void) {
    struct diag_dgram recv_dgram;
    char exitmsg[20];
+
+   if (!diagopts.signalsafe) {
+      return;
+   }
+
    while (recv(diag_sock_recv, &recv_dgram, sizeof(recv_dgram)-1,
 	       0 	/* for canonical reasons */
 #ifdef MSG_DONTWAIT

@@ -40,6 +40,10 @@ Corrections:
 	ctype(3) functions need there arguments to be unsigned char.
 	Thanks to Taylor R Campbell for sending a patch.
 
+	Filan library uses Socats diag/error message system and therefore had
+	always the signal handler messages socket pair open. This fix avoids
+	this socketpair in standalone Filan.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty
