@@ -917,7 +917,7 @@ int tcpan2(int fd, FILE *outfile) {
 	     fd, &tcpinfo, sizeof(tcpinfo), strerror(errno));
       return -1;
    }
-   fprintf(outfile, "%s={%u}\t", "TCPI_STATE", 		tcpinfo.tcpi_state);
+   fprintf(outfile, "%s={%u}\t", "TCPI_STATE",		tcpinfo.tcpi_state);
 #if 0  /* on BSD these components are prefixed with __ - I get tired... */
    fprintf(outfile, "%s={%u}\t", "TCPI_CA_STATE", 	tcpinfo.tcpi_ca_state);
    fprintf(outfile, "%s={%u}\t", "TCPI_RETRANSMITS", 	tcpinfo.tcpi_retransmits);

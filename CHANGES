@@ -43,6 +43,10 @@ Porting:
 	IP_ADD_SOURCE_MEMBERSHIP but not struct ip_mreq_source
 	Thanks to Justin Yackoski for sending a patch.
 
+	configure.ac's detection of getprotobynumber_r() variant did not
+	recognize if this function does not exist, e.g. on Musl libc.
+	Thanks to Alexander Kanavin and Baruch Siach for sending patches.
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 

@@ -261,8 +261,12 @@ int sockname(int fd, FILE *outfile, char style) {
    }
    strncpy(protoname, protoentp->p_name, sizeof(protoname));
 #elif HAVE_GETPROTOBYNUMBER_R==2 /* Solaris */
-   protoentp = getprotobynumber(proto);
-   strncpy(protoname, protoentp->p_name, sizeof(protoname));
+   {
+#     define FILAN_GETPROTOBYNUMBER_R_BUFLEN 1024
+      char buffer[FILAN_GETPROTOBYNUMBER_R_BUFLEN];
+      protoentp = getprotobynumber_r(proto, &protoent, buffer, FILAN_GETPROTOBYNUMBER_R_BUFLEN);
+      strncpy(protoname, protoentp->p_name, sizeof(protoname));
+   }
 #elif HAVE_GETPROTOBYNUMBER_R==3 /* AIX */
    {
       struct protoent_data proto_data;

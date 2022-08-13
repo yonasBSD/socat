@@ -137,13 +137,13 @@ AC_MSG_RESULT($sc_cv_have_prototype_hstrerror)
 # getprotobynumber_r() is not standardized
 AC_MSG_CHECKING(for getprotobynumber_r() variant)
 AC_CACHE_VAL(sc_cv_getprotobynumber_r,
-[AC_TRY_COMPILE([#include <stddef.h>
+[AC_TRY_LINK([#include <stddef.h>
 #include <netdb.h>],[getprotobynumber_r(1,NULL,NULL,1024,NULL);],
 [sc_cv_getprotobynumber_r=1; tmp_bynum_variant=Linux],
- [AC_TRY_COMPILE([#include <stddef.h>
+ [AC_TRY_LINK([#include <stddef.h>
  #include <netdb.h>],[getprotobynumber_r(1,NULL,NULL,1024);],
  [sc_cv_getprotobynumber_r=2; tmp_bynum_variant=Solaris],
-  [AC_TRY_COMPILE([#include <stddef.h>
+  [AC_TRY_LINK([#include <stddef.h>
   #include <netdb.h>],[getprotobynumber_r(1,NULL,NULL);],
   [sc_cv_getprotobynumber_r=3; tmp_bynum_variant=AIX],
 
