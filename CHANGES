@@ -24,6 +24,9 @@ Corrections:
 	Thanks to Paul Wise for reporting and analyzing the case of accessing
 	a left over socket entry with GOPEN.
 
+	The rawer option failed because it tried to clear CREAD.
+	Test: RAWER
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty

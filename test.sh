@@ -15274,7 +15274,6 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
-
 # Socats access to different types of file system entries using various kinds
 # of addresses fails in a couple of useless combinations. These failures have
 # to print an error message and exit with return code 1.
@@ -15296,6 +15295,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+
 printf "test $F_n $TEST... " $N
 # create an invalid or non-matching UNIX socket
 case "$entry" in
@@ -15457,6 +15457,43 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
+
+# Test if the rawer option works. Up to Socat 1.7.4.3, it failed because it
+# cleared the CREAD flag.
+NAME=RAWER
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%pty%*|*%$NAME%*)
+TEST="$NAME: Test if the rawer option fails"
+# Invoke Socat with a terminal address with option rawer. When it has no error
+# the test succeeded.
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$SOCAT -lp outer /dev/null EXEC:\"$SOCAT\\ -lp\\ inner\\ -\\,rawer\\ PIPE\",pty"
+printf "test $F_n $TEST... " $N
+eval "$CMD0" >/dev/null 2>"${te}0"
+rc0=$?
+if [ $rc0 -eq 0 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD0" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0" >&2
+    cat "${te}0" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
 # end of common tests
 
 ##################################################################################
@@ -15558,12 +15595,12 @@ exit
 #==============================================================================
 # test template
 
-# give a description of what is tested (a bugfix, a new feature...)
+# Give a description of what is tested (a bugfix, a new feature...)
 NAME=SHORT_UNIQUE_TESTNAME
 case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: give a one line description of test"
-# describe how the test is performed, and what's the success criteria
+# Describe how the test is performed, and what's the success criteria
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"

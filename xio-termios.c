@@ -475,7 +475,7 @@ int xiotermios_spec(int fd, int optcode) {
       _xiotermios_data.termarg.c_iflag = 0;
       _xiotermios_data.termarg.c_oflag = 0;
       _xiotermios_data.termarg.c_lflag = 0;
-      _xiotermios_data.termarg.c_cflag = (CS8);
+      _xiotermios_data.termarg.c_cflag = (CREAD|CS8);
       _xiotermios_data.termarg.c_cc[VMIN] = 1;
       _xiotermios_data.termarg.c_cc[VTIME] = 0;
       break;
