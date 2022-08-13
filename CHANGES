@@ -4,6 +4,11 @@ Corrections:
 	terminating \0 Byte was written behind the last position.
 	Thanks to Martin Liška for sending the address sanitizer report.
 
+	UDP-RECVFROM with fork sometimes terminated when multiple packets
+	arrived. This issue was introduced with a bug fix in version 1.7.4.0.
+	Reason was not handling EAGAIN on recvmsg().
+	Thanks to Jamie McQuillan for reporting this issue.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty

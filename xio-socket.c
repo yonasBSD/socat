@@ -693,6 +693,7 @@ int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
 
 #endif /* WITH_GENERICSOCKET */
 
+/* EINTR not handled specially */
 int xiogetpacketinfo(int fd)
 {
 #if defined(MSG_ERRQUEUE)
@@ -1245,6 +1246,7 @@ void xiosigaction_hasread(int signum
 	    return;
 	 }
 	 if (pid == xio_waitingfor) {
+	    xio_waitingfor = 0; 	/* so this child will not set hashappened again */
 	    xio_hashappened = true;
             xio_childstatus = WEXITSTATUS(status);
 	    Debug("xiosigaction_hasread() ->");
@@ -1284,6 +1286,7 @@ void xiosigaction_hasread(int signum
    PH_INIT, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_EARLY, PH_PREOPEN, PH_FD,
    PH_CONNECTED, PH_LATE, PH_LATE2
    OPT_FORK, OPT_SO_TYPE, OPT_SO_PROTOTYPE, cloexec, OPT_RANGE, tcpwrap
+   EINTR is not handled specially.
  */
 int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 			  struct sockaddr *us, socklen_t uslen,
@@ -1413,6 +1416,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
       socklen_t palen = sizeof(_peername);	/* peer address size */
       char ctrlbuff[1024];			/* ancillary messages */
       struct msghdr msgh = {0};
+      int rc;
 
       socket_init(pf, pa);
 
@@ -1423,6 +1427,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 	 drop = true;
       }
 
+      Info("Recvfrom: Checking/waiting for next packet");
       /* loop until select()/poll() returns valid */
       do {
 	 struct pollfd readfd;
@@ -1455,15 +1460,15 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 #if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
       msgh.msg_controllen = sizeof(ctrlbuff);
 #endif
-      if (xiogetpacketsrc(xfd->fd,
+      while ((rc = xiogetpacketsrc(xfd->fd,
 			  &msgh,
 			  MSG_PEEK
 #ifdef MSG_TRUNC
 			  |MSG_TRUNC
 #endif
-			  ) < 0) {
-	 return STAT_RETRYLATER;
-      }
+				   )) < 0 &&
+	     errno == EINTR) ;
+      if (rc < 0)  return STAT_RETRYLATER;
       palen = msgh.msg_namelen;
 
       Notice1("receiving packet from %s"/*"src"*/,
@@ -1534,24 +1539,21 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 	    break;
 	 }
 
-	 /* server: continue loop with listen */
 	 xio_waitingfor = pid;
 
+	 do {
 #if HAVE_PSELECT
-	 {
+	  {
 	    struct timespec timeout = { LONG_MAX, 0 };
 	    Pselect(0, NULL, NULL, NULL, &timeout, &oldset);
 	    Sigprocmask(SIG_SETMASK, &oldset, NULL);
-	 }
+	  }
 #else /* ! HAVE_PSELECT */
-	 /* now we are ready to handle signals */
-	 Sigprocmask(SIG_SETMASK, &oldset, NULL);
-
-	 while (!xio_hashappened) {
-	    Sleep(1);	/* any signal speeds up return */
-	 }
+	  /* now we are ready to handle signals */
+	  Sigprocmask(SIG_SETMASK, &oldset, NULL);
+	  Sleep(1);	/* any signal speeds up return */
 #endif /* ! HAVE_PSELECT */
-	 xio_waitingfor = 0;	/* so this child will not set hashappened again */
+	 } while (!xio_hashappened) ;
 	 xio_hashappened = false;
 
          if (xio_childstatus != 0) {
@@ -1676,9 +1678,12 @@ int retropt_socket_pf(struct opt *opts, int *pf) {
 }
 
 
-/* this function calls recvmsg(..., MSG_PEEK, ...) to obtain information about
-   the arriving packet. in msgh the msg_name pointer must refer to an (empty)
-   sockaddr storage. */
+/* This function calls recvmsg(..., MSG_PEEK, ...) to obtain information about
+   the arriving packet, thus it does not "consume" the packet.
+   In msgh the msg_name pointer must refer to an (empty) sockaddr storage.
+   Returns STAT_OK on success, or STAT_RETRYLATER when an error occurred,
+   including EINTR.
+ */
 int xiogetpacketsrc(int fd, struct msghdr *msgh, int flags) {
    char peekbuff[1];
 #if HAVE_STRUCT_IOVEC
