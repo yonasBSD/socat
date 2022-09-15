@@ -164,7 +164,7 @@ const struct optname optionnames[] = {
 #ifdef IP_ADD_MEMBERSHIP
 	IF_IP     ("add-membership",	&opt_ip_add_membership)
 #endif
-#ifdef IP_ADD_SOURCE_MEMBERSHIP
+#if defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
 	IF_IP     ("add-source-membership",	&opt_ip_add_source_membership)
 #endif
 	IF_TUN    ("allmulti",	&opt_iff_allmulti)
@@ -678,7 +678,7 @@ const struct optname optionnames[] = {
 #ifdef IP_ADD_MEMBERSHIP
 	IF_IP     ("ip-add-membership",	&opt_ip_add_membership)
 #endif
-#ifdef IP_ADD_SOURCE_MEMBERSHIP
+#if defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
 	IF_IP     ("ip-add-source-membership",	&opt_ip_add_source_membership)
 #endif
 #ifdef IP_FREEBIND
@@ -1563,7 +1563,7 @@ const struct optname optionnames[] = {
 	IF_SOCKS4 ("socksport",	&opt_socksport)
 	IF_SOCKS4 ("socksuser",	&opt_socksuser)
 	IF_SOCKET ("socktype",	&opt_so_type)
-#ifdef IP_ADD_SOURCE_MEMBERSHIP
+#if defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
 	IF_IP     ("source-membership",	&opt_ip_add_source_membership)
 #endif
 	IF_IPAPP  ("sourceport",	&opt_sourceport)
@@ -2507,7 +2507,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 break;
 #endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
 
-#if HAVE_STRUCT_IP_MREQ_SOURCE
+#if defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
       case TYPE_IP_MREQ_SOURCE:
 	 xiotype_ip_add_source_membership(token, ent, opt);
 	 break;

@@ -39,6 +39,10 @@ Porting:
 	Thanks to Martin Dorey for reporting and analyzing this issue, and for
 	providing an environment for reproduction.
 
+	Socat failed to compile on platforms that have
+	IP_ADD_SOURCE_MEMBERSHIP but not struct ip_mreq_source
+	Thanks to Justin Yackoski for sending a patch.
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
