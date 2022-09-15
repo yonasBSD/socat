@@ -1,5 +1,4 @@
 ﻿
-<<<<<<< HEAD
 Corrections:
 	In error.c msg2() there was a stack overflow on long messages: The
 	terminating \0 Byte was written behind the last position.
@@ -76,6 +75,11 @@ Porting:
 
 	Solaris derivatives no longer need librt for clock_gettime()
 	Thanks to Andy Fiddaman to directing me to the patch.
+
+Building:
+	Failure during building documentation, e.g. due to missing Yodl
+	packages, now does not let the build process fail.
+	Feature requested by Seyhun.
 
 Features:
 	Filan prints target of symlink when appropriate

@@ -100,11 +100,11 @@ docclean:
 	rm -f doc/socat.1 doc/socat.html
 
 doc/socat.1: doc/socat.yo
-	mkdir -p $(@D); yodl2man -o $@ $+
+	-mkdir -p $(@D); yodl2man -o $@ $+
 
 doc/socat.html: doc/socat.yo
 # care for refs in html
-	mkdir -p $(@D); cd $(@D); yodl2html -o socat.html ../$+; cd ..
+	-mkdir -p $(@D); cd $(@D); yodl2html -o socat.html ../$+; cd ..
 
 progs: $(PROGS)
 
