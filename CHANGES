@@ -67,6 +67,8 @@ Porting:
 	Solaris requires that termios options are always applied to the slave
 	side of PTY.
 
+	Fixed ancillary messages on Solaris.
+
 Features:
 	Filan prints target of symlink when appropriate
 	Test: FILANSYMLINK

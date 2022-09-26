@@ -618,7 +618,11 @@ int xiolog_ancillary_ip(struct cmsghdr *cmsg, int *num,
       cmsgtype = "IP_OPTIONS"; cmsgname = "options"; cmsgctr = -1;
       /*!!!*/
       break;
+#if XIO_ANCILLARY_TYPE_SOLARIS
+   case IP_RECVTOS:
+#else
    case IP_TOS:
+#endif
       cmsgtype = "IP_TOS";     cmsgname = "tos"; cmsgctr = msglen;
       break;
    case IP_TTL: /* Linux */

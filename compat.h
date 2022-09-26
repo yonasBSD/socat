@@ -31,6 +31,10 @@ extern char **environ;
 #  undef PIPE_STATES_SOCKET
 #endif
 
+#if defined(__sun) || defined(__sun__) || defined(__SunOS)
+#  define XIO_ANCILLARY_TYPE_SOLARIS 1
+#endif
+
 /*****************************************************************************/
 
 /* substitute some features that might be missing on some platforms */
