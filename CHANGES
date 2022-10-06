@@ -81,6 +81,10 @@ Features:
 	Filan prints target of symlink when appropriate
 	Test: FILANSYMLINK
 
+Documentation:
+	Fixed typo in doc/socat-tun.html and link in README.
+	Thanks to William Suthers for reporting.
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
