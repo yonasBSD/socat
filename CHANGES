@@ -85,6 +85,9 @@ Documentation:
 	Fixed typo in doc/socat-tun.html and link in README.
 	Thanks to William Suthers for reporting.
 
+	Fixed hard coded path in docu examples.
+	Thanks to Jakub Wilk for sending a patch.
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
