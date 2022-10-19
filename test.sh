@@ -51,6 +51,18 @@ _MICROS=$((MICROS+999999)); SECONDs="${_MICROS%??????}"
 [ -z "$SECONDs" ] && SECONDs=0
 
 withroot=0	# perform privileged tests even if not run by root
+
+[ -z "$SOCAT" ] && SOCAT="./socat"
+if ! [ -x "$SOCAT" ] && ! type $SOCAT >/dev/null 2>&1; then
+    echo "$SOCAT does not exist" >&2; exit 1;
+fi
+if [ "$SOCAT" = socat ]; then
+    SOCAT=$(type -p socat) || SOCAT=$(which socat)
+fi
+#echo $SOCAT
+if [ -z "$PROCAN" ]; then if test -x ./procan; then PROCAN="./procan"; elif type procan >/dev/null 2>&1; then PROCAN=procan; elif test -x ${SOCAT%/*}/procan; then PROCAN=${SOCAT%/*}/procan; else PROCAN=false; fi; fi
+if [ -z "$FILAN" ]; then if test -x ./filan; then FILAN="./filan"; elif ! type filan >/dev/null 2>&1; then FILAN=filan; elif test -x ${SOCAT%/*}/filan; then FILAN=${SOCAT%/*}/filan; else FILAN=false; fi; fi
+
 #PATH=$PATH:/opt/freeware/bin
 #PATH=$PATH:/usr/local/ssl/bin
 PATH=$PATH:/sbin 	# RHEL6:ip
@@ -60,23 +72,18 @@ esac
 #OPENSSL_RAND="-rand /dev/egd-pool"
 #SOCAT_EGD="egd=/dev/egd-pool"
 MISCDELAY=1
-[ -z "$SOCAT" ] && SOCAT="./socat"
-if ! [ -x "$SOCAT" ] && ! type $SOCAT >/dev/null 2>&1; then
-    echo "$SOCAT does not exist" >&2; exit 1;
-fi
-if [ -z "$PROCAN" ]; then if test -x ./procan; then PROCAN="./procan"; elif type procan >/dev/null 2>&1; then PROCAN=procan; elif test -x ${SOCAT%/*}/procan; then PROCAN=${SOCAT%/*}/procan; else PROCAN=false; fi; fi
-if [ -z "$FILAN" ]; then if test -x ./filan; then FILAN="./filan"; elif ! type filan >/dev/null 2>&1; then FILAN=filan; elif test -x ${SOCAT%/*}/filan; then FILAN=${SOCAT%/*}/filan; else FILAN=false; fi; fi
+
 opts="$opt_t $OPTS"
 export SOCAT_OPTS="$opts"
 #debug="1"
 debug=
 TESTS="$*"; export TESTS
-if !  $SOCAT -V >/dev/null 2>&1; then
+if ! SOCAT_MAIN_WAIT= $SOCAT -V >/dev/null 2>&1; then
     echo "Failed to execute $SOCAT, exiting" >&2
     exit 1
 fi
 
-SOCAT_VERSION=$($SOCAT -V |head -n 2 |tail -n 1 |sed 's/.* \([0-9][1-9]*\.[0-9][0-9]*\.[0-9][^[:space:]]*\).*/\1/')
+SOCAT_VERSION=$(SOCAT_MAIN_WAIT= $SOCAT -V |head -n 2 |tail -n 1 |sed 's/.* \([0-9][1-9]*\.[0-9][0-9]*\.[0-9][^[:space:]]*\).*/\1/')
 if [ -z "$SOCAT_VERSION" ]; then
     echo "Warning: failed to retrieve Socat version" >&2
 fi
@@ -1842,7 +1849,7 @@ testfeats () {
     local a A;
     for a in $@; do
 	A=$(echo "$a" |tr 'a-z-' 'A-Z_')
-	if $SOCAT -V |grep "#define WITH_$A 1\$" >/dev/null; then
+	if SOCAT_MAIN_WAIT= $SOCAT -V |grep "#define WITH_$A 1\$" >/dev/null; then
 	    if [[ "$A" =~ OPENSSL.* ]]; then
 		gentestcert testsrv
 		gentestcert testcli
@@ -2535,6 +2542,8 @@ gentestaltcert () {
     cat $name.key $name.crt testcert.dh >$name.pem
 }
 
+#------------------------------------------------------------------------------
+# Begin of functional tests
 
 NAME=UNISTDIO
 case "$TESTS " in
@@ -2996,15 +3005,19 @@ rc2=$?
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
    echo "$CMD1 &"
+   cat "${te}1"
    echo "$CMD2"
    echo "rc=$rc2"
-   cat "${te}1"
    cat "${te}2"
    numFAIL=$((numFAIL+1))
    listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
    $PRINTF "$FAILED: diff:\n"
    cat "$tdiff"
+   echo "$CMD1 &"
+   cat "${te}1"
+   echo "$CMD2"
+   cat "${te}2"
    numFAIL=$((numFAIL+1))
    listFAIL="$listFAIL $N"
 else
@@ -8534,7 +8547,9 @@ rc=$?
 kill $bg 2>/dev/null; wait
 if [ $rc -ne 0 ]; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD &"
+    echo "$CMD1 &"
+    cat "${te}1"
+    echo "$CMD"
     cat "$te"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -9390,7 +9405,6 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 tl="$td/test$N.lock"
 da="$(date) $RANDOM"
-dalen=$((${#da}+1))
 TUNNET=10.255.255
 TUNNAME=tun9
 CMD1="$TRACE $SOCAT $opts -L $tl TUN:$TUNNET.1/24,iff-up=1,tun-type=tun,tun-name=$TUNNAME echo"
@@ -9400,7 +9414,7 @@ $CMD1 2>"${te}1" &
 pid1="$!"
 #waitinterface "$TUNNAME"
 sleep 1
-echo "$da" |$CMD 2>"${te}1" >"$tf" 2>"${te}"
+echo "$da" |$CMD >"$tf" 2>"${te}"
 kill $pid1 2>/dev/null
 wait
 if [ $? -ne 0 ]; then
@@ -9878,10 +9892,10 @@ if [ -z "$FOPEN_MAX" ]; then
     listCANT="$listCANT $N"
 else
 OPEN_FILES=$FOPEN_MAX	# more than the highest FOPEN_MAX
-i=3; while [ "$i" -lt "$OPEN_FILES" ]; do
-    REDIR="$REDIR $i>&2"
-    i=$((i+1))
-done
+#i=3; while [ "$i" -lt "$OPEN_FILES" ]; do
+#    REDIR="$REDIR $i>&2"
+#    i=$((i+1))
+#done
 #echo "$REDIR"
 #testecho "$N" "$TEST" "" "pipe" "$opts -T 3" "" 1 
 #set -vx
@@ -14666,10 +14680,15 @@ N=$((N+1))
 NAME=VSOCK_ECHO
 case "$TESTS" in
 *%$N%*|*%functions%*|*%vsock%*|*%socket%*|*%$NAME%*)
-TEST="$NAME: test communication via vsock loopback socket"
+TEST="$NAME: test communication via VSOCK loopback socket"
 # Start a listening echo server
 # Connect with a client, send data and compare reply with original data
-if ! eval $NUMCOND; then :; else
+if ! eval $NUMCOND; then :;
+elif ! fea=$(testfeats VSOCK); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$fea not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"

@@ -1,4 +1,13 @@
 ﻿
+Testing:
+	Unset SOCAT_MAIN_WAIT on informational Socat calls
+
+	SOCAT=socat used ./socat instead of the version derived by $PATH
+
+	Do not try VSOCK_ECHO test when feature is not compiled in.
+
+	Fixed logging of test 220 TUNINTERFACE
+
 ####################### V 1.7.4.3:
 
 Corrections:
