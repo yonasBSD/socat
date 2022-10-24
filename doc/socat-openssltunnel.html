@@ -42,13 +42,13 @@ installed. It might as well be the client or server host themselves.</p>
 <span class="frame"><span class="shell">FILENAME=server</span></span>
 
 <p>Generate a public/private key pair:</p>
-<span class="frame"><span class="shell">openssl genrsa -out $FILENAME.key 1024</span></span>
+<span class="frame"><span class="shell">openssl genrsa -out $FILENAME.key 2048</span></span>
 
 <p>Generate a self signed certificate:</p>
 <span class="frame"><span class="shell">
 openssl req -new -key $FILENAME.key -x509 -days 3653 -out $FILENAME.crt</span></span>
 <p>You will be prompted for your country code, name etc.; you may quit all prompts
-with the enter key.</p>
+with the ENTER key, except for the Common Name which must be exactly the name or IP address of the server that the client will use.</p>
 <p>Generate the PEM file by just appending the key and certificate files:<p>
 <span class="frame"><span class="shell">cat $FILENAME.key $FILENAME.crt &gt;$FILENAME.pem</span></span>
 
@@ -70,7 +70,7 @@ are not critical.
 <p>First prepare a different basename for the files related to the client certificate:</p>
 <span class="frame"><span class="shell">FILENAME=client</span></span>
 
-<p>Repeat the procedure for certificate generation described above.
+<p>Repeat the procedure for certificate generation described above. A special common name is not required.
 Copy <tt>client.pem</tt> to the SSL client, and <tt>client.crt</tt> to the
 server.</p>
 
@@ -81,7 +81,7 @@ for the server, <tt>cert=...</tt> tells the program to the file containing its
 ceritificate and private key, and <tt>cafile=...</tt> points to the file
 containing the certificate of the peer; we trust clients only if they can proof
 that they have the related private key (OpenSSL handles this for us):<p>
-<span class="frame"><span class="shell">socat openssl-listen:4433,reuseaddr,cert=$HOME/etc/server.pem,cafile=$HOME/etc/client.crt echo</span></span>
+<span class="frame"><span class="shell">socat OPENSSL-LISTEN:4433,reuseaddr,cert=$HOME/etc/server.pem,cafile=$HOME/etc/client.crt PIPE</span></span>
 <p>After starting this command, socat should be listening on port 4433, but
 will require client authentication.</p>
 
@@ -89,7 +89,7 @@ will require client authentication.</p>
 <p>Substitute your <tt>tcp-connect</tt> or <tt>tcp</tt> address keyword with
 <tt>openssl-connect</tt> or just <tt>ssl</tt> and here too add the
 <tt>cert</tt> and <tt>cafile</tt> options:<p>
-<span class="frame"><span class="shell">socat stdio openssl-connect:server.domain.org:4433,cert=$HOME/etc/client.pem,cafile=$HOME/etc/server.crt</span></span>
+<span class="frame"><span class="shell">socat STDIO OPENSSL-CONNECT:server.domain.org:4433,cert=$HOME/etc/client.pem,cafile=$HOME/etc/server.crt</span></span>
 <p>This command should establish a secured connection to the server
 process.</p>
 
@@ -100,10 +100,10 @@ to be adapted; <tt>ip6name.domain.org</tt> is assumed to resolve to the IPv6
 address of the server:</p>
 <p>Server:</p>
 <span class="frame"><span class="shell">socat
-openssl-listen:4433,<b style="color:yellow">pf=ip6</b>,reuseaddr,cert=$HOME/etc/server.pem,cafile=$HOME/etc/client.crt echo</span></span>
+OPENSSL-LISTEN:4433,<b style="color:yellow">pf=ip6</b>,reuseaddr,cert=$HOME/etc/server.pem,cafile=$HOME/etc/client.crt PIPE</span></span>
 
 <p>Client:</p>
-<span class="frame"><span class="shell">socat stdio openssl-connect:<b style="color:yellow">ip6name</b>.domain.org:4433,cert=$HOME/etc/client.pem,cafile=$HOME/etc/server.crt</span></span>
+<span class="frame"><span class="shell">socat STDIO OPENSSL-CONNECT:<b style="color:yellow">ip6name</b>.domain.org:4433,cert=$HOME/etc/client.pem,cafile=$HOME/etc/server.crt</span></span>
 
 <h2>Troubleshooting</h2>
 
@@ -153,8 +153,11 @@ With socat version 1.6.0, the SSL server per default requires the client to
 present a trusted certificate. socat's OpenSSL implementation still does not
 check the contents of a certificate like host name or host address.
 </p>
+<p>
+  Socat 1.7.3.0 introduces check of servers commonname by the client, and optionally check of clients commonname by the server.
+</p>
 
-<p>This document was last modified in March 2007.</p>
+<p>This document was last modified in Oct. 2023.</p>
 
 <h2>More info about socat OpenSSL</h2>
 

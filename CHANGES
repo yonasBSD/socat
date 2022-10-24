@@ -88,6 +88,8 @@ Documentation:
 	Fixed hard coded path in docu examples.
 	Thanks to Jakub Wilk for sending a patch.
 
+	Updated doc/socat-openssltunnel.html: 2048 bits, commonname
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
