@@ -2070,6 +2070,7 @@ runsudp6 () {
 runssctp4 () {
     runsip4 >/dev/null || { echo SCTP4; return 1; }
     $SOCAT -h |grep ' sctp4-' >/dev/null || return 1
+    $SOCAT /dev/null SCTP4-L:0,accept-timeout=0.001 2>/dev/null || return 1;
     return 0;
 }
 
@@ -2077,6 +2078,7 @@ runssctp4 () {
 runssctp6 () {
     runsip6 >/dev/null || { echo SCTP6; return 1; }
     $SOCAT -h |grep ' sctp6-' >/dev/null || return 1
+    $SOCAT /dev/null SCTP6-L:0,accept-timeout=0.001 2>/dev/null || return 1;
     return 0;
 }
 

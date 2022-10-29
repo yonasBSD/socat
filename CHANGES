@@ -65,6 +65,10 @@ Testing:
 	UNIX_TO_FILE UNIX_TO_ORPHANED GOPEN_TO_DENIED GOPEN_TO_DIRECTORY
 	GOPEN_TO_ORPHANED 
 
+	On RHEL-9 and Ubuntu-22.04 there is SCTP support for development but
+	not in kernel. test.sh now detects this situation and reacts with
+	warnings.
+
 ####################### V 1.7.4.3:
 
 Corrections:
