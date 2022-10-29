@@ -72,11 +72,14 @@ Porting:
 	Filan: Solaris has the open file path infos in /proc/<pid>/path/
 	Thanks to Andy Fiddaman to directing me to the patch.
 
+	Filan now recognizes and prints Solaris doors and event ports.
+
+	Solaris derivatives no longer need librt for clock_gettime()
+	Thanks to Andy Fiddaman to directing me to the patch.
+
 Features:
 	Filan prints target of symlink when appropriate
 	Test: FILANSYMLINK
-
-	Filan now recognizes and prints Solaris doors and event ports.
 
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls

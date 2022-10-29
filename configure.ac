@@ -1516,8 +1516,7 @@ AC_CHECK_LIB(util, openpty,
 
 AC_CHECK_PROTOTYPE_LIB(gettimeofday)
 
-AC_CHECK_LIB(rt, clock_gettime,
-		 [LIBS="-lrt $LIBS"; AC_DEFINE(HAVE_CLOCK_GETTIME)])
+AC_CHECK_FUNC(clock_gettime, AC_DEFINE(HAVE_CLOCK_GETTIME), AC_CHECK_LIB(rt, clock_gettime, [LIBS="-lrt $LIBS"; AC_DEFINE(HAVE_CLOCK_GETTIME)]))
 
 dnl Search for flock()
 # with Linux it's in libc, with AIX in libbsd
