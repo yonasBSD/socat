@@ -60,7 +60,7 @@ int fdname(const char *file, int fd, FILE *outfile, const char *numform,
    }
 }
 
-#if HAVE_PROC_DIR_FD
+#if HAVE_PROC_DIR_FD || HAVE_PROC_DIR_PATH
 static int procgetfdname(int fd, char *filepath, size_t pathsize) {
    static pid_t pid = -1;
    char procpath[PATH_MAX];
@@ -91,30 +91,36 @@ static int procgetfdname(int fd, char *filepath, size_t pathsize) {
 #endif /* !HAVE_STAT64 */
        
    if (pid < 0)  pid = Getpid();
-   snprintf(procpath, sizeof(procpath), "/proc/"F_pid"/fd/%d", pid, fd);
+   snprintf(procpath, sizeof(procpath), "/proc/"F_pid"/"
+#if HAVE_PROC_DIR_PATH
+	    "path"
+#else
+	    "fd"
+#endif
+	    "/%d", pid, fd);
    if ((len = Readlink(procpath, filepath, pathsize-1)) < 0) {
-      Error4("readlink(\"%s\", %p, "F_Zu"): %s",
+      Warn4("readlink(\"%s\", %p, "F_Zu"): %s",
 	     procpath, filepath, pathsize, strerror(errno));
-      return -1;
+      len = 0;
    }
    filepath[len] = '\0';
    return 0;
 }
-#endif /* HAVE_PROC_DIR_FD */
+#endif /* HAVE_PROC_DIR_FD || HAVE_PROC_DIR_PATH */
    
 int statname(const char *file, int fd, int filetype, FILE *outfile,
 	     char style) {
    char filepath[PATH_MAX];
 
    filepath[0] = '\0';
-#if HAVE_PROC_DIR_FD
+#if HAVE_PROC_DIR_FD || HAVE_PROC_DIR_PATH
    if (fd >= 0) {
       procgetfdname(fd, filepath, sizeof(filepath));
       if (filepath[0] == '/') {
 	 file = filepath;
       }
    }
-#endif /*  HAVE_PROC_DIR_FD */
+#endif /*  HAVE_PROC_DIR_FD || HAVE_PROC_DIR_PATH */
    /* now see for type specific infos */
    switch (filetype) {
    case (S_IFIFO>>12):	/* 1, FIFO */

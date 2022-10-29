@@ -652,6 +652,7 @@
 
 /* Define if you have the /proc/$$/fd directories */
 #undef HAVE_PROC_DIR_FD
+#undef HAVE_PROC_DIR_PATH
 
 #undef HAVE_SETGRENT
 #undef HAVE_GETGRENT

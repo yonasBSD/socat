@@ -1985,6 +1985,16 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# On Solaris family, we have to use /proc/$$/path/N
+AC_MSG_CHECKING(for /proc/*/path)
+if test -d /proc/$$/path; then
+  AC_DEFINE(HAVE_PROC_DIR_PATH, 1)
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
+
 dnl "tcpd" "tcpwrappers"
 # on some platforms, raw linking with libwrap fails because allow_severity and
 # deny_severity are not explicitely defined. Thus we put the libwrap part to
