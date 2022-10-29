@@ -8,6 +8,7 @@
 #include "xioopen.h"
 
 #include "xio-process.h"
+#include "xio-named.h"
 #include "xio-progcall.h"
 
 #include "xio-socket.h"
@@ -73,6 +74,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
    bool withstderr = false;
    bool nofork = false;
    bool withfork;
+   char *tn = NULL;
+   int trigger[2];
 
    popts = moveopts(*copts, GROUP_ALL);
    if (applyopts_single(fd, popts, PH_INIT) < 0)  return -1;
@@ -223,19 +226,9 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	    /*0 Info2("open(\"%s\", O_RDWR|O_NOCTTY, 0620) -> %d", PTMX, ptyfd);*/
 	 }
 	 if (ptyfd >= 0 && ttyfd < 0) {
-	    char *tn = NULL;
 	    /* we used PTMX before forking */
 	    extern char *ptsname(int);
-#if HAVE_GRANTPT	/* AIX, not Linux */
-	    if (Grantpt(ptyfd)/*!*/ < 0) {
-	       Warn2("grantpt(%d): %s", ptyfd, strerror(errno));
-	    }
-#endif /* HAVE_GRANTPT */
-#if HAVE_UNLOCKPT
-	    if (Unlockpt(ptyfd)/*!*/ < 0) {
-	       Warn2("unlockpt(%d): %s", ptyfd, strerror(errno));
-	    }
-#endif /* HAVE_UNLOCKPT */
+
 #if HAVE_PROTOTYPE_LIB_ptsname	/* AIX, not Linux */
 	    if ((tn = Ptsname(ptyfd)) == NULL) {
 	       Warn2("ptsname(%d): %s", ptyfd, strerror(errno));
@@ -247,35 +240,16 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	       }
 	    }
 	    ptyname[0] = '\0'; strncat(ptyname, tn, MAXPTYNAMELEN-1);
-	    if ((ttyfd = Open(tn, O_RDWR|O_NOCTTY, 0620)) < 0) {
-	       Warn2("open(\"%s\", O_RDWR|O_NOCTTY, 0620): %s", tn, strerror(errno));
-	    } else {
-	       /*0 Info2("open(\"%s\", O_RDWR|O_NOCTTY, 0620) -> %d", tn, ttyfd);*/
+#if HAVE_GRANTPT	/* AIX, not Linux */
+	    if (Grantpt(ptyfd)/*!*/ < 0) {
+	       Warn2("grantpt(%d): %s", ptyfd, strerror(errno));
 	    }
-
-#ifdef I_PUSH
-	    /* Linux: I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> -1 EINVAL */
-	    /* AIX:   I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> 1 */
-	    /* SunOS: I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> 0 */
-	    /* HP-UX: I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> 0 */
-	    if (Ioctl(ttyfd, I_FIND, "ldterm\0") == 0) {
-	       Ioctl(ttyfd, I_PUSH, "ptem\0\0\0");	/* 0 */ /* padding for AdressSanitizer */
-	       Ioctl(ttyfd, I_PUSH, "ldterm\0");	/* 0 */
-	       Ioctl(ttyfd, I_PUSH, "ttcompat");	/* HP-UX: -1 */
+#endif /* HAVE_GRANTPT */
+#if HAVE_UNLOCKPT
+	    if (Unlockpt(ptyfd)/*!*/ < 0) {
+	       Warn2("unlockpt(%d): %s", ptyfd, strerror(errno));
 	    }
-#endif
-
-#if 0	    /* the following block need not work */
-
-	    if (ttyfd >= 0 && ((tn = Ttyname(ttyfd)) == NULL)) {
-	       Warn2("ttyname(%d): %s", ttyfd, strerror(errno));
-	    }
-	    if (tn == NULL) {
-	       Error("could not open pty");
-	       return -1;
-	    }
-#endif
-	    Info1("opened pseudo terminal %s", tn);
+#endif /* HAVE_UNLOCKPT */
 	 }
       }
 #endif /* HAVE_DEV_PTMX || HAVE_DEV_PTC */
@@ -290,7 +264,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       }
 #endif /* HAVE_OPENPTY */
       free(*copts);
-      if ((*copts = moveopts(popts, GROUP_TERMIOS|GROUP_FORK|GROUP_EXEC|GROUP_PROCESS)) == NULL) {
+      if ((*copts = moveopts(popts, GROUP_TERMIOS|GROUP_FORK|GROUP_EXEC|GROUP_PROCESS|GROUP_NAMED)) == NULL) {
 	 return -1;
       }
       applyopts_cloexec(ptyfd, popts);/*!*/
@@ -306,8 +280,6 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
       fd->fd = ptyfd;
 
-      /* this for child, was after fork */
-      applyopts(ttyfd, *copts, PH_FD);
    } else
 #endif /* HAVE_PTY */
    if (usepipes) {
@@ -411,6 +383,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
    xiosetchilddied();	/* set SIGCHLD handler */
 
    if (withfork) {
+      Socketpair(PF_UNIX, SOCK_STREAM, 0, trigger);
       pid = xio_fork(true, E_ERROR);
       if (pid < 0) {
 	 return -1;
@@ -422,10 +395,43 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	 /* In particular, it's not defined whether ignoring SIGCHLD is inheritable. */
 	 if (Signal(SIGCHLD, SIG_DFL) == SIG_ERR) {
 	    Warn1("signal(SIGCHLD, SIG_DFL): %s", strerror(errno));
+	    Close(trigger[0]);
 	 }
 
 #if HAVE_PTY
 	 if (usepty) {
+	    applyopts_named(tn, *copts, PH_PREOPEN);
+	    applyopts_named(tn, *copts, PH_EARLY);
+	    applyopts_named(tn, *copts, PH_FD);
+
+	   if (ttyfd < 0) {
+	    if ((ttyfd = Open(tn, O_RDWR|O_NOCTTY, 0620)) < 0) {
+	       Warn2("open(\"%s\", O_RDWR|O_NOCTTY, 0620): %s", tn, strerror(errno));
+	    } else {
+	       /*0 Info2("open(\"%s\", O_RDWR|O_NOCTTY, 0620) -> %d", tn, ttyfd);*/
+	    }
+	   } else {
+	      if ((tn = Ttyname(ttyfd)) == NULL) {
+		 Warn2("ttyname(%d): %s", ttyfd, strerror(errno));
+	      }
+	   }
+
+#ifdef I_PUSH
+	    /* Linux: I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> -1 EINVAL */
+	    /* AIX:   I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> 1 */
+	    /* SunOS: I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> 0 */
+	    /* HP-UX: I_PUSH def'd; pty: ioctl(, I_FIND, ...) -> 0 */
+	    if (Ioctl(ttyfd, I_FIND, "ldterm\0") == 0) {
+	       Ioctl(ttyfd, I_PUSH, "ptem\0\0\0");	/* 0 */ /* padding for AdressSanitizer */
+	       Ioctl(ttyfd, I_PUSH, "ldterm\0");	/* 0 */
+	       Ioctl(ttyfd, I_PUSH, "ttcompat");	/* HP-UX: -1 */
+	    }
+#endif
+
+	    /* this for child, was after fork */
+	    applyopts(ttyfd, *copts, PH_FD);
+
+	    Info1("opened pseudo terminal %s", tn);
 	    Close(ptyfd);
 	    if (rw != XIO_RDONLY && fdi != ttyfd) {
 	       /* make sure that the internal diagnostic socket pair fds do not conflict
@@ -451,7 +457,6 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	    }
 
 	    applyopts(ttyfd, *copts, PH_LATE);
-
 	    applyopts(ttyfd, *copts, PH_LATE2);
 	 } else
 #endif /* HAVE_PTY */
@@ -539,6 +544,10 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	       applyopts(fdi, *copts, PH_LATE);
 	       applyopts(fdi, *copts, PH_LATE2);
 	    }
+	 if (withfork) {
+	    Info("Signalling parent ready");
+	    Close(trigger[1]);
+	 }
       } /* withfork */
       else {
 	 applyopts(-1, *copts, PH_LATE);
@@ -556,6 +565,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
    /* for parent (this is our socat process) */
    Notice1("forked off child process "F_pid, pid);
+   Close(trigger[1]);
 
 #if 0
    if ((popts = copyopts(*copts,
@@ -565,9 +575,11 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
 #if HAVE_PTY
    if (usepty) {
+#  if 0
       if (Close(ttyfd) < 0) {
 	 Info2("close(%d): %s", ttyfd, strerror(errno));
       }
+#  endif
    } else
 #endif /* HAVE_PTY */
    if (usepipes) {
@@ -584,6 +596,14 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       Error1("%d option(s) could not be used", numleft);
       showleft(popts);
       return STAT_NORETRY;
+   }
+
+   {
+      struct pollfd fds[1];
+      fds[0].fd = trigger[0];
+      fds[0].events = POLLIN|POLLHUP;
+      Poll(fds, 1, -1);
+      Info("Child process signalled ready");
    }
 
    return pid;	/* indicate parent (main) process */

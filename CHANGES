@@ -1,4 +1,5 @@
 ﻿
+<<<<<<< HEAD
 Corrections:
 	In error.c msg2() there was a stack overflow on long messages: The
 	terminating \0 Byte was written behind the last position.
@@ -62,6 +63,9 @@ Porting:
 
 	Corrected message format when no strftime() is available; improved
 	handling of very long host or program names
+
+	Solaris requires that termios options are always applied to the slave
+	side of PTY.
 
 Features:
 	Filan prints target of symlink when appropriate

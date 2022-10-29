@@ -677,7 +677,10 @@ int Ioctl(int d, int request, void *argp) {
    _errno = errno;
    if (!diag_in_handler) diag_flush();
 #if WITH_SYCLS
-   Debug1("ioctl() -> %d", retval);
+   if (retval < 0)
+      Debug2("ioctl() -> %d, errno=%d", retval, _errno);
+   else
+      Debug1("ioctl() -> %d", retval);
 #endif /* WITH_SYCLS */
    errno = _errno;
    return retval;

@@ -270,8 +270,8 @@ case "$UNAME" in
 #    PTYOPTS2=
 #    ;;
 SunOS)
-    PTYOPTS="echo=0,opost=0,perm=600"
-    PTYOPTS2="cfmakeraw"
+    PTYOPTS="perm=600"
+    PTYOPTS2="echo=0,opost=0"
 	;;
 *)
     PTYOPTS="echo=0,opost=0"
@@ -2685,7 +2685,7 @@ elif ! testfeats pty >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testecho "$N" "$TEST" "" "exec:$CAT,pty,$PTYOPTS" "$opts"
+testecho "$N" "$TEST" "" "exec:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts"
 fi
 esac
 N=$((N+1))
@@ -2701,7 +2701,7 @@ elif ! testfeats pty >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testecho "$N" "$TEST" "" "system:$CAT,pty,$PTYOPTS" "$opts"
+testecho "$N" "$TEST" "" "system:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts"
 fi
 esac
 N=$((N+1))
@@ -10575,7 +10575,7 @@ printf "test $F_n $TEST... " $N
 eval "$CMD0 2>\"${te}0\" >\"$tf\" &"
 pid0=$!
 wait${protov}port $tsa1 1
-echo |$CMD1 2>"${te}1"
+{ echo; sleep 0.1; } |$CMD1 2>"${te}1"
 rc1=$?
 waitfile "$tf" 2
 kill $pid0 2>/dev/null; wait
@@ -10689,7 +10689,7 @@ if $SOCAT -hhh |grep "[[:space:]]$SCM_RECV[[:space:]]" >/dev/null; then
 eval "$CMD0 >\"$tf\" 2>\"${te}0\" &"
 pid0="$!"
 wait${proto}port $tra 1
-echo "XYZ" |$CMD1 2>"${te}1"
+{ echo "XYZ"; sleep 0.1; } |$CMD1 2>"${te}1"
 rc1="$?"
 waitfile "$tf" 2
 #i=0; while [ ! -s "${te}0" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
@@ -11899,7 +11899,7 @@ esac
 N=$((N+1))
 
 
-# PTY address allowed to sepcify address parameters but ignored them
+# PTY address allowed to specify address parameters but ignored them
 NAME=PTY_VOIDARG
 case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%pty%*|*%$NAME%*)
@@ -13748,12 +13748,13 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -T 1 STDIO,echo=0 EXEC:cat"
+CMD0="$TRACE $SOCAT $opts -T 1 STDIO,echo=0 EXEC:cat 2>${te}0"
 echo "$CMD0" >$td/test$N.sh
 chmod a+x $td/test$N.sh
-printf "test $F_n $TEST... " $N
 # EXEC need not work with script (musl libc), so use SYSTEM
-$SOCAT /dev/null SYSTEM:$td/test$N.sh,pty 2>"${te}0"
+CMD1="$TRACE $SOCAT $opts /dev/null SYSTEM:$td/test$N.sh,pty,$PTYOPTS"
+printf "test $F_n $TEST... " $N
+$CMD1  2>"${te}1"
 rc0=$?
 if [ $rc0 -eq 0 ]; then
     $PRINTF "$OK\n"
@@ -13762,6 +13763,8 @@ else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
     cat "${te}0"
+    echo "$CMD1"
+    cat "${te}1"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 fi
@@ -14562,8 +14565,8 @@ if ! kill $pid1 2>"$tk1"; then
     listCANT="$listCANT $N"
 else
 # Second, set accept-timeout and see if socat exits before kill
-CMD2="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr,accept-timeout=1 PIPE" >"$te1" &
-$CMD2 >"$te1" 2>&1 </dev/null &
+CMD2="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr,accept-timeout=1 PIPE" &
+$CMD2 >"$te2" 2>&1 </dev/null &
 pid2=$!
 sleep 1
 if kill $pid2 2>"$tk2"; then
