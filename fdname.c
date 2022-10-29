@@ -162,6 +162,18 @@ int statname(const char *file, int fd, int filetype, FILE *outfile,
       return -1;
 #endif /* !_WITH_SOCKET */
       break;
+#ifdef S_IFDOOR
+   case (S_IFDOOR>>12):	/* 13, door (Solaris) */
+      fputs("door", outfile);
+      if (file) fprintf(outfile, " %s", file);
+      break;
+#endif /* HAVE_MACRO_S_IFDOOR */
+#ifdef S_IFPORT
+   case (S_IFPORT>>12):	/* 14, event port (Solaris) */
+      fputs("event_port", outfile);
+      if (file) fprintf(outfile, " %s", file);
+      break;
+#endif /* HAVE_MACRO_S_IFPORT */
    }
    /* ioctl() */
    fputc('\n', outfile);
@@ -243,12 +255,21 @@ int sockname(int fd, FILE *outfile, char style) {
 #if defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)
    optlen = sizeof(proto);
 #ifdef SO_PROTOCOL
-   Getsockopt(fd, SOL_SOCKET, SO_PROTOCOL,   &proto,         &optlen);
+   rc = Getsockopt(fd, SOL_SOCKET, SO_PROTOCOL,   &proto,         &optlen);
 #elif defined(SO_PROTOTYPE)
-   Getsockopt(fd, SOL_SOCKET, SO_PROTOTYPE,  &proto,         &optlen);
+   rc = Getsockopt(fd, SOL_SOCKET, SO_PROTOTYPE,  &proto,         &optlen);
 #endif
+   if (rc < 0) {
+      Warn5("getsocktop(%d, SOL_SOCKET, "
+#ifdef SO_PROTOCOL
+	    "SO_PROTOCOL"
+#else
+	    "SO_PROTOTYPE"
+#endif
+	    ", &%p, {"F_Zu"}): errno=%d (%s)", fd, &proto, optlen, errno, strerror(errno));
+   }
+   proto = 0;
 #endif /* defined(SO_PROTOCOL) || defined(SO_PROTOTYPE) */
-
    optlen = sizeof(opttype);
    Getsockopt(fd, SOL_SOCKET, SO_TYPE,       &opttype,       &optlen);
    sockettype(opttype, typename, sizeof(typename));

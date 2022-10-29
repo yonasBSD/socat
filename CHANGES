@@ -76,6 +76,8 @@ Features:
 	Filan prints target of symlink when appropriate
 	Test: FILANSYMLINK
 
+	Filan now recognizes and prints Solaris doors and event ports.
+
 Testing:
 	Unset SOCAT_MAIN_WAIT on informational Socat calls
 
