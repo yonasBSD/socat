@@ -8996,7 +8996,8 @@ da="test$N $(date) $RANDOM XXXX"
 sh="$td/test$N-sed.sh"
 echo 'sed s/XXXX/YYYY/' >"$sh"
 chmod a+x "$sh"
-CMD1="$TRACE $SOCAT $opts IP4-RECVFROM:$ts1p,reuseaddr,broadcast exec:$sh"
+# EXEC need not work with script (musl libc), so use SYSTEM
+CMD1="$TRACE $SOCAT $opts IP4-RECVFROM:$ts1p,reuseaddr,broadcast SYSTEM:$sh"
 #CMD2="$TRACE $SOCAT $opts - IP4-BROADCAST:$ts1"
 CMD2="$TRACE $SOCAT $opts - IP4-DATAGRAM:$ts1,broadcast"
 printf "test $F_n $TEST... " $N
@@ -9871,6 +9872,7 @@ N=$((N+1))
 #   Cygwin:		20	unlimit	256	64
 #   AIX:		32767	65534		65534
 #   SunOS 8:		20			1024
+#   musl libc:		1024
 NAME=EXCEED_FOPEN_MAX
 case "$TESTS" in
 *%$N%*|*%functions%*|*%maxfds%*|*%$NAME%*)
@@ -9891,11 +9893,16 @@ if [ -z "$FOPEN_MAX" ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-OPEN_FILES=$FOPEN_MAX	# more than the highest FOPEN_MAX
-#i=3; while [ "$i" -lt "$OPEN_FILES" ]; do
-#    REDIR="$REDIR $i>&2"
-#    i=$((i+1))
-#done
+    if [ $FOPEN_MAX -lt 270 ]; then
+	OPEN_FILES=$FOPEN_MAX	# more than the highest FOPEN_MAX
+    else
+	OPEN_FILES=269 		# bash tends to SIGSEGV on higher value
+				# btw, the test is obsolete anyway
+    fi
+i=3; while [ "$i" -lt "$OPEN_FILES" ]; do
+    REDIR="$REDIR $i>&2"
+    i=$((i+1))
+done
 #echo "$REDIR"
 #testecho "$N" "$TEST" "" "pipe" "$opts -T 3" "" 1 
 #set -vx
@@ -13732,7 +13739,8 @@ CMD0="$TRACE $SOCAT $opts -T 1 STDIO,echo=0 EXEC:cat"
 echo "$CMD0" >$td/test$N.sh
 chmod a+x $td/test$N.sh
 printf "test $F_n $TEST... " $N
-$SOCAT /dev/null EXEC:$td/test$N.sh,pty 2>"${te}0"
+# EXEC need not work with script (musl libc), so use SYSTEM
+$SOCAT /dev/null SYSTEM:$td/test$N.sh,pty 2>"${te}0"
 rc0=$?
 if [ $rc0 -eq 0 ]; then
     $PRINTF "$OK\n"

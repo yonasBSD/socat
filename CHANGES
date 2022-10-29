@@ -8,6 +8,12 @@ Testing:
 
 	Fixed logging of test 220 TUNINTERFACE
 
+	Musl libc refuses to execve() shell scripts, 2 tests needed to be
+	adapted.
+
+	Musl libc has FOPEN_MAX=1000 which made bash dumping core on test
+	EXCEED_FOPEN_MAX.
+
 ####################### V 1.7.4.3:
 
 Corrections:
