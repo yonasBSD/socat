@@ -85,6 +85,10 @@ Features:
 	Filan prints target of symlink when appropriate
 	Test: FILANSYMLINK
 
+	VSOCK-LISTEN now generates environment variables SOCAT_PEERADDR,
+	SOCAT_PEERPORT, SOCAT_SOCKADDR, SOCAT_SOCKPORT
+	New address aliases VSOCK, VSOCK-L
+
 Documentation:
 	Fixed typo in doc/socat-tun.html and link in README.
 	Thanks to William Suthers for reporting.
@@ -127,6 +131,9 @@ Testing:
 	On RHEL-9 and Ubuntu-22.04 there is SCTP support for development but
 	not in kernel. test.sh now detects this situation and reacts with
 	warnings.
+
+	VSOCK loopback still does not seem to work even in kernel 5.13, so just
+	issue warning on "No such device".
 
 ####################### V 1.7.4.3:
 

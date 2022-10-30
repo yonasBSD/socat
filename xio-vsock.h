@@ -8,4 +8,8 @@
 extern const struct addrdesc addr_vsock_connect;
 extern const struct addrdesc addr_vsock_listen;
 
+extern int xiosetsockaddrenv_vsock(int idx, char *namebuff, size_t namelen,
+			       char *valuebuff, size_t valuelen,
+			       struct sockaddr_vm *sa, int ipproto);
+
 #endif /* !defined(__xio_vsock_h_included) */

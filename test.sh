@@ -14736,6 +14736,10 @@ elif [ $rc1 -ne 0 ] && [ "$UNAME" = Linux ] && ! [[ $UNAME_R =~ ^[6-9]\.* ]] && 
     $PRINTF "${YELLOW}works only on Linux from 5.6${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+elif grep -q "No such device" "${te}1"; then
+    $PRINTF "${YELLOW}Loopback does not work${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 elif [ $rc1 -ne 0 ]; then
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2

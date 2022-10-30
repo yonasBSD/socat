@@ -14,6 +14,9 @@
 #include "xio-socket.h"
 #include "xio-named.h"
 #include "xio-unix.h"
+#if WITH_VSOCK
+#include "xio-vsock.h"
+#endif
 #if WITH_IP4
 #include "xio-ip4.h"
 #endif /* WITH_IP4 */
@@ -2069,8 +2072,21 @@ int xiosetsockaddrenv(const char *lr,
 	 xiosetenv(namebuff, valuebuff, 1, NULL);
 	 namebuff[strlen(lr)] = '\0';  ++idx;
       } while (result > 0);
-      break; 
+      break;
 #endif /* WITH_IP6 */
+#if WITH_VSOCK
+   case PF_VSOCK:
+      strcpy(namebuff, lr);
+      do {
+	 result =
+	    xiosetsockaddrenv_vsock(idx, strchr(namebuff, '\0'), XIOSOCKADDRENVLEN-strlen(lr),
+				  valuebuff, XIOSOCKADDRENVLEN,
+				  &sau->vm, proto);
+	 xiosetenv(namebuff, valuebuff, 1, NULL);
+	 namebuff[strlen(lr)] = '\0';  ++idx;
+      } while (result > 0);
+      break; 
+#endif /* WITH_VSOCK */
 #if LATER
    case PF_PACKET:
       result = xiosetsockaddrenv_packet(lr, (void *)sau, proto); break;

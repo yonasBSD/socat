@@ -308,9 +308,11 @@ const struct addrname addressnames[] = {
    { "unix-sendto",	&xioaddr_unix_sendto },
 #endif
 #if WITH_VSOCK
+   { "vsock",		&addr_vsock_connect },
    { "vsock-connect",	&addr_vsock_connect },
 #endif
 #if WITH_VSOCK && WITH_LISTEN
+   { "vsock-l",		&addr_vsock_listen },
    { "vsock-listen",	&addr_vsock_listen },
 #endif
 #else /* !0 */
