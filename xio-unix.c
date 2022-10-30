@@ -286,7 +286,7 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
       if (result != 0) {
 	 char infobuff[256];
 	 /* we caller must handle this */
-	 Msg3(level, "connect(, %s, "F_Zd"): %s",
+	 Msg3(level, "connect(, %s, "F_socklen"): %s",
 	      sockaddr_info((struct sockaddr *)&them, themlen, infobuff, sizeof(infobuff)),
 	      themlen, strerror(errno));
       }

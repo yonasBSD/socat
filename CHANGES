@@ -44,6 +44,8 @@ Corrections:
 	always the signal handler messages socket pair open. This fix avoids
 	this socketpair in standalone Filan.
 
+	Corrected printf format for type socklen_t in two places.
+
 Porting:
 	OpenSSL, at least 1.1 on Ubuntu, crashed with SIGSEGV under certain
 	conditions: client connection to server with certificate with empty
@@ -128,9 +130,9 @@ Testing:
 	UNIX_TO_FILE UNIX_TO_ORPHANED GOPEN_TO_DENIED GOPEN_TO_DIRECTORY
 	GOPEN_TO_ORPHANED 
 
-	On RHEL-9 and Ubuntu-22.04 there is SCTP support for development but
-	not in kernel. test.sh now detects this situation and reacts with
-	warnings.
+	On RHEL-9 SCTP support requires installation of package
+	kernel-modules-extra. test.sh now detects when SCTP is missing in
+	kernel and reacts with warnings instead of errors.
 
 	VSOCK loopback still does not seem to work even in kernel 5.13, so just
 	issue warning on "No such device".

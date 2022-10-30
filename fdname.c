@@ -266,7 +266,7 @@ int sockname(int fd, FILE *outfile, char style) {
 #else
 	    "SO_PROTOTYPE"
 #endif
-	    ", &%p, {"F_Zu"}): errno=%d (%s)", fd, &proto, optlen, errno, strerror(errno));
+	    ", &%p, {"F_socklen"}): errno=%d (%s)", fd, &proto, optlen, errno, strerror(errno));
    }
    proto = 0;
 #endif /* defined(SO_PROTOCOL) || defined(SO_PROTOTYPE) */

@@ -13910,7 +13910,7 @@ da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts -u FILE:$td/ab\"cd FILE:/dev/null"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0"
-if grep -q "syntax error" "${te}0"; then
+if grep -q -i -e "syntax error" -e "unexpected end" "${te}0"; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0" >&2; fi
     if [ "$debug" ]; then cat ${te} >&2; fi
@@ -15323,19 +15323,19 @@ case "$entry" in
     denied)      pid0=; rm -f $ts; touch $ts; chmod 000 $ts ;;
     directory)   pid0=; mkdir -p $ts ;;
     orphaned)    pid0= 	# the remainder of a UNIX socket in FS
-		 $SOCAT $opts UNIX-LISTEN:$ts,unlink-close=0 /dev/null >${tf}0 2>${te}0 &
+		 SOCAT_MAIN_WAIT= $SOCAT $opts UNIX-LISTEN:$ts,unlink-close=0 /dev/null >${tf}0 2>${te}0 &
 		 waitunixport $ts 1
-		 $SOCAT $opts /dev/null UNIX-CONNECT:$ts
+		 SOCAT_MAIN_WAIT= $SOCAT $opts /dev/null UNIX-CONNECT:$ts >>${tf}0 2>>${te}0
 		 ;;
     file)        pid0=; rm -f $ts; touch $ts ;;
     stream)      CMD0="$SOCAT $opts UNIX-LISTEN:$ts /dev/null"
-		 $CMD0 >${tf}0 2>${te}0 &
+		 SOCAT_MAIN_WAIT= $CMD0 >${tf}0 2>${te}0 &
 		 pid0=$! ;;
     dgram)       CMD0="$SOCAT $opts -u UNIX-RECV:$ts /dev/null"
-		 $CMD0 >${tf}0 2>${te}0 &
+		 SOCAT_MAIN_WAIT= $CMD0 >${tf}0 2>${te}0 &
 		 pid0=$! ;;
-    seqpacket)   CMD0="$SOCAT $opts UNIX-LISTEN:$ts,socktype=$SOCK_SEQPACKET= /dev/null"
-		 $CMD0 >${tf}0 2>${te}0 &
+    seqpacket)   CMD0="$SOCAT $opts UNIX-LISTEN:$ts,socktype=$SOCK_SEQPACKET /dev/null"
+		 SOCAT_MAIN_WAIT= $CMD0 >${tf}0 2>${te}0 &
 		 pid0=$! ;;
 esac
 [ "$pid0" ] && waitunixport $ts 1
@@ -15628,8 +15628,7 @@ TEST="$NAME: capability to display symlink target"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.file"
 tl="$td/test$N.symlink"
-te1="$td/test$N.stderr1"	# socat
-te2="$td/test$N.stderr2"	# filan
+te="$td/test$N.stderr"
 printf "test $F_n $TEST... " $N
 touch "$tf"
 ln -s "$tf" "$tl"
