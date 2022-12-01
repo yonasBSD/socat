@@ -4,6 +4,11 @@ Corrections:
 	detailled information about the error with recvmsg(). Error return of
 	this function is now logged as Info instead of Warn.
 
+	Tests of the correction of the "IP_ADD_SOURCE_MEMBERSHIP but not struct
+	ip_mreq_source" issue left an #undef in xiosysincludes.h that disabled
+	the ip-add-source-membership option.
+	Thanks to Benjamin Poirier for sending a patch.
+
 Coding:
 	New Environment variable SOCAT_TRANSFER_WAIT that Socat sleep before
 	starting the data transfer loop. Useful, e.g., to accumulate multiple
