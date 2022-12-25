@@ -582,7 +582,9 @@ if test -n "$WITH_OPENSSL" -a "$sc_cv_have_openssl_ssl_h" = 'yes'; then
       else
 	LIBS="$LIBS -lssl -lcrypto"
       fi
-      AC_TRY_LINK([#include <openssl/ssl.h>],
+      AC_TRY_LINK([#include <openssl/ssl.h>
+      #include <openssl/err.h>
+      ],
        [SSL_library_init();ERR_error_string()],
        [sc_cv_have_libssl='yes'],
        [ LIBS="$LIBS -lcrypto"
