@@ -826,12 +826,14 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 	    if (result < 0) {
 	       Msg4(level, "xiopoll({%d,POLLOUT|POLLERR},,{"F_tv_sec"."F_tv_usec"): %s",
 		    xfd->fd, timeout.tv_sec, timeout.tv_usec, strerror(errno));
+	       Close(xfd->fd);
 	       return STAT_RETRYLATER;
 	    }
 	    if (result == 0) {
 	       Msg2(level, "connecting to %s: %s",
 		    sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
 		    strerror(ETIMEDOUT));
+	       Close(xfd->fd);
 	       return STAT_RETRYLATER;
 	    }
 	    if (writefd.revents & POLLERR) {
@@ -847,6 +849,7 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 		     xfd->fd, sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
 		     themlen, strerror(errno));
 #endif
+	       Close(xfd->fd);
 	       return STAT_RETRYLATER;
 	    }
 	    /* otherwise OK or network error */
@@ -854,6 +857,7 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 	    if (result != 0) {
 	       Msg2(level, "getsockopt(%d, SOL_SOCKET, SO_ERROR, ...): %s",
 		    xfd->fd, strerror(err));
+	       Close(xfd->fd);
 	       return STAT_RETRYLATER;
 	    }
 	    Debug2("getsockopt(%d, SOL_SOCKET, SO_ERROR, { %d }) -> 0",
@@ -862,6 +866,7 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 	       Msg4(level, "connect(%d, %s, "F_Zd"): %s",
 		     xfd->fd, sockaddr_info(them, themlen, infobuff, sizeof(infobuff)),
 		     themlen, strerror(err));
+	       Close(xfd->fd);
 	       return STAT_RETRYLATER;
 	    }
 	    Fcntl_l(xfd->fd, F_SETFL, fcntl_flags);
