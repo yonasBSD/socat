@@ -1,4 +1,9 @@
 ﻿
+Corrections:
+	On connect() failure and in some other situations Socat tries to get
+	detailled information about the error with recvmsg(). Error return of
+	this function is now logged as Info instead of Warn.
+
 Coding:
 	New Environment variable SOCAT_TRANSFER_WAIT that Socat sleep before
 	starting the data transfer loop. Useful, e.g., to accumulate multiple

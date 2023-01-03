@@ -1577,7 +1577,7 @@ int xiogetpacketsrc(int fd, struct msghdr *msgh, int flags) {
    msgh->msg_flags = 0;
 #endif
    if (Recvmsg(fd, msgh, flags) < 0) {
-      Warn1("recvmsg(): %s", strerror(errno));
+      Info1("recvmsg(): %s", strerror(errno));
       return STAT_RETRYLATER;
    }
    return STAT_OK;
