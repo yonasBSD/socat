@@ -25,6 +25,9 @@ Corrections:
 	Filan: If IP protocol type cannot be retrieved, display at least the
 	socket type
 
+	Filan: Fixed diag_set() call in filan_main.c, bug popped up with C23.
+	Thanks to Cristian Rodríguez from openSUSE for reporting this issue.
+
 Coding:
 	New Environment variable SOCAT_TRANSFER_WAIT that Socat sleep before
 	starting the data transfer loop. Useful, e.g., to accumulate multiple
