@@ -49,6 +49,11 @@ Corrections:
 	derived from option commonname or rom target server name. This is not
 	useful with IP addresses, which Socat now checks and avoids.
 
+	Socat options -L and -W create lock files using mkstemp(), so they had
+	permissions 600. There does not seem to be a good reason for this
+	restrictive mode. Furthermore Silla Rizzoli experienced that Minicom
+	ignores lock files with mode 600, so it is set to 644 now.
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)
