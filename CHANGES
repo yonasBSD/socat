@@ -54,6 +54,8 @@ Corrections:
 	restrictive mode. Furthermore Silla Rizzoli experienced that Minicom
 	ignores lock files with mode 600, so it is set to 644 now.
 
+	Procan tries to find out VSOCK CID only when running as root
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)
