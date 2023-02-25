@@ -164,7 +164,7 @@ int xioshutdown(xiofile_t *sock, int how) {
    }
 #if WITH_TERMIOS
    if (sock->stream.ttyvalid) {
-      if (Tcsetattr(sock->stream.fd, 0, &sock->stream.savetty) < 0) {
+      if (Tcsetattr(sock->stream.fd, TCSAFLUSH, &sock->stream.savetty) < 0) {
 	 Warn2("cannot restore terminal settings on fd %d: %s",
 	       sock->stream.fd, strerror(errno));
       }

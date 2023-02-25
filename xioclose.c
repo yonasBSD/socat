@@ -44,7 +44,7 @@ int xioclose1(struct single *pipe) {
 #endif /* WITH_OPENSSL */
 #if WITH_TERMIOS
    if (pipe->ttyvalid) {
-      if (Tcsetattr(pipe->fd, 0, &pipe->savetty) < 0) {
+      if (Tcsetattr(pipe->fd, TCSANOW, &pipe->savetty) < 0) {
 	 Warn2("cannot restore terminal settings on fd %d: %s",
 	       pipe->fd, strerror(errno));
       }

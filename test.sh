@@ -4210,11 +4210,20 @@ N=$((N+1))
 NAME=CHILDDEFAULT
 case "$TESTS" in
 *%$N%*|*%functions%*|*%$NAME%*)
-if ! eval $NUMCOND; then :; else
+if ! eval $NUMCOND; then :
+elif ! a=$(testfeats STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testaddrs STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
 TEST="$NAME: child process default properties"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
-CMD="$TRACE $SOCAT $opts -u exec:$PROCAN -"
+CMD="$TRACE $SOCAT $opts -u EXEC:$PROCAN -"
 printf "test $F_n $TEST... " $N
 $CMD >$tf 2>$te
 MYPID=`expr "\`grep "process id =" $tf\`" : '[^0-9]*\([0-9]*\).*'`
@@ -4227,12 +4236,14 @@ if [ "$MYPID" = "$MYPPID" -o "$MYPID" = "$MYPGID" -o "$MYPID" = "$MYSID" -o \
 then
     $PRINTF "$FAILED:\n"
     echo "$CMD"
-    cat "$te"
+    cat "$te" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-   numOK=$((numOK+1))
+    if [ "$VERBOSE" ]; then echo "$CMD"; fi
+    if [ "$DEBUG" ];   then cat "${te}" >&2; fi
+    numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND
 esac
@@ -15838,6 +15849,67 @@ fi # NUMCOND
 esac
 PORT=$((PORT+1))
 N=$((N+1))
+
+
+# Test if the settings of the terminal that Socat is invoked in are restored
+# on termination.
+# This failed on Open-Solaris family OSes up to 1.7.4.4
+NAME=RESTORE_TTY
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%termios%*|*%tty%*|*%$NAME%*)
+TEST="$NAME: Restoring of terminal settings"
+# With an outer Socat command create a new pty and a bash in it.
+# In this bash store the current terminal settings, then invoke a temporary
+# inner Socat command that changes the term to raw mode and terminates.
+# When the terminal settings afterwards are the same as before the call the
+# test succeeded.
+if ! eval $NUMCOND; then :
+elif ! $(type stty >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}stty not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testfeats STDIO SYSTEM PTY GOPEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testaddrs - STDIO SYSTEM GOPEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions cfmakeraw pty setsid ctty stderr) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+te="$td/test$N.stderr"
+tx0="$td/test$N.stty0"
+tx1="$td/test$N.stty1"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT $opts -lp outersocat - SYSTEM:\"stty\ >$tx0;\ $SOCAT\ -\,cfmakeraw\ /dev/nul\l >${te};\ stty\ >$tx1\",pty,setsid,ctty,stderr"
+printf "test $F_n $TEST... " $N
+eval "$CMD" >/dev/null 2>${te}.outer
+rc=$?
+if diff $tx0 $tx1 >$tdiff 2>&1; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD &"; fi
+    if [ "$DEBUG" ];   then cat "${te}" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD"
+    cat "${te}" >&2
+    cat "${te}.outer" >&2
+    cat $tdiff >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
 
 # end of common tests
 

@@ -40,6 +40,11 @@ Corrections:
 	Option stderr on addresses EXEC and SYSTEM uses a temporary FD. It
 	lacked the FD_CLOEXEC setting and thus leakt into child processes.
 
+	Restoring of STDIO tty settings failed on Solaris type operating
+	systems.
+	Thanks to Gordon W.Ross for reporting and fixing this issue.
+	Test: RESTORE_TTY
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)
