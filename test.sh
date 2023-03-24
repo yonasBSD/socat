@@ -2171,7 +2171,7 @@ waitip4proto () {
 	esac
 	[ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
 	  \( \( $logic -eq 0 \) -a -z "$l" \) ] && return 0
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2217,7 +2217,7 @@ waitip6proto () {
 	esac
 	[ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
 	  \( \( $logic -eq 0 \) -a -z "$l" \) ] && return 0
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2294,7 +2294,7 @@ waittcp4port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2338,7 +2338,7 @@ waitudp4port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2381,7 +2381,7 @@ waitsctp4port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2421,7 +2421,7 @@ waittcp6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2465,7 +2465,7 @@ waitudp6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2504,7 +2504,7 @@ waitsctp6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -2536,7 +2536,7 @@ waitfile () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	psleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -4564,7 +4564,11 @@ if ! echo "$da" |$OD_C |diff - "$tf" >"$tdiff"; then
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "  $CMD2 &"
+	echo "  $CMD"
+    fi
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
 fi
@@ -6622,23 +6626,28 @@ testptywaitslave () {
     local da="test$N $(date) $RANDOM"
 printf "test $F_n $TEST... " $N
 # first generate a pty, then a socket
-($TRACE $SOCAT $opts -lpsocat1 pty,$PTYTYPE,pty-wait-slave,link="$tp" unix-listen:"$ts" 2>"$te1"; rm -f "$tp") 2>/dev/null &
+($TRACE $SOCAT $opts -lpsocat1 PTY,$PTYTYPE,pty-wait-slave,link="$tp" UNIX-LISTEN:"$ts" 2>"$te1"; rm -f "$tp") 2>/dev/null &
 pid=$!
 waitfile "$tp"
 # if pty was non-blocking, the socket is active, and socat1 will term
-$TRACE $SOCAT $opts -T 10 -lpsocat2 file:/dev/null unix-connect:"$ts" 2>"$te2"
+$TRACE $SOCAT $opts -T 10 -lpsocat2 FILE:/dev/null UNIX-CONNECT:"$ts" 2>"$te2"
 # if pty is blocking, first socat is still active and we get a connection now
 #((echo "$da"; sleep 2) |$TRACE $SOCAT -lpsocat3 $opts - file:"$tp",$PTYOPTS2 >"$tf" 2>"$te3") &
-( (waitfile "$ts"; echo "$da"; sleep 1) |$TRACE $SOCAT -lpsocat3 $opts - file:"$tp",$PTYOPTS2 >"$tf" 2>"$te3") &
-waitfile "$ts"
+( (waitfile "$ts" 1 20; echo "$da"; sleep 1) |$TRACE $SOCAT -lpsocat3 $opts - FILE:"$tp",$PTYOPTS2 >"$tf" 2>"$te3") &
+waitfile "$ts" 1 20
 # but we need an echoer on the socket
-$TRACE $SOCAT $opts -lpsocat4 unix:"$ts" echo 2>"$te4"
+$TRACE $SOCAT $opts -lpsocat4 UNIX:"$ts" ECHO 2>"$te4"
 # now $tf file should contain $da
 #kill $pid 2>/dev/null
 wait
 #
 if echo "$da" |diff - "$tf"> "$tdiff"; then
     $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+        echo "  $TRACE $SOCAT $opts -T 10 -lpsocat2 FILE:/dev/null UNIX-CONNECT:\"$ts\"" 2>"$te2"
+	echo "  $TRACE $SOCAT $opts -lpsocat1 PTY,$PTYTYPE,pty-wait-slave,link=\"$tp\" UNIX-LISTEN:\"$ts\"" >&2
+	echo "  $TRACE $SOCAT -lpsocat3 $opts - file:\"$tp\",$PTYOPTS2" >&2
+    fi
     numOK=$((numOK+1))
 else
     $PRINTF "${YELLOW}FAILED${NORMAL}\n"
