@@ -87,6 +87,8 @@ Testing:
 	Speeded up wait loops; more addresses in upper case; more tests with
 	command printing ($VERBOSE)
 
+	test.sh: Check if ports are free before using them for tests
+
 ####################### V 1.7.4.4:
 
 Corrections:

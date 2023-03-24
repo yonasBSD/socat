@@ -159,7 +159,7 @@ LOCALHOST6="[::1]"
 #PROTO=$(awk '{print($2);}' /etc/protocols |sort -n |tail -n 1)
 #PROTO=$(($PROTO+1))
 PROTO=$((144+RANDOM/2048))
-PORT=12002
+_PORT=12001
 SOURCEPORT=2002
 REUSEADDR=reuseaddr 	# use this with LISTEN addresses and bind options
 
@@ -2268,7 +2268,7 @@ waittcp4port () {
     local vx=+; case $- in *vx*) set +vx; vx=-; esac	# no tracing here
     [ "$logic" ] || logic=1
     [ "$timeout" ] || timeout=5
-    while [ $timeout -gt 0 ]; do
+    while true; do
 	case "$UNAME" in
 	Linux) if [ "$SS" ]; then
 	       l=$($SS -l -n -t |grep "^LISTEN .*:$port\>")
@@ -2293,6 +2293,10 @@ waittcp4port () {
 	    \( \( $logic -eq 0 \) -a -z "$l" \) ]; then
 	    set ${vx}vx
 	    return 0
+	fi
+	if [ $timeout -le 0 ]; then
+	    set ${vx}vx
+	    return 1
 	fi
 	psleep $val_t
 	timeout=$((timeout-1))
@@ -2618,6 +2622,8 @@ testecho "$N" "$TEST" "stdin" "stdout" "$opts -u"
 esac
 N=$((N+1))
 
+#------------------------------------------------------------------------------
+# Begin of common tests
 
 NAME=UNPIPESTDIO
 case "$TESTS" in
@@ -2964,6 +2970,12 @@ fi
 esac
 N=$((N+1))
 
+newport() {
+    _PORT=$((_PORT+1))
+    while eval wait${1}port $_PORT 1 0 2>/dev/null; do _PORT=$((_PORT+1)); done
+    #echo "PORT=$_PORT" >&2
+    PORT=$_PORT
+}
 
 NAME=TCPSELF
 case "$TESTS" in
@@ -2975,11 +2987,11 @@ elif [ "$UNAME" != Linux ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
+    newport tcp4 	# provide free port number in $PORT
     #ts="127.0.0.1:$tsl"
     testecho "$N" "$TEST" "" "tcp:$SECONDADDR:$PORT,sp=$PORT,bind=$SECONDADDR,reuseaddr" "$opts"
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -2993,11 +3005,11 @@ if [ "$UNAME" != Linux ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-    testecho "$N" "$TEST" "" "udp:$SECONDADDR:$PORT,sp=$PORT,bind=$SECONDADDR" "$opts"
+    newport udp4 	# provide free port number in $PORT
+    testecho "$N" "$TEST" "" "UDP:$SECONDADDR:$PORT,sp=$PORT,bind=$SECONDADDR" "$opts"
 fi
 esac
 fi # NUMCOND
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -3016,10 +3028,10 @@ elif ! testfeats udp ip6 >/dev/null || ! runsudp6 >/dev/null; then
     listCANT="$listCANT $N"
 else
     tf="$td/file$N"
-    testecho "$N" "$TEST" "" "udp6:[::1]:$PORT,sp=$PORT,bind=[::1]" "$opts"
+    newport udp6 	# provide free port number in $PORT
+    testecho "$N" "$TEST" "" "UDP6:[::1]:$PORT,sp=$PORT,bind=[::1]" "$opts"
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -3029,12 +3041,11 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%$NAME%*)
 TEST="$NAME: echo via two unidirectional UDP IPv4 sockets"
 tf="$td/file$N"
-p1=$PORT
-p2=$((PORT+1))
-testecho "$N" "$TEST" "" "udp:127.0.0.1:$p2,sp=$p1!!udp:127.0.0.1:$p1,sp=$p2" "$opts"
+newport udp4; PORT1=$PORT 	# get free port
+newport udp4; PORT2=$PORT 	# get free port
+testecho "$N" "$TEST" "" "UDP:127.0.0.1:$PORT2,sp=$PORT1!!UDP:127.0.0.1:$PORT1,sp=$PORT2" "$opts"
 esac
 fi # NUMCOND
-PORT=$((PORT+2))
 N=$((N+1))
 
 
@@ -3098,7 +3109,7 @@ TEST="$NAME: echo via connection to TCP V4 socket"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP4-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -3129,7 +3140,6 @@ fi
 kill $pid1 2>/dev/null
 wait ;;
 esac
-PORT=$((PORT+1))
 fi # NUMCOND
 N=$((N+1))
 
@@ -3148,7 +3158,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP6-listen:$tsl,$REUSEADDR PIPE"
@@ -3178,7 +3188,6 @@ fi
 kill $pid 2>/dev/null
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #set +vx
 
@@ -3200,7 +3209,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP-listen:$tsl,pf=ip4,$REUSEADDR PIPE"
@@ -3230,7 +3239,6 @@ fi
 kill $pid 2>/dev/null
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -3251,7 +3259,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP-listen:$tsl,pf=ip6,$REUSEADDR PIPE"
@@ -3281,7 +3289,6 @@ fi
 kill $pid 2>/dev/null
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # TCP6-LISTEN may also listen for IPv4 connections. Test if option
@@ -3308,7 +3315,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP6-LISTEN:$tsl,ipv6-v6only=0,$REUSEADDR PIPE"
@@ -3338,7 +3345,6 @@ fi
 kill $pid 2>/dev/null
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 #set -vx
@@ -3365,7 +3371,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP6-listen:$tsl,ipv6-v6only=1,$REUSEADDR PIPE"
@@ -3393,7 +3399,6 @@ kill $pid; wait
 wait
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #set +vx
 
@@ -3418,7 +3423,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -3448,7 +3453,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=ENV_LISTEN_6
@@ -3468,7 +3472,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -3498,7 +3502,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=LISTEN_OPTION_4
@@ -3522,7 +3525,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -4 TCP-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -3552,7 +3555,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=LISTEN_OPTION_6
@@ -3572,7 +3574,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -6 TCP-listen:$tsl,$REUSEADDR PIPE"
@@ -3603,7 +3605,6 @@ kill $pid 2>/dev/null; wait
 wait
 fi # feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=LISTEN_PF_IP4
@@ -3627,7 +3628,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -6 TCP-LISTEN:$tsl,pf=ip4,$REUSEADDR PIPE"
@@ -3657,7 +3658,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=LISTEN_PF_IP6
@@ -3677,7 +3677,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -4 TCP-LISTEN:$tsl,pf=ip6,$REUSEADDR PIPE"
@@ -3707,7 +3707,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -3719,7 +3718,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport udp4; tsl=$PORT
 ts="$LOCALHOST:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP4-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -3754,7 +3753,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -3771,7 +3769,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport udp6; tsl=$PORT
 ts="$LOCALHOST6:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP6-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -3802,7 +3800,6 @@ else
 fi
 fi ;; # ! testfeats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -4388,6 +4385,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# provide free port number in $PORT
 init_openssl_s_server
 CMD2="$TRACE $SOCAT $opts exec:'openssl s_server $OPENSSL_S_SERVER_4 -accept "$PORT" -quiet -cert testsrv.pem' pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
@@ -4416,7 +4414,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -4439,6 +4436,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0 pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -4464,7 +4462,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLLISTEN_TCP6
@@ -4486,6 +4483,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp6 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip6,$REUSEADDR,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0 pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST6:$PORT,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -4511,7 +4509,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -4547,6 +4544,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+case $RUNS in tcp4|tcp6) newport $RUNS;; esac
 CMD2="$TRACE $SOCAT $opts \"$PEERADDR\" EXEC:'$OD_C'"
 CMD="$TRACE $SOCAT -T1 $opts -t 1 - $TESTADDR"
 printf "test $F_n $TEST... " $N
@@ -4557,9 +4555,9 @@ echo "$da" |$CMD >$tf 2>"${te}2"
 if ! echo "$da" |$OD_C |diff - "$tf" >"$tdiff"; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
     echo "$CMD2 &"
+    cat "${te}2"
     echo "$CMD"
     cat "${te}1"
-    cat "${te}2"
     cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -4576,7 +4574,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 done <<<"
@@ -4615,6 +4612,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# provide free port number in $PORT
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0 pipe"
 CMD1="$TRACE $SOCAT $opts - OPENSSL:$LOCALHOST:$PORT,verify=1,cafile=testsrv.crt,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -4640,7 +4638,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSL_CLIENTAUTH
@@ -4663,6 +4660,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,verify=1,cert=testsrv.crt,key=testsrv.key,cafile=testcli.crt,$SOCAT_EGD pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,verify=0,cert=testcli.crt,key=testcli.key,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -4688,7 +4686,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSL_FIPS_BOTHAUTH
@@ -4715,6 +4712,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,fips,$SOCAT_EGD,cert=testsrvfips.crt,key=testsrvfips.key,cafile=testclifips.crt pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,fips,verify=1,cert=testclifips.crt,key=testclifips.key,cafile=testsrvfips.crt,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -4740,7 +4738,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -4771,8 +4768,9 @@ else
     success=yes
     for srccompr in '' compress=auto compress=none; do
         for dstcompr in '' compress=auto compress=none; do
-            CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0,$dstcompr pipe"
-            CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD,$srccompr"
+	    newport tcp4 	# provide free port number in $PORT
+            CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0,$dstcompr PIPE"
+            CMD="$TRACE $SOCAT $opts - OPENSSL:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD,$srccompr"
             eval "$CMD2 2>\"${te}1\" &"
             pid=$! # background process id
             waittcp4port $PORT
@@ -4800,7 +4798,6 @@ else
     fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -4823,6 +4820,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 # we have a normal tcp echo listening - so the socks header must appear in answer
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts TCP4-L:$PORT,$REUSEADDR exec:\"./socks4echo.sh\""
 CMD="$TRACE $SOCAT $opts - socks4:$LOCALHOST:32.98.76.54:32109,pf=ip4,socksport=$PORT",socksuser="nobody"
 printf "test $F_n $TEST... " $N
@@ -4848,7 +4846,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=SOCKS4CONNECT_TCP6
@@ -4870,6 +4867,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 # we have a normal tcp echo listening - so the socks header must appear in answer
+newport tcp6 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts TCP6-L:$PORT,$REUSEADDR exec:\"./socks4echo.sh\""
 CMD="$TRACE $SOCAT $opts - socks4:$LOCALHOST6:32.98.76.54:32109,socksport=$PORT",socksuser="nobody"
 printf "test $F_n $TEST... " $N
@@ -4895,7 +4893,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -4918,6 +4915,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 # we have a normal tcp echo listening - so the socks header must appear in answer
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts TCP4-L:$PORT,$REUSEADDR exec:\"./socks4a-echo.sh\""
 CMD="$TRACE $SOCAT $opts - socks4a:$LOCALHOST:localhost:32109,pf=ip4,socksport=$PORT",socksuser="nobody"
 printf "test $F_n $TEST... " $N
@@ -4943,7 +4941,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=SOCKS4ACONNECT_TCP6
@@ -4965,6 +4962,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 # we have a normal tcp echo listening - so the socks header must appear in answer
+newport tcp6 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts TCP6-L:$PORT,$REUSEADDR exec:\"./socks4a-echo.sh\""
 CMD="$TRACE $SOCAT $opts - socks4a:$LOCALHOST6:localhost:32109,socksport=$PORT",socksuser="nobody"
 printf "test $F_n $TEST... " $N
@@ -4990,7 +4988,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -5013,6 +5010,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
+newport tcp4 	# provide free port number in $PORT
 #CMD2="$TRACE $SOCAT tcp4-l:$PORT,crlf SYSTEM:\"read; read; $ECHO \\\"HTTP/1.0 200 OK\n\\\"; cat\""
 CMD2="$TRACE $SOCAT $opts TCP4-L:$PORT,$REUSEADDR,crlf exec:\"/usr/bin/env bash proxyecho.sh\""
 CMD="$TRACE $SOCAT $opts - proxy:$LOCALHOST:127.0.0.1:1000,pf=ip4,proxyport=$PORT"
@@ -5039,7 +5037,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=PROXYCONNECT_TCP6
@@ -5061,6 +5058,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
+newport tcp6 	# provide free port number in $PORT
 #CMD2="$TRACE $SOCAT $opts tcp6-l:$PORT,crlf SYSTEM:\"read; read; $ECHO \\\"HTTP/1.0 200 OK\n\\\"; cat\""
 CMD2="$TRACE $SOCAT $opts TCP6-L:$PORT,$REUSEADDR,crlf exec:\"/usr/bin/env bash proxyecho.sh\""
 CMD="$TRACE $SOCAT $opts - proxy:$LOCALHOST6:127.0.0.1:1000,proxyport=$PORT"
@@ -5087,7 +5085,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -5099,7 +5096,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP4-LISTEN:$tsl,$REUSEADDR exec:$CAT,nofork"
@@ -5130,7 +5127,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -5211,6 +5207,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts -T 1 TCP4-LISTEN:$PORT,$REUSEADDR pipe"
 CMD="$TRACE $SOCAT $opts - tcp4-connect:$LOCALHOST:$PORT"
 printf "test $F_n $TEST... " $N
@@ -5237,7 +5234,6 @@ wait
 #set +vx
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -5296,6 +5292,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
+newport tcp4 	# provide free port number in $PORT
 #CMD2="$TRACE $SOCAT $opts tcp-l:$PORT,crlf SYSTEM:\"read; read; $ECHO \\\"HTTP/1.0 200 OK\n\\\"; cat\""
 CMD2="$TRACE $SOCAT $opts tcp4-l:$PORT,reuseaddr,crlf exec:\"/usr/bin/env bash proxyecho.sh -w 2\""
 CMD="$TRACE $SOCAT $opts - proxy:$LOCALHOST:127.0.0.1:1000,pf=ip4,proxyport=$PORT"
@@ -5322,7 +5319,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -5530,7 +5526,6 @@ MICROS=$SAVEMICS
 TERM="$SAVETERM"
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -5543,14 +5538,17 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4; PORT1=$PORT
+newport tcp4; PORT2=$PORT
+newport tcp4; PORT3=$PORT
 # this is the server in the protected network that we want to reach
-CMD1="$TRACE $SOCAT -lpserver $opts tcp4-l:$PORT,reuseaddr,bind=$LOCALHOST echo"
+CMD1="$TRACE $SOCAT -lpserver $opts TCP4-L:$PORT1,reuseaddr,bind=$LOCALHOST ECHO"
 # this is the double client in the protected network
-CMD2="$TRACE $SOCAT -lp2client $opts tcp4:$LOCALHOST:$((PORT+1)),retry=10,interval=1 tcp4:$LOCALHOST:$PORT"
+CMD2="$TRACE $SOCAT -lp2client $opts TCP4:$LOCALHOST:$PORT2,retry=10,interval=1 TCP4:$LOCALHOST:$PORT1"
 # this is the double server in the outside network
-CMD3="$TRACE $SOCAT -lp2server $opts tcp4-l:$((PORT+2)),reuseaddr,bind=$LOCALHOST tcp4-l:$((PORT+1)),reuseaddr,bind=$LOCALHOST"
+CMD3="$TRACE $SOCAT -lp2server $opts TCP4-L:$PORT3,reuseaddr,bind=$LOCALHOST TCP4-L:$PORT2,reuseaddr,bind=$LOCALHOST"
 # this is the outside client that wants to use the protected server
-CMD4="$TRACE $SOCAT -lpclient $opts -t1 - tcp4:$LOCALHOST:$((PORT+2))"
+CMD4="$TRACE $SOCAT -lpclient $opts -t1 - tcp4:$LOCALHOST:$PORT3"
 printf "test $F_n $TEST... " $N
 eval "$CMD1 2>${te}1 &"
 pid1=$!
@@ -5558,8 +5556,8 @@ eval "$CMD2 2>${te}2 &"
 pid2=$!
 eval "$CMD3 2>${te}3 &"
 pid3=$!
-waittcp4port $PORT 1 &&
-waittcp4port $((PORT+2)) 1
+waittcp4port $PORT1 1 &&
+waittcp4port $PORT3 1
 sleep 1
 echo "$da" |$CMD4 >$tf 2>"${te}4"
 if ! echo "$da" |diff - "$tf" >"$tdiff"; then
@@ -5581,13 +5579,9 @@ kill $pid1 $pid2 $pid3 $pid4 2>/dev/null
 wait
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+3))
 N=$((N+1))
 
 
-#!
-#PORT=10000
-#!
 NAME=OUTBOUNDIN
 case "$TESTS" in
 *%$N%*|*%functions%*|*%openssl%*|*%proxy%*|*%$NAME%*)
@@ -5604,19 +5598,24 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4; PORT1=$PORT
+newport tcp4; PORT2=$PORT
+newport tcp4; PORT3=$PORT
+newport tcp4; PORT4=$PORT
+newport tcp4; PORT5=$PORT
 # this is the server in the protected network that we want to reach
-CMD1="$TRACE $SOCAT $opts -lpserver tcp4-l:$PORT,reuseaddr,bind=$LOCALHOST echo"
+CMD1="$TRACE $SOCAT $opts -lpserver TCP4-L:$PORT1,reuseaddr,bind=$LOCALHOST ECHO"
 # this is the proxy in the protected network that provides a way out
-CMD2="$TRACE $SOCAT $opts -lpproxy tcp4-l:$((PORT+1)),reuseaddr,bind=$LOCALHOST,fork exec:./proxy.sh"
+CMD2="$TRACE $SOCAT $opts -lpproxy TCP4-L:$PORT2,reuseaddr,bind=$LOCALHOST,fork EXEC:./proxy.sh"
 # this is our proxy connect wrapper in the protected network
-CMD3="$TRACE $SOCAT $opts -lpwrapper tcp4-l:$((PORT+2)),reuseaddr,bind=$LOCALHOST,fork proxy:$LOCALHOST:$LOCALHOST:$((PORT+3)),pf=ip4,proxyport=$((PORT+1)),resolve"
+CMD3="$TRACE $SOCAT $opts -lpwrapper TCP4-L:$PORT3,reuseaddr,bind=$LOCALHOST,fork PROXY:$LOCALHOST:$LOCALHOST:$PORT4,pf=ip4,proxyport=$PORT2,resolve"
 # this is our double client in the protected network using SSL
-#CMD4="$TRACE $SOCAT $opts -lp2client ssl:$LOCALHOST:$((PORT+2)),pf=ip4,retry=10,interval=1,cert=testcli.pem,cafile=testsrv.crt,$SOCAT_EGD tcp4:$LOCALHOST:$PORT"
-CMD4="$TRACE $SOCAT $opts -lp2client ssl:$LOCALHOST:$((PORT+2)),pf=ip4,cert=testcli.pem,cafile=testsrv.crt,$SOCAT_EGD tcp4:$LOCALHOST:$PORT"
+#CMD4="$TRACE $SOCAT $opts -lp2client SSL:$LOCALHOST:$PORT3,pf=ip4,retry=10,interval=1,cert=testcli.pem,cafile=testsrv.crt,$SOCAT_EGD TCP4:$LOCALHOST:$PORT1"
+CMD4="$TRACE $SOCAT $opts -lp2client SSL:$LOCALHOST:$PORT3,pf=ip4,cert=testcli.pem,cafile=testsrv.crt,$SOCAT_EGD TCP4:$LOCALHOST:$PORT1"
 # this is the double server in the outside network
-CMD5="$TRACE $SOCAT $opts -lp2server -t1 tcp4-l:$((PORT+4)),reuseaddr,bind=$LOCALHOST ssl-l:$((PORT+3)),pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt"
+CMD5="$TRACE $SOCAT $opts -lp2server -t1 tcp4-l:$PORT5,reuseaddr,bind=$LOCALHOST ssl-l:$PORT4,pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt"
 # this is the outside client that wants to use the protected server
-CMD6="$TRACE $SOCAT $opts -lpclient -t5 - tcp4:$LOCALHOST:$((PORT+4))"
+CMD6="$TRACE $SOCAT $opts -lpclient -t5 - tcp4:$LOCALHOST:$PORT5"
 printf "test $F_n $TEST... " $N
 eval "$CMD1 2>${te}1 &"
 pid1=$!
@@ -5624,15 +5623,15 @@ eval "$CMD2 2>${te}2 &"
 pid2=$!
 eval "$CMD3 2>${te}3 &"
 pid3=$!
-waittcp4port $PORT 1       || $PRINTF "$FAILED: port $PORT\n" >&2 </dev/null
-waittcp4port $((PORT+1)) 1 || $PRINTF "$FAILED: port $((PORT+1))\n" >&2 </dev/null
-waittcp4port $((PORT+2)) 1 || $PRINTF "$FAILED: port $((PORT+2))\n" >&2 </dev/null
+waittcp4port $PORT1 1 || $PRINTF "$FAILED: port $PORT1\n" >&2 </dev/null
+waittcp4port $PORT2 1 || $PRINTF "$FAILED: port $PORT2\n" >&2 </dev/null
+waittcp4port $PORT3 1 || $PRINTF "$FAILED: port $PORT3\n" >&2 </dev/null
 eval "$CMD5 2>${te}5 &"
 pid5=$!
-waittcp4port $((PORT+4)) 1 || $PRINTF "$FAILED: port $((PORT+4))\n" >&2 </dev/null
+waittcp4port $PORT5 1 || $PRINTF "$FAILED: port $PORT5\n" >&2 </dev/null
 echo "$da" |$CMD6 >$tf 2>"${te}6" &
 pid6=$!
-waittcp4port $((PORT+3)) 1 || $PRINTF "$FAILED: port $((PORT+3))\n" >&2 </dev/null
+waittcp4port $PORT4 1 || $PRINTF "$FAILED: port $PORT4\n" >&2 </dev/null
 eval "$CMD4 2>${te}4 &"
 pid4=$!
 wait $pid6
@@ -5662,7 +5661,6 @@ kill $pid1 $pid2 $pid3 $pid4 $pid5 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+5))
 N=$((N+1))
 
 
@@ -5673,7 +5671,7 @@ N=$((N+1))
 # succeeded to establish an SSL connection, it connects with its second client
 # side to the specified (protected) server. all three consecutive connections
 # must function for full success of this test.
-PORT=$((RANDOM+16184))
+#PORT=$((RANDOM+16184))
 #!
 NAME=INTRANETRIPPER
 case "$TESTS" in
@@ -5693,38 +5691,43 @@ tdiff="$td/test$N.diff"
 da1="test$N.1 $(date) $RANDOM"
 da2="test$N.2 $(date) $RANDOM"
 da3="test$N.3 $(date) $RANDOM"
+newport tcp4; PORT1=$PORT
+newport tcp4; PORT2=$PORT
+newport tcp4; PORT3=$PORT
+newport tcp4; PORT4=$PORT
+newport tcp4; PORT5=$PORT
 # this is the server in the protected network that we want to reach
-CMD1="$TRACE $SOCAT $opts -lpserver -t1 tcp4-l:$PORT,reuseaddr,bind=$LOCALHOST,fork echo"
+CMD1="$TRACE $SOCAT $opts -lpserver -t1 tcp4-l:$PORT1,reuseaddr,bind=$LOCALHOST,fork echo"
 # this is the proxy in the protected network that provides a way out
 # note: the proxy.sh script starts one or two more socat processes without
 # setting the program name 
-CMD2="$TRACE $SOCAT $opts -lpproxy -t1 tcp4-l:$((PORT+1)),reuseaddr,bind=$LOCALHOST,fork exec:./proxy.sh"
+CMD2="$TRACE $SOCAT $opts -lpproxy -t1 tcp4-l:$PORT2,reuseaddr,bind=$LOCALHOST,fork exec:./proxy.sh"
 # this is our proxy connect wrapper in the protected network
-CMD3="$TRACE $SOCAT $opts -lpwrapper -t3 tcp4-l:$((PORT+2)),reuseaddr,bind=$LOCALHOST,fork proxy:$LOCALHOST:$LOCALHOST:$((PORT+3)),pf=ip4,proxyport=$((PORT+1)),resolve"
+CMD3="$TRACE $SOCAT $opts -lpwrapper -t3 tcp4-l:$PORT3,reuseaddr,bind=$LOCALHOST,fork proxy:$LOCALHOST:$LOCALHOST:$PORT4,pf=ip4,proxyport=$PORT2,resolve"
 # this is our double client in the protected network using SSL
-CMD4="$TRACE $SOCAT $opts -lp2client -t3 ssl:$LOCALHOST:$((PORT+2)),retry=10,interval=1,cert=testcli.pem,cafile=testsrv.crt,verify,fork,$SOCAT_EGD tcp4:$LOCALHOST:$PORT,forever,interval=0.1"
+CMD4="$TRACE $SOCAT $opts -lp2client -t3 ssl:$LOCALHOST:$PORT3,retry=10,interval=1,cert=testcli.pem,cafile=testsrv.crt,verify,fork,$SOCAT_EGD tcp4:$LOCALHOST:$PORT1,forever,interval=0.1"
 # this is the double server in the outside network
-CMD5="$TRACE $SOCAT $opts -lp2server -t4 tcp4-l:$((PORT+4)),reuseaddr,bind=$LOCALHOST,backlog=3,fork ssl-l:$((PORT+3)),pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt,retry=20,interval=0.5"
+CMD5="$TRACE $SOCAT $opts -lp2server -t4 tcp4-l:$PORT5,reuseaddr,bind=$LOCALHOST,backlog=3,fork ssl-l:$PORT4,pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt,retry=20,interval=0.5"
 # this is the outside client that wants to use the protected server
-CMD6="$TRACE $SOCAT $opts -lpclient -t6 - tcp4:$LOCALHOST:$((PORT+4)),retry=3"
+CMD6="$TRACE $SOCAT $opts -lpclient -t6 - tcp4:$LOCALHOST:$PORT5,retry=3"
 printf "test $F_n $TEST... " $N
 # start the intranet infrastructure
 eval "$CMD1 2>\"${te}1\" &"
 pid1=$!
 eval "$CMD2 2>\"${te}2\" &"
 pid2=$!
-waittcp4port $PORT 1       || $PRINTF "$FAILED: port $PORT\n" >&2 </dev/null
-waittcp4port $((PORT+1)) 1 || $PRINTF "$FAILED: port $((PORT+1))\n" >&2 </dev/null
+waittcp4port $PORT1 1 || $PRINTF "$FAILED: port $PORT1\n" >&2 </dev/null
+waittcp4port $PORT2 1 || $PRINTF "$FAILED: port $PORT2\n" >&2 </dev/null
 # initiate our internal measures
 eval "$CMD3 2>\"${te}3\" &"
 pid3=$!
 eval "$CMD4 2>\"${te}4\" &"
 pid4=$!
-waittcp4port $((PORT+2)) 1 || $PRINTF "$FAILED: port $((PORT+2))\n" >&2 </dev/null
+waittcp4port $PORT3 1 || $PRINTF "$FAILED: port $PORT3\n" >&2 </dev/null
 # now we start the external daemon
 eval "$CMD5 2>\"${te}5\" &"
 pid5=$!
-waittcp4port $((PORT+4)) 1 || $PRINTF "$FAILED: port $((PORT+4))\n" >&2 </dev/null
+waittcp4port $PORT5 1 || $PRINTF "$FAILED: port $5PORT\n" >&2 </dev/null
 # and this is the outside client:
 echo "$da1" |$CMD6 >${tf}_1 2>"${te}6_1" &
 pid6_1=$!
@@ -5776,7 +5779,6 @@ kill $pid1 $pid2 $pid3 $pid4 $pid5 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+5))
 N=$((N+1))
 
 
@@ -5964,10 +5966,10 @@ elif [ -z "$SECONDADDR" ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "range=$SECONDADDR/32" "tcp4:127.0.0.1:$PORT" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "range=$SECONDADDR/32" "TCP4:127.0.0.1:$PORT" 4 tcp $PORT 0
 fi ;; # $SECONDADDR, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP4RANGEMASK
@@ -5981,10 +5983,10 @@ elif [ -z "$SECONDADDR" ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "range=$SECONDADDR:255.255.255.255" "tcp4:127.0.0.1:$PORT" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "range=$SECONDADDR:255.255.255.255" "TCP4:127.0.0.1:$PORT" 4 tcp $PORT 0
 fi ;; # $SECONDADDR, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # like TCP4RANGEMASK, but the "bad" address is within the same class A network
@@ -5993,10 +5995,10 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with RANGE option"
 if ! eval $NUMCOND; then :; else
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "range=127.0.0.0:255.255.0.0" "tcp4:$SECONDADDR:$PORT,bind=$SECONDADDR" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "range=127.0.0.0:255.255.0.0" "TCP4:$SECONDADDR:$PORT,bind=$SECONDADDR" 4 tcp $PORT 0
 fi ;; # Linux, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6005,10 +6007,10 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%sourceport%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with SOURCEPORT option"
 if ! eval $NUMCOND; then :; else
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "sp=$PORT" "tcp4:127.0.0.1:$PORT" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "sp=$PORT" "TCP4:127.0.0.1:$PORT" 4 tcp $PORT 0
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP4LOWPORT
@@ -6016,10 +6018,10 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%lowport%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with LOWPORT option"
 if ! eval $NUMCOND; then :; else
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "lowport" "tcp4:127.0.0.1:$PORT" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "lowport" "TCP4:127.0.0.1:$PORT" 4 tcp $PORT 0
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP4WRAPPERS_ADDR
@@ -6036,10 +6038,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "hosts-allow=$ha,hosts-deny=$hd" "tcp4:127.0.0.1:$PORT" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "hosts-allow=$ha,hosts-deny=$hd" "TCP4:127.0.0.1:$PORT" 4 tcp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP4WRAPPERS_NAME
@@ -6056,10 +6058,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $LOCALHOST" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "hosts-allow=$ha,hosts-deny=$hd" "tcp4:$SECONDADDR:$PORT,bind=$SECONDADDR" 4 tcp $PORT 0
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP4-L:$PORT,reuseaddr,fork,retry=1" "" "hosts-allow=$ha,hosts-deny=$hd" "TCP4:$SECONDADDR:$PORT,bind=$SECONDADDR" 4 tcp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6073,10 +6075,10 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "tcp6-l:$PORT,reuseaddr,fork,retry=1" "" "range=[::2]/128" "tcp6:[::1]:$PORT" 6 tcp $PORT 0
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP6-L:$PORT,reuseaddr,fork,retry=1" "" "range=[::2]/128" "TCP6:[::1]:$PORT" 6 tcp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP6SOURCEPORT
@@ -6089,10 +6091,10 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "tcp6-l:$PORT,reuseaddr,fork,retry=1" "" "sp=$PORT" "tcp6:[::1]:$PORT" 6 tcp $PORT 0
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP6-L:$PORT,reuseaddr,fork,retry=1" "" "sp=$PORT" "TCP6:[::1]:$PORT" 6 tcp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP6LOWPORT
@@ -6105,10 +6107,10 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "tcp6-l:$PORT,reuseaddr,fork,retry=1" "" "lowport" "tcp6:[::1]:$PORT" 6 tcp $PORT 0
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP6-L:$PORT,reuseaddr,fork,retry=1" "" "lowport" "TCP6:[::1]:$PORT" 6 tcp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=TCP6TCPWRAP
@@ -6125,10 +6127,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "tcp6-l:$PORT,reuseaddr,fork,retry=1" "" "hosts-allow=$ha,hosts-deny=$hd" "tcp6:[::1]:$PORT" 6 tcp $PORT 0
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "TCP6-L:$PORT,reuseaddr,fork,retry=1" "" "hosts-allow=$ha,hosts-deny=$hd" "TCP6:[::1]:$PORT" 6 tcp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6137,11 +6139,11 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-L with RANGE option"
 if ! eval $NUMCOND; then :; else
-#testserversec "$N" "$TEST" "$opts" "udp4-l:$PORT,reuseaddr,fork" "" "range=$SECONDADDR/32" "udp4:127.0.0.1:$PORT" 4 udp $PORT 0
-testserversec "$N" "$TEST" "$opts" "udp4-l:$PORT,reuseaddr" "" "range=$SECONDADDR/32" "udp4:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "UDP4-L:$PORT,reuseaddr,fork" "" "range=$SECONDADDR/32" "UDP4:127.0.0.1:$PORT" 4 udp $PORT 0
+testserversec "$N" "$TEST" "$opts" "UDP4-L:$PORT,reuseaddr" "" "range=$SECONDADDR/32" "UDP4:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4SOURCEPORT
@@ -6149,10 +6151,10 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%sourceport%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-L with SOURCEPORT option"
 if ! eval $NUMCOND; then :; else
-testserversec "$N" "$TEST" "$opts" "udp4-l:$PORT,reuseaddr" "" "sp=$PORT" "udp4:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP4-L:$PORT,reuseaddr" "" "sp=$PORT" "UDP4:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4LOWPORT
@@ -6160,10 +6162,10 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%lowport%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-L with LOWPORT option"
 if ! eval $NUMCOND; then :; else
-testserversec "$N" "$TEST" "$opts" "udp4-l:$PORT,reuseaddr" "" "lowport" "udp4:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP4-L:$PORT,reuseaddr" "" "lowport" "UDP4:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4TCPWRAP
@@ -6180,10 +6182,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "udp4-l:$PORT,reuseaddr" "" "tcpwrap-etc=$td" "udp4:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP4-L:$PORT,reuseaddr" "" "tcpwrap-etc=$td" "UDP4:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6197,11 +6199,11 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-#testserversec "$N" "$TEST" "$opts" "udp6-l:$PORT,reuseaddr,fork" "" "range=[::2]/128" "udp6:[::1]:$PORT" 6 udp $PORT 0
-testserversec "$N" "$TEST" "$opts" "udp6-l:$PORT,reuseaddr" "" "range=[::2]/128" "udp6:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "UDP6-L:$PORT,reuseaddr,fork" "" "range=[::2]/128" "UDP6:[::1]:$PORT" 6 udp $PORT 0
+testserversec "$N" "$TEST" "$opts" "UDP6-L:$PORT,reuseaddr" "" "range=[::2]/128" "UDP6:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6SOURCEPORT
@@ -6214,10 +6216,10 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "udp6-l:$PORT,reuseaddr" "" "sp=$PORT" "udp6:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP6-L:$PORT,reuseaddr" "" "sp=$PORT" "UDP6:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6LOWPORT
@@ -6230,10 +6232,10 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "udp6-l:$PORT,reuseaddr" "" "lowport" "udp6:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP6-L:$PORT,reuseaddr" "" "lowport" "UDP6:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6TCPWRAP
@@ -6250,10 +6252,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "udp6-l:$PORT,reuseaddr" "" "lowport" "udp6:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP6-L:$PORT,reuseaddr" "" "lowport" "UDP6:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP4_RANGE
@@ -6267,10 +6269,10 @@ elif ! testfeats openssl >/dev/null; then
     listCANT="$listCANT $N"
 else
 gentestcert testsrv
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip4,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv.crt,key=testsrv.key" "" "range=$SECONDADDR/32" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,$SOCAT_EGD" 4 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP4_SOURCEPORT
@@ -6284,10 +6286,10 @@ elif ! testfeats openssl >/dev/null; then
     listCANT="$listCANT $N"
 else
 gentestcert testsrv
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip4,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv.crt,key=testsrv.key" "" "sp=$PORT" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,$SOCAT_EGD" 4 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP4_LOWPORT
@@ -6301,10 +6303,10 @@ elif ! testfeats openssl >/dev/null; then
     listCANT="$listCANT $N"
 else
 gentestcert testsrv
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip4,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv.crt,key=testsrv.key" "" "lowport" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,$SOCAT_EGD" 4 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP4_TCPWRAP
@@ -6322,10 +6324,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip4,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv.crt,key=testsrv.key" "" "tcpwrap-etc=$td" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,$SOCAT_EGD" 4 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLCERTSERVER
@@ -6340,10 +6342,10 @@ elif ! testfeats openssl >/dev/null; then
 else
 gentestcert testsrv
 gentestcert testcli
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts -4" "SSL-L:$PORT,pf=ip4,reuseaddr,fork,retry=1,$SOCAT_EGD,verify,cert=testsrv.crt,key=testsrv.key" "cafile=testcli.crt" "cafile=testsrv.crt" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,cert=testcli.pem,$SOCAT_EGD" 4 tcp $PORT '*'
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLCERTCLIENT
@@ -6358,10 +6360,10 @@ elif ! testfeats openssl >/dev/null; then
 else
 gentestcert testsrv
 gentestcert testcli
-testserversec "$N" "$TEST" "$opts -t 0.5 -lu -d" "ssl:$LOCALHOST:$PORT,pf=ip4,fork,retry=2,verify,cert=testcli.pem,$SOCAT_EGD" "cafile=testsrv.crt" "cafile=testcli.crt" "ssl-l:$PORT,pf=ip4,reuseaddr,$SOCAT_EGD,cafile=testcli.crt,cert=testsrv.crt,key=testsrv.key" 4 tcp "" -1
+newport tcp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts -t 0.5 -lu -d" "SSL:$LOCALHOST:$PORT,pf=ip4,fork,retry=2,verify,cert=testcli.pem,$SOCAT_EGD" "cafile=testsrv.crt" "cafile=testcli.crt" "SSL-L:$PORT,pf=ip4,reuseaddr,$SOCAT_EGD,cafile=testcli.crt,cert=testsrv.crt,key=testsrv.key" 4 tcp "" -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6380,10 +6382,10 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     listCANT="$listCANT $N"
 else
 gentestcert6 testsrv6
-testserversec "$N" "$TEST" "$opts" "ssl-l:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "range=[::2]/128" "ssl:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "range=[::2]/128" "SSL:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP6_SOURCEPORT
@@ -6401,10 +6403,10 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     listCANT="$listCANT $N"
 else
 gentestcert6 testsrv6
-testserversec "$N" "$TEST" "$opts" "ssl-l:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "sp=$PORT" "ssl:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "sp=$PORT" "SSL:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP6_LOWPORT
@@ -6422,10 +6424,10 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     listCANT="$listCANT $N"
 else
 gentestcert6 testsrv6
-testserversec "$N" "$TEST" "$opts" "ssl-l:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "lowport" "ssl:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "lowport" "SSL:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSLTCP6_TCPWRAP
@@ -6443,10 +6445,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "ssl-l:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "tcpwrap-etc=$td" "ssl:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
+newport tcp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "SSL-L:$PORT,pf=ip6,reuseaddr,fork,retry=1,$SOCAT_EGD,verify=0,cert=testsrv6.crt,key=testsrv6.key" "" "tcpwrap-etc=$td" "SSL:[::1]:$PORT,cafile=testsrv6.crt,$SOCAT_EGD" 6 tcp $PORT -1
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6469,10 +6471,10 @@ elif ! testfeats listen tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
 else
 gentestcert testsrv
 gentestcert testcli
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts -t 0.5 -4" "SSL:127.0.0.1:$PORT,fork,retry=2,verify,cafile=testsrv.crt" "commonname=$LOCALHOST" "" "SSL-L:$PORT,pf=ip4,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0" 4 tcp "" '*'
 fi ;; # testfeats, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # test security with the openssl-commonname option on server side
@@ -6495,10 +6497,10 @@ elif ! testfeats listen tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
 else
 gentestcert testsrv
 gentestcert testcli
+newport tcp4 	# provide free port number in $PORT
 testserversec "$N" "$TEST" "$opts -4" "SSL-L:$PORT,pf=ip4,reuseaddr,cert=testsrv.crt,key=testsrv.key,cafile=testcli.crt" "" "commonname=onlyyou" "SSL:$LOCALHOST:$PORT,$REUSEADDR,verify=0,cafile=testsrv.crt,cert=testcli.crt,key=testcli.key" 4 tcp "$PORT" '*'
 fi ;; # testfeats, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6522,11 +6524,11 @@ elif ! testoptions fips >/dev/null; then
 else
 gentestcert testsrv
 gentestcert testcli
+newport tcp4 	# provide free port number in $PORT
 # openssl client accepts a "normal" certificate only when not in fips mode
-testserversec "$N" "$TEST" "$opts" "ssl:$LOCALHOST:$PORT,fork,retry=2,verify,cafile=testsrv.crt" "" "fips" "SSL-L:$PORT,pf=ip4,$REUSEADDR,cert=testsrv.crt,key=testsrv.key" 4 tcp "" -1
+testserversec "$N" "$TEST" "$opts" "SSL:$LOCALHOST:$PORT,fork,retry=2,verify,cafile=testsrv.crt" "" "fips" "SSL-L:$PORT,pf=ip4,$REUSEADDR,cert=testsrv.crt,key=testsrv.key" 4 tcp "" -1
 fi ;; # testfeats, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6774,7 +6776,7 @@ TEST="$NAME: TCP4 connect-timeout option when server replies"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP4-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -6805,7 +6807,6 @@ fi
 kill $pid1 2>/dev/null
 wait ;;
 esac
-PORT=$((PORT+1))
 fi # NUMCOND
 N=$((N+1))
 
@@ -6826,6 +6827,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# provide free port number in $PORT
 CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,$SOCAT_EGD,cert=$SRVCERT.pem,key=$SRVCERT.key,verify=0 pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
 $PRINTF "test $F_n $TEST... " $N
@@ -6851,7 +6853,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # testfeats, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -6980,6 +6981,7 @@ da1="test$N $(date) $RANDOM"
 da2="test$N $(date) $RANDOM"
 #establish a listening and forking udp socket in background
 #processes hang forever without -T
+newport udp4 	# provide free port number in $PORT
 SRV="$TRACE $SOCAT -T 5 $opts -lpserver UDP4-LISTEN:$PORT,bind=$LOCALHOST,$REUSEADDR,fork PIPE"
 #make a first and a second connection
 CLI="$TRACE $SOCAT $opts -lpclient - UDP4-CONNECT:$LOCALHOST:$PORT"
@@ -7027,7 +7029,6 @@ fi # !(rc -ne 0)
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -7072,6 +7073,7 @@ case "$MAJADDR" in
 esac	
 case "$MINADDR" in
     "PORT")
+	newport $protov 	# provide free port number in $PORT
 	tla="$PORT,bind=$MAJADDR"
 	tca="$MAJADDR:$PORT"
 	waitproto="${protov}port"
@@ -7108,7 +7110,6 @@ fi # !(rc -ne 0)
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 done <<<"
 TCP4  $LOCALHOST PORT
@@ -7328,10 +7329,10 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport tcp6; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
-CMD1="$TRACE $SOCAT $opts TCP6-listen:$tsl,$REUSEADDR PIPE"
+CMD1="$TRACE $SOCAT $opts TCP6-LISTEN:$tsl,$REUSEADDR PIPE"
 CMD2="$TRACE $SOCAT $opts stdin!!stdout TCP6:$ts"
 printf "test $F_n $TEST... " $N
 $CMD1 >"$tf" 2>"${te}1" &
@@ -7359,7 +7360,6 @@ fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -7374,10 +7374,10 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 ts1a="127.0.0.1"
 ts1="$ts1a:$ts1p"
-ts2p=$PORT; PORT=$((PORT+1))
+newport udp4; ts2p=$PORT
 ts2="127.0.0.1:$ts2p"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP4-RECVFROM:$ts1p,reuseaddr,bind=$ts1a PIPE"
@@ -7414,7 +7414,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -7431,10 +7430,10 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp6; ts1p=$PORT
 tsa="[::1]"
 ts1="$tsa:$ts1p"
-ts2p=$PORT; PORT=$((PORT+1))
+newport udp6; ts2p=$PORT
 ts2="$tsa:$ts2p"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP6-RECVFROM:$ts1p,reuseaddr,bind=$tsa PIPE"
@@ -7463,7 +7462,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -7623,7 +7621,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 ts1a="127.0.0.1"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -7679,7 +7677,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp6; ts1p=$PORT
 ts1a="[::1]"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -7877,10 +7875,10 @@ elif ! feat=$(testfeats udp ip4) || ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "udp4-recvfrom:$PORT,reuseaddr" "" "sp=$PORT" "udp4-sendto:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr" "" "sp=$PORT" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4RECVFROM_LOWPORT
@@ -7893,22 +7891,22 @@ elif ! feat=$(testfeats udp ip4) || ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "udp4-recvfrom:$PORT,reuseaddr" "" "lowport" "udp4-sendto:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr" "" "lowport" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4RECVFROM_RANGE
 case "$TESTS" in
 *%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-RECVFROM with RANGE option"
-#testserversec "$N" "$TEST" "$opts" "udp4-recvfrom:$PORT,reuseaddr,fork" "" "range=$SECONDADDR/32" "udp4-sendto:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr,fork" "" "range=$SECONDADDR/32" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
 if ! eval $NUMCOND; then :; else
-testserversec "$N" "$TEST" "$opts" "udp4-recvfrom:$PORT,reuseaddr" "" "range=$SECONDADDR/32" "udp4-sendto:127.0.0.1:$PORT" 4 udp $PORT 0
+testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr" "" "range=$SECONDADDR/32" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4RECVFROM_TCPWRAP
@@ -7925,11 +7923,11 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-#testserversec "$N" "$TEST" "$opts" "udp4-recvfrom:$PORT,reuseaddr,fork" "" "tcpwrap=$d" "udp4-sendto:127.0.0.1:$PORT" 4 udp $PORT 0
-testserversec "$N" "$TEST" "$opts" "udp4-recvfrom:$PORT,reuseaddr" "" "tcpwrap-etc=$td" "udp4-sendto:127.0.0.1:$PORT" 4 udp $PORT 0
+newport udp4 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr,fork" "" "tcpwrap=$d" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
+testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr" "" "tcpwrap-etc=$td" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -7943,15 +7941,14 @@ elif ! feat=$(testfeats udp ip4) || ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT; PORT=$((PORT+1))
-PORT3=$PORT
+newport udp4; PORT1=$PORT
+newport udp4; PORT2=$PORT
+newport udp4; PORT3=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp4-recv:$PORT1,reuseaddr!!udp4-sendto:127.0.0.1:$PORT2" "" "sp=$PORT3" "udp4-recv:$PORT2!!udp4-sendto:127.0.0.1:$PORT1" 4 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP4-RECV:$PORT1,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT2" "" "sp=$PORT3" "UDP4-RECV:$PORT2!!UDP4-SENDTO:127.0.0.1:$PORT1" 4 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4RECV_LOWPORT
@@ -7964,14 +7961,13 @@ elif ! feat=$(testfeats udp ip4) || ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT
+newport udp4; PORT1=$PORT
+newport udp4; PORT2=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp4-recv:$PORT1,reuseaddr!!udp4-sendto:127.0.0.1:$PORT2" "" "lowport" "udp4-recv:$PORT2!!udp4-sendto:127.0.0.1:$PORT1" 4 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP4-RECV:$PORT1,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT2" "" "lowport" "UDP4-RECV:$PORT2!!UDP4-SENDTO:127.0.0.1:$PORT1" 4 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4RECV_RANGE
@@ -7984,14 +7980,13 @@ elif ! feat=$(testfeats udp ip4) || ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT
+newport udp4; PORT1=$PORT
+newport udp4; PORT2=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp4-recv:$PORT1,reuseaddr!!udp4-sendto:127.0.0.1:$PORT2" "" "range=$SECONDADDR/32" "udp4-recv:$PORT2!!udp4-sendto:127.0.0.1:$PORT1" 4 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP4-RECV:$PORT1,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT2" "" "range=$SECONDADDR/32" "UDP4-RECV:$PORT2!!UDP4-SENDTO:127.0.0.1:$PORT1" 4 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP4RECV_TCPWRAP
@@ -8004,18 +7999,17 @@ elif ! feat=$(testfeats udp ip4 libwrap) || ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT
+newport udp4; PORT1=$PORT
+newport udp4; PORT2=$PORT
 ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp4-recv:$PORT1,reuseaddr!!udp4-sendto:127.0.0.1:$PORT2" "" "tcpwrap-etc=$td" "udp4-recv:$PORT2!!udp4-sendto:127.0.0.1:$PORT1" 4 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP4-RECV:$PORT1,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT2" "" "tcpwrap-etc=$td" "UDP4-RECV:$PORT2!!UDP4-SENDTO:127.0.0.1:$PORT1" 4 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8029,10 +8023,10 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "udp6-recvfrom:$PORT,reuseaddr" "" "sp=$PORT" "udp6-sendto:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP6-RECVFROM:$PORT,reuseaddr" "" "sp=$PORT" "UDP6-SENDTO:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6RECVFROM_LOWPORT
@@ -8045,10 +8039,10 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testserversec "$N" "$TEST" "$opts" "udp6-recvfrom:$PORT,reuseaddr" "" "lowport" "udp6-sendto:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP6-RECVFROM:$PORT,reuseaddr" "" "lowport" "UDP6-SENDTO:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6RECVFROM_RANGE
@@ -8061,11 +8055,11 @@ elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-#testserversec "$N" "$TEST" "$opts" "udp6-recvfrom:$PORT,reuseaddr,fork" "" "range=[::2]/128" "udp6-sendto:[::1]:$PORT" 6 udp $PORT 0
-testserversec "$N" "$TEST" "$opts" "udp6-recvfrom:$PORT,reuseaddr" "" "range=[::2]/128" "udp6-sendto:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "UDP6-RECVFROM:$PORT,reuseaddr,fork" "" "range=[::2]/128" "UDP6-SENDTO:[::1]:$PORT" 6 udp $PORT 0
+testserversec "$N" "$TEST" "$opts" "UDP6-RECVFROM:$PORT,reuseaddr" "" "range=[::2]/128" "UDP6-SENDTO:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6RECVFROM_TCPWRAP
@@ -8082,10 +8076,10 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-testserversec "$N" "$TEST" "$opts" "udp6-recvfrom:$PORT,reuseaddr" "" "tcpwrap-etc=$td" "udp6-sendto:[::1]:$PORT" 6 udp $PORT 0
+newport udp6 	# provide free port number in $PORT
+testserversec "$N" "$TEST" "$opts" "UDP6-RECVFROM:$PORT,reuseaddr" "" "tcpwrap-etc=$td" "UDP6-SENDTO:[::1]:$PORT" 6 udp $PORT 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8099,15 +8093,14 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT; PORT=$((PORT+1))
-PORT3=$PORT
+newport udp6; PORT1=$PORT
+newport udp6; PORT2=$PORT
+newport udp6; PORT3=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp6-recv:$PORT1,reuseaddr!!udp6-sendto:[::1]:$PORT2" "" "sp=$PORT3" "udp6-recv:$PORT2!!udp6-sendto:[::1]:$PORT1" 6 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP6-RECV:$PORT1,reuseaddr!!UDP6-SENDTO:[::1]:$PORT2" "" "sp=$PORT3" "UDP6-RECV:$PORT2!!UDP6-SENDTO:[::1]:$PORT1" 6 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6RECV_LOWPORT
@@ -8120,14 +8113,13 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT
+newport udp6; PORT1=$PORT
+newport udp6; PORT2=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp6-recv:$PORT1,reuseaddr!!udp6-sendto:[::1]:$PORT2" "" "lowport" "udp6-recv:$PORT2!!udp6-sendto:[::1]:$PORT1" 6 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP6-RECV:$PORT1,reuseaddr!!UDP6-SENDTO:[::1]:$PORT2" "" "lowport" "UDP6-RECV:$PORT2!!UDP6-SENDTO:[::1]:$PORT1" 6 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6RECV_RANGE
@@ -8140,14 +8132,13 @@ elif ! feat=$(testfeats udp ip6) || ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT
+newport udp6; PORT1=$PORT
+newport udp6; PORT2=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp6-recv:$PORT1,reuseaddr!!udp6-sendto:[::1]:$PORT2" "" "range=[::2]/128" "udp6-recv:$PORT2!!udp6-sendto:[::1]:$PORT1" 6 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP6-RECV:$PORT1,reuseaddr!!UDP6-SENDTO:[::1]:$PORT2" "" "range=[::2]/128" "UDP6-RECV:$PORT2!!UDP6-SENDTO:[::1]:$PORT1" 6 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=UDP6RECV_TCPWRAP
@@ -8164,14 +8155,13 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-PORT1=$PORT; PORT=$((PORT+1))
-PORT2=$PORT
+newport udp6; PORT1=$PORT
+newport udp6; PORT2=$PORT
 # we use the forward channel (PORT1) for testing, and have a backward channel
 # (PORT2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "udp6-recv:$PORT1,reuseaddr!!udp6-sendto:[::1]:$PORT2" "" "tcpwrap-etc=$td" "udp6-recv:$PORT2!!udp6-sendto:[::1]:$PORT1" 6 udp $PORT1 0
+testserversec "$N" "$TEST" "$opts" "UDP6-RECV:$PORT1,reuseaddr!!UDP6-SENDTO:[::1]:$PORT2" "" "tcpwrap-etc=$td" "UDP6-RECV:$PORT2!!UDP6-SENDTO:[::1]:$PORT1" 6 udp $PORT1 0
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8189,12 +8179,12 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-#testserversec "$N" "$TEST" "$opts" "ip4-recvfrom:$PROTO,reuseaddr,fork" "" "range=$SECONDADDR/32" "ip4-sendto:127.0.0.1:$PROTO" 4 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "ip4-recvfrom:$PROTO,reuseaddr!!udp4-sendto:127.0.0.1:$PORT" "" "range=$SECONDADDR/32" "udp4-recv:$PORT!!ip4-sendto:127.0.0.1:$PROTO" 4 ip $PROTO 0
+newport udp4 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr,fork" "" "range=$SECONDADDR/32" "IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
+testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT" "" "range=$SECONDADDR/32" "UDP4-RECV:$PORT!!IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
 fi ;; # NUMCOND, feats, root
 esac
 PROTO=$((PROTO+1))
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=IP4RECVFROM_TCPWRAP
@@ -8215,13 +8205,13 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-#testserversec "$N" "$TEST" "$opts" "ip4-recvfrom:$PROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "ip4-sendto:127.0.0.1:$PROTO" 4 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "ip4-recvfrom:$PROTO,reuseaddr!!udp4-sendto:127.0.0.1:$PORT" "" "tcpwrap-etc=$td" "udp4-recv:$PORT!!ip4-sendto:127.0.0.1:$PROTO" 4 ip $PROTO 0
+newport udp4 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
+testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT" "" "tcpwrap-etc=$td" "UDP4-RECV:$PORT!!IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
 fi # NUMCOND, feats, root
  ;;
 esac
 PROTO=$((PROTO+1))
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8294,12 +8284,12 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-#testserversec "$N" "$TEST" "$opts" "ip6-recvfrom:$PROTO,reuseaddr,fork" "" "range=[::2]/128" "ip6-sendto:[::1]:$PROTO" 6 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "ip6-recvfrom:$PROTO,reuseaddr!!udp6-sendto:[::1]:$PORT" "" "range=[::2]/128" "udp6-recv:$PORT!!ip6-sendto:[::1]:$PROTO" 6 ip $PROTO 0
+newport udp6 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr,fork" "" "range=[::2]/128" "IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
+testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr!!UDP6-SENDTO:[::1]:$PORT" "" "range=[::2]/128" "UDP6-RECV:$PORT!!IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
 fi ;; # NUMCOND, feats
 esac
 PROTO=$((PROTO+1))
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=IP6RECVFROM_TCPWRAP
@@ -8320,12 +8310,12 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-#testserversec "$N" "$TEST" "$opts" "ip6-recvfrom:$PROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "ip6-sendto:[::1]:$PROTO" 6 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "ip6-recvfrom:$PROTO,reuseaddr!!udp6-sendto:[::1]:$PORT" "" "tcpwrap-etc=$td" "udp6-recv:$PORT!!ip6-sendto:[::1]:$PROTO" 6 ip $PROTO 0
+newport udp6 	# provide free port number in $PORT
+#testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
+testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr!!UDP6-SENDTO:[::1]:$PORT" "" "tcpwrap-etc=$td" "UDP6-RECV:$PORT!!IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
 fi ;; # NUMCOND, feats
 esac
 PROTO=$((PROTO+1))
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8657,8 +8647,8 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-p1=$PORT; PORT=$((PORT+1))
-p2=$PORT
+newport tcp4; p1=$PORT
+newport tcp4; p2=$PORT
 da1a="$(date) $RANDOM"
 da1b="$(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -u - TCP4-CONNECT:$LOCALHOST:$p1"
@@ -8697,7 +8687,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8802,6 +8791,7 @@ tf="$td/test$N.stout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport udp4 	# provide free port number in $PORT
 CMD0="$TRACE $SOCAT $opts -u UDP-RECV:$PORT,null-eof CREAT:$tf"
 CMD1="$TRACE $SOCAT $opts -u - UDP-SENDTO:127.0.0.1:$PORT,shut-null"
 printf "test $F_n $TEST... " $N
@@ -8856,7 +8846,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport udp6; tsl=$PORT
 ts="$LOCALHOST6:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP6-LISTEN:$tsl,$REUSEADDR,bind=$LOCALHOST6 PIPE"
@@ -8887,7 +8877,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8909,6 +8898,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 ha="$td/hosts.allow"
 $ECHO "test : ALL : allow" >"$ha"
+newport tcp4 	# provide free port number in $PORT
 CMD1="$TRACE $SOCAT $opts TCP4-LISTEN:$PORT,$REUSEADDR,hosts-allow=$ha,tcpwrap=test pipe"
 CMD2="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT"
 printf "test $F_n $TEST... " $N
@@ -8938,7 +8928,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -8962,6 +8951,7 @@ ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat : [::1] : allow" >"$ha"
 $ECHO "ALL : ALL : deny" >"$hd"
+newport tcp6 	# provide free port number in $PORT
 CMD1="$TRACE $SOCAT $opts TCP6-LISTEN:$PORT,$REUSEADDR,tcpwrap-etc=$td,tcpwrappers=socat pipe"
 CMD2="$TRACE $SOCAT $opts - TCP6:[::1]:$PORT"
 printf "test $F_n $TEST... " $N
@@ -8991,7 +8981,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -9008,10 +8997,10 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 #ts1="$BCADDR/8:$ts1p"
 ts1="$BCADDR:$ts1p"
-ts2p=$PORT; PORT=$((PORT+1))
+newport udp4; ts2p=$PORT
 ts2="$BCIFADDR:$ts2p"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP4-RECVFROM:$ts1p,reuseaddr,broadcast PIPE"
@@ -9125,10 +9114,10 @@ N=$((N+1))
 #elif [ -z "$BCADDR" ]; then
 #    $PRINTF "test $F_n $TEST... ${YELLOW}dont know a broadcast address${NORMAL}\n" $N
 #else
+#newport udp4 	# provide free port number in $PORT
 #testserversec "$N" "$TEST" "$opts" "UDP4-BROADCAST:$BCADDR/8:$PORT" "" "range=127.1.0.0:255.255.0.0" "udp4:127.1.0.0:$PORT" 4 udp $PORT 0
 #fi ;; # NUMCOND, feats
 #esac
-#PORT=$((PORT+1))
 #N=$((N+1))
 
 
@@ -9145,7 +9134,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 ts1a="$SECONDADDR"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -9253,7 +9242,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp6; ts1p=$PORT
 if1="$MCINTERFACE"
 ts1a="[::1]"
 da="test$N $(date) $RANDOM"
@@ -9307,10 +9296,10 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 ts1a="$SECONDADDR"
 ts1="$ts1a:$ts1p"
-ts2p=$PORT; PORT=$((PORT+1))
+newport udp4; ts2p=$PORT
 ts2="$BCIFADDR:$ts2p"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts UDP4-RECVFROM:$ts1p,reuseaddr,ip-add-membership=224.255.255.254:$ts1a PIPE"
@@ -9433,6 +9422,7 @@ tl="$td/test$N.lock"
 da="test$N $(date) $RANDOM"
 dalen=$((${#da}+1))
 TUNNET=10.255.255
+newport udp4 	# provide free port number in $PORT
 CMD1="$TRACE $SOCAT $opts -u - UDP4-SENDTO:$TUNNET.2:$PORT"
 #CMD="$TRACE $SOCAT $opts -u -L $tl TUN,ifaddr=$TUNNET.1,netmask=255.255.255.0,iff-up=1 -"
 CMD="$TRACE $SOCAT $opts -u -L $tl TUN:$TUNNET.1/24,iff-up=1 -"
@@ -9465,7 +9455,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -9526,7 +9515,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -9732,7 +9720,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -9764,6 +9751,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 SRVCERT=testsrv
 gentestcert "$SRVCERT"
+newport tcp4 	# provide free port number in $PORT
 CMD1="$TRACE $SOCAT $opts -u -T 1 -b $($ECHO "$da\c" |wc -c) OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=$SRVCERT.pem,verify=0 -"
 CMD2="$TRACE $SOCAT $opts -u - OPENSSL-CONNECT:$LOCALHOST:$PORT,verify=0"
 printf "test $F_n $TEST... " $N
@@ -9887,7 +9875,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -9938,7 +9925,7 @@ else
 fi
 kill $pid1 2>/dev/null
 wait
-PORT="$_PORT"
+PORT=$_PORT
 fi ;; # NUMCOND
 esac
 N=$((N+1))
@@ -10013,7 +10000,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport udp4; tsl=$PORT
 ts="$LOCALHOST:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -T 0.5 UDP4-LISTEN:$tsl,$REUSEADDR,fork PIPE"
@@ -10050,7 +10037,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #set +vx
 
@@ -10068,7 +10054,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport udp4; tsl=$PORT
 ts="$LOCALHOST:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts -T 0.5 UDP4-RECVFROM:$tsl,reuseaddr,fork PIPE"
@@ -10105,7 +10091,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -10181,7 +10166,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsp=$PORT
+newport udp4; tsp=$PORT
 ts="$LOCALHOST:$tsp"
 da2a="test$N $(date) $RANDOM"
 da2b="test$N $(date) $RANDOM"
@@ -10216,7 +10201,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -10272,16 +10256,7 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-if [ "$SS" ]; then
-    while [ "$($SS -anu |grep "127\.0\.0\.1:$PORT\>" |wc -l)" -ne 0 ]; do
-	PORT=$((PORT+1))
-    done
-else
-    while [ "$(netstat -an |grep "^udp.*127\.0\.0\.1:$PORT\>" |wc -l)" -ne 0 ]; do
-	PORT=$((PORT+1))
-    done
-fi
-tp=$PORT
+newport udp4; tp=$PORT
 da1="test$N $(date) $RANDOM"
 a1="$LOCALHOST"
 a2="$SECONDADDR"
@@ -10323,7 +10298,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -10472,9 +10446,9 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 case "X$IPPORT" in
     "XPORT")
-    tra="$PORT"		# test recv address
+    newport $proto; tra="$PORT"		# test recv address
     tsa="$ADDR:$PORT"	# test sendto address
-    PORT=$((PORT+1)) ;;
+    ;;
     "XPROTO")
     tra="$PROTO"		# test recv address
     tsa="$ADDR:$PROTO"	# test sendto address
@@ -10595,7 +10569,7 @@ IP6  IP6  [::1]     PROTO ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    
 # test: setting of environment variables that describe a stream socket
 # connection: SOCAT_SOCKADDR, SOCAT_PEERADDR; and SOCAT_SOCKPORT,
 # SOCAT_PEERPORT when applicable
-while read KEYW FEAT TEST_SOCKADDR TEST_PEERADDR TEST_SOCKPORT TEST_PEERPORT; do
+while read KEYW FEAT TEST_SOCKADDR TEST_PEERADDR PORTMETHOD; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 #
 protov="$(echo "$KEYW" |tr A-Z a-z)"
@@ -10618,9 +10592,9 @@ elif [ "$KEYW" = "TCP6" -o "$KEYW" = "UDP6" -o "$KEYW" = "SCTP6" ] && \
     $PRINTF "test $F_n $TEST... ${YELLOW}IP6 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ "$KEYW" = "SCTP4" ] && ! runssctp4 "$((PORT))" >/dev/null; then
+elif [ "$KEYW" = "SCTP4" ] && ! runssctp4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}$KEYW not available${NORMAL}\n" $N
-elif [ "$KEYW" = "SCTP6" ] && ! runssctp6 "$((PORT))" >/dev/null; then
+elif [ "$KEYW" = "SCTP6" ] && ! runssctp6 >/dev/null; then
     #!!! branch not reached - caught above!
     $PRINTF "test $F_n $TEST... ${YELLOW}$KEYW not available${NORMAL}\n" $N
 else
@@ -10628,16 +10602,16 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 TEST_SOCKADDR="$(echo "$TEST_SOCKADDR" |sed "s/\$N/$N/g")"	# actual vars
 tsa="$TEST_SOCKADDR"	# test server address
-tsp="$TEST_SOCKPORT"	# test server port
-if [ "$tsp" != ',' ]; then
+if [ "$PORTMETHOD" == PORT ]; then
+    newport $proto; tsp="$PORT"; 	# test server port
     tsa1="$tsp"; tsa2="$tsa"; tsa="$tsa:$tsp"	# tsa2 used for server bind=
 else
     tsa1="$tsa"; tsa2=				# tsa1 used for addr parameter
 fi
 TEST_PEERADDR="$(echo "$TEST_PEERADDR" |sed "s/\$N/$N/g")"	# actual vars
 tca="$TEST_PEERADDR"	# test client address
-tcp="$TEST_PEERPORT"	# test client port
-if [ "$tcp" != ',' ]; then
+if [ $PORTMETHOD = PORT ]; then
+    newport $proto; tcp="$PORT"; 	# test client port
     tca="$tca:$tcp"
 fi
 #CMD0="$TRACE $SOCAT $opts -u $KEYW-LISTEN:$tsa1 SYSTEM:\"export -p\""
@@ -10662,8 +10636,8 @@ if [ $rc1 != 0 ]; then
     listCANT="$listCANT $N"
 elif [ "$(grep SOCAT_SOCKADDR "${tf}" |sed -e 's/^[^=]*=//' |sed -e "s/[\"']//g")" = "$TEST_SOCKADDR" -a \
     "$(grep SOCAT_PEERADDR "${tf}" |sed -e 's/^[^=]*=//' -e "s/[\"']//g")" = "$TEST_PEERADDR" -a \
-    \( "$TEST_SOCKPORT" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tsp" \) -a \
-    \( "$TEST_PEERPORT" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tcp" \) \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tsp" \) -a \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tcp" \) \
     ]; then
     $PRINTF "$OK\n"
     if [ "$debug" ]; then
@@ -10691,12 +10665,12 @@ N=$((N+1))
 #set +xv
 #
 done <<<"
-TCP4  TCP  127.0.0.1                                 $SECONDADDR                               $PORT       $((PORT+1))
-TCP6  IP6  [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] $((PORT+2)) $((PORT+3))
-UDP6  IP6  [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] $((PORT+6)) $((PORT+7))
-SCTP4 SCTP 127.0.0.1                                 $SECONDADDR                               $((PORT+8)) $((PORT+9))
-SCTP6 SCTP [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] $((PORT+10)) $((PORT+11))
-UNIX  UNIX $td/test\$N.server                        $td/test\$N.client                        ,           ,
+TCP4  TCP  127.0.0.1                                 $SECONDADDR                               PORT
+TCP6  IP6  [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+UDP6  IP6  [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+SCTP4 SCTP 127.0.0.1                                 $SECONDADDR                               PORT
+SCTP6 SCTP [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+UNIX  UNIX $td/test\$N.server                        $td/test\$N.client                        ,
 "
 # this one fails due to weakness in socats UDP4-LISTEN implementation:
 #UDP4 $LOCALHOST $SECONDADDR $((PORT+4)) $((PORT+5))
@@ -10732,9 +10706,9 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 case "X$IPPORT" in
     "XPORT")
-    tra="$PORT"		# test recv address
-    tsa="$ADDR:$PORT"	# test sendto address
-    PORT=$((PORT+1)) ;;
+    newport $proto; tra="$PORT"		# test recv address
+    tsa="$ADDR:$tra"	# test sendto address
+    ;;
     "XPROTO")
     tra="$PROTO"		# test recv address
     tsa="$ADDR:$PROTO"	# test sendto address
@@ -10846,12 +10820,12 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts0p=$PORT; PORT=$((PORT+1))
+newport tcp4; ts0p=$PORT
 ts0a="127.0.0.1"
 ts1p=$(printf "%04x" $ts0p);
 ts1a="7f000001" # "127.0.0.1"
 ts1="x${ts1p}${ts1a}x0000000000000000"
-ts1b=$(printf "%04x" $PORT); PORT=$((PORT+1))
+newport tcp4; ts1b=$(printf "%04x" $PORT)
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts TCP4-LISTEN:$ts0p,$REUSEADDR,bind=$ts0a PIPE"
 CMD1="$TRACE $SOCAT $opts - SOCKET-CONNECT:2:6:$ts1,bind=x${ts1b}00000000x0000000000000000"
@@ -10887,7 +10861,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -10907,12 +10880,12 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts0p=$PORT; PORT=$((PORT+1))
+newport tcp6; ts0p=$PORT
 ts0a="[::1]"
 ts1p=$(printf "%04x" $ts0p);
 ts1a="00000000000000000000000000000001" # "[::1]"
 ts1="x${ts1p}x00000000x${ts1a}x00000000"
-ts1b=$(printf "%04x" $PORT); PORT=$((PORT+1))
+newport tcp6; ts1b=$(printf "%04x" $PORT)
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts TCP6-LISTEN:$ts0p,$REUSEADDR,bind=$ts0a PIPE"
 CMD1="$TRACE $SOCAT $opts - SOCKET-CONNECT:$PF_INET6:6:$ts1,bind=x${ts1b}x00000000x00000000000000000000000000000000x00000000"
@@ -10947,7 +10920,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # test the SOCKET-CONNECT address (against UNIX-LISTEN)
@@ -11010,12 +10982,12 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport tcp4; ts1p=$PORT
 ts1a="127.0.0.1"
 ts0p=$(printf "%04x" $ts1p);
 ts0a="7f000001" # "127.0.0.1"
 ts0="x${ts0p}${ts0a}x0000000000000000"
-ts1b=$PORT; PORT=$((PORT+1))
+newport tcp4; ts1b=$PORT
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts SOCKET-LISTEN:2:6:$ts0,$REUSEADDR PIPE"
@@ -11052,7 +11024,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # test the SOCKET-SENDTO address (against UDP4-RECVFROM)
@@ -11066,12 +11037,12 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts0p=$PORT; PORT=$((PORT+1))
+newport udp4; ts0p=$PORT
 ts0a="127.0.0.1"
 ts1p=$(printf "%04x" $ts0p);
 ts1a="7f000001" # "127.0.0.1"
 ts1="x${ts1p}${ts1a}x0000000000000000"
-ts1b=$(printf "%04x" $PORT); PORT=$((PORT+1))
+newport udp4; ts1b=$(printf "%04x" $PORT)
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts UDP4-RECVFROM:$ts0p,reuseaddr,bind=$ts0a PIPE"
 CMD1="$TRACE $SOCAT $opts - SOCKET-SENDTO:2:$SOCK_DGRAM:17:$ts1,bind=x${ts1b}x00000000x0000000000000000"
@@ -11106,7 +11077,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # test the SOCKET-RECVFROM address (with UDP4-SENDTO)
@@ -11120,12 +11090,12 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 ts1a="127.0.0.1"
 ts0p=$(printf "%04x" $ts1p);
 ts0a="7f000001" # "127.0.0.1"
 ts0="x${ts0p}${ts0a}x0000000000000000"
-ts1b=$PORT; PORT=$((PORT+1))
+newport udp4; ts1b=$PORT
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts SOCKET-RECVFROM:2:$SOCK_DGRAM:17:$ts0,reuseaddr PIPE"
@@ -11161,7 +11131,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -11170,18 +11139,18 @@ NAME=SOCKET_RECV
 case "$TESTS" in
 *%$N%*|*%functions%*|*%generic%*|*%socket%*|*%ip4%*|*%udp%*|*%dgram%*|*%$NAME%*)
 TEST="$NAME: socket recv with UDP/IPv4"
-# start a SOCKET-RECV process that uses UPD/IPv4 and writes received data to file, and
+# start a SOCKET-RECV process that uses UDP/IPv4 and writes received data to file, and
 # send test data using UDP4-SENDTO.
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts1p=$PORT
 ts1a="127.0.0.1"
 ts0p=$(printf "%04x" $ts1p);
 ts0a="7f000001" # "127.0.0.1"
 ts0="x${ts0p}${ts0a}x0000000000000000"
-ts1b=$PORT; PORT=$((PORT+1))
+newport udp4; ts1b=$PORT
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts -u SOCKET-RECV:2:$SOCK_DGRAM:17:$ts0,reuseaddr -"
@@ -11218,7 +11187,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # test SOCKET-DATAGRAM (with UDP4-DATAGRAM)
@@ -11232,8 +11200,8 @@ if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts0p=$PORT; PORT=$((PORT+1))
-ts1p=$PORT; PORT=$((PORT+1))
+newport udp4; ts0p=$PORT
+newport udp4; ts1p=$PORT
 ts0a="127.0.0.1"
 ts1b=$(printf "%04x" $ts0p);
 ts1a="7f000001" # "127.0.0.1"
@@ -11274,7 +11242,6 @@ else
 fi
 fi ;; # NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=SOCKETRANGEMASK
@@ -11288,11 +11255,10 @@ elif [ -z "$SECONDADDR" ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-ts1p=$(printf "%04x" $PORT);
+newport tcp4; ts1p=$(printf "%04x" $PORT);
 testserversec "$N" "$TEST" "$opts" "SOCKET-LISTEN:2:6:x${ts1p}x00000000x0000000000000000,$REUSEADDR,fork,retry=1" "" "range=x0000x7f000000:x0000xffffffff" "SOCKET-CONNECT:2:6:x${ts1p}x${SECONDADDRHEX}x0000000000000000" 4 tcp $PORT 0
 fi ;; # NUMCOND, $SECONDADDR
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -11382,6 +11348,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts TCP4-L:$PORT,so-reuseaddr,fork PIPE"
 CMD1="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT,setsockopt=6:$TCP_MAXSEG:512"
 CMD2="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT,setsockopt=6:$TCP_MAXSEG:1"
@@ -11428,7 +11395,6 @@ fi
 fi # NUMCOND, SO_REUSEADDR
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # Test the generic setsockopt-listen option
@@ -11460,6 +11426,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts TCP4-L:$PORT,setsockopt-listen=$SOL_SOCKET:$SO_REUSEADDR:1 PIPE"
 CMD1="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT"
 CMD2="$CMD0"
@@ -11519,7 +11486,6 @@ fi
 fi # NUMCOND, SO_REUSEADDR
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -11527,9 +11493,8 @@ NAME=SCTP4STREAM
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%sctp%*|*%$NAME%*)
 TEST="$NAME: echo via connection to SCTP V4 socket"
-PORT="$((PORT+1))"
 if ! eval $NUMCOND; then :;
-elif ! testfeats sctp ip4 >/dev/null || ! runsip4 >/dev/null || ! runssctp4 "$((PORT-1))" >/dev/null; then
+elif ! testfeats sctp ip4 >/dev/null || ! runsip4 >/dev/null || ! runssctp4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}SCTP4 not available${NORMAL}\n" $N
     listCANT="$listCANT $N"
     numCANT=$((numCANT+1))
@@ -11544,7 +11509,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport sctp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da=$(date)
 CMD1="$TRACE $SOCAT $opts SCTP4-LISTEN:$tsl,$REUSEADDR PIPE"
@@ -11578,16 +11543,14 @@ wait
 fi # NUMCOND, feats
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=SCTP6STREAM
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip6%*|*%ipapp%*|*%sctp%*|*%$NAME%*)
 TEST="$NAME: echo via connection to SCTP V6 socket"
-PORT="$((PORT+1))"
 if ! eval $NUMCOND; then :;
-elif ! testfeats sctp ip6 >/dev/null || ! runsip6 >/dev/null || ! runssctp6 "$((PORT-1))" >/dev/null; then
+elif ! testfeats sctp ip6 >/dev/null || ! runsip6 >/dev/null || ! runssctp6 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}SCTP6 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -11599,7 +11562,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-tsl=$PORT
+newport sctp6; tsl=$PORT
 ts="[::1]:$tsl"
 da=$(date)
 CMD1="$TRACE $SOCAT $opts SCTP6-listen:$tsl,$REUSEADDR PIPE"
@@ -11632,7 +11595,6 @@ kill $pid 2>/dev/null
 fi # NUMCOND, feats
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -11671,6 +11633,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 init_openssl_s_client
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 #CMD1="openssl s_client -port $PORT -verify 0" 	# not with openssl 1.1.0g
 CMD1="openssl s_client $OPENSSL_S_CLIENT_4 $OPENSSL_METHOD -port $PORT"
@@ -11697,7 +11660,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -11732,6 +11694,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 init_openssl_s_client
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 SYSTEM:\"sleep 1; echo \\\\\\\"\\\"$da\\\"\\\\\\\"; sleep 1\"!!STDIO"
 #CMD1="openssl s_client -port $PORT -verify 0" 	# not with openssl 1.1.0g
 CMD1="openssl s_client $OPENSSL_S_CLIENT_4 $OPENSSL_METHOD -port $PORT"
@@ -11758,7 +11721,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -11778,6 +11740,7 @@ da="test$N $(date) $RANDOM"
 # prepare long data - perl might not be installed
 rm -f "$td/test$N.dat"
 i=0; while [ $i -lt 64 ]; do  echo -n "AAAAAAAAAAAAAAAA" >>"$td/test$N.dat"; i=$((i+1)); done
+newport tcp4
 CMD0="$TRACE $SOCAT $opts TCP-CONNECT:$(cat "$td/test$N.dat"):$PORT STDIO"
 printf "test $F_n $TEST... " $N
 $CMD0 </dev/null 1>&0 2>"${te}0"
@@ -11795,7 +11758,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # socat up to 1.7.1.2 had a stack overflow vulnerability that occurred when
@@ -11812,6 +11774,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 i=0; while [ $i -lt 64 ]; do  echo -n "AAAAAAAAAAAAAAAA" >>"$td/test$N.dat"; i=$((i+1)); done
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL:localhost:$PORT,key=$(cat "$td/test$N.dat") STDIO"
 printf "test $F_n $TEST... " $N
 $CMD0 </dev/null 1>&0 2>"${te}0"
@@ -11829,7 +11792,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # socat up to 1.7.3.0 had a stack overflow vulnerability that occurred when
@@ -11865,7 +11827,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -12059,6 +12020,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD2="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,$SOCAT_EGD,ciphers=aNULL,verify=0 pipe"
 CMD="$TRACE $SOCAT $opts - openssl:$LOCALHOST:$PORT,ciphers=aNULL,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -12083,7 +12045,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -12114,9 +12075,10 @@ elif ! runs$RUNS >/dev/null; then
 else
 case "X$IPPORT" in
     "XPORT")
+    newport $proto
     tsl=$PORT 		# test socket listen address
     tsc="$ADDR:$PORT"	# test socket connect address
-    PORT=$((PORT+1)) ;;
+    ;;
     *)
     tsl="$(eval echo "$ADDR")"	# resolve $N
     tsc=$tsl
@@ -12199,9 +12161,10 @@ elif ! runs$RUNS >/dev/null; then
 else
 case "X$IPPORT" in
     "XPORT")
+    newport $proto
     tsl=$PORT 		# test socket listen address
     tsc="$ADDR:$PORT"	# test socket connect address
-    PORT=$((PORT+1)) ;;
+    ;;
     *)
     tsl="$(eval echo "$ADDR")"	# resolve $N
     tsc=$tsl
@@ -12299,7 +12262,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -12326,6 +12288,7 @@ if [ $RLIMIT_NOFILE -gt 1024 ]; then
     ulimit -n 1024 	# 65536 takes too long
     RLIMIT_NOFILE="$(ulimit -n)"
 fi
+newport tcp4
 CMD0="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,$REUSEADDR,range=$LOCALHOST:255.255.255.255 PIPE"
 CMD1="$TRACE $SOCAT $opts -t 0 /dev/null TCP:$SECONDADDR:$PORT,bind=$SECONDADDR"
 CMD2="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT,bind=$LOCALHOST"
@@ -12365,7 +12328,6 @@ fi # ulimit -n
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -12387,6 +12349,7 @@ EF=; for p in ef; do
 	EF="ef "; break
     fi
 done
+newport tcp4
 CMD0="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,$REUSEADDR FILE:/dev/null"
 #CMD1="$EF $TRACE $SOCAT $opts FILE:/dev/null PROXY-CONNECT:$(perl -e "print 'A' x 256"):$(perl -e "print 'A' x 256"):80"
 CMD1="$EF $TRACE $SOCAT $opts FILE:/dev/null PROXY-CONNECT:localhost:$(perl -e "print 'A' x 384"):80,proxyport=$PORT"
@@ -12415,7 +12378,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 fi	# false
 
@@ -12435,6 +12397,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 #tdiff="$td/test$N.diff"
 #da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts TCP4-LISTEN:$PORT,$REUSEADDR,so-keepalive EXEC:\"$FILAN -i 1\",nofork"
 CMD1="$TRACE $SOCAT $opts - TCP4:$LOCALHOST:$PORT"
 printf "test $F_n $TEST... " $N
@@ -12468,7 +12431,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -12494,6 +12456,7 @@ tf1="$td/test$N.1.stdout"
 te1="$td/test$N.1.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.pem,verify=0 PIPE"
 CMD1="$TRACE $SOCAT $opts - OPENSSL-CONNECT:$LOCALHOST:$PORT,bind=$LOCALHOST,verify=0"
 printf "test $F_n $TEST... " $N
@@ -12527,7 +12490,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -12548,6 +12510,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 #testserversec "$N" "$TEST" "$opts" "tcp4-l:$PORT,reuseaddr,fork,retry=1" "" "range=$SECONDADDR/32" "tcp4:127.0.0.1:$PORT" 4 tcp $PORT 0
 CMD0="$TRACE $SOCAT $opts -u TCP4-LISTEN:$PORT,$REUSEADDR,range=127.0.0.1/0 CREATE:$tf"
 CMD1="$TRACE $SOCAT $opts -u - TCP4-CONNECT:$SECONDADDR:$PORT,bind=$SECONDADDR"
@@ -12582,11 +12545,11 @@ fi
 
 fi ;; # $SECONDADDR, NUMCOND
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
 # test: OPENSSL sets of environment variables with important values of peer certificate
+newport tcp4
 while read ssldist MODE MODULE FIELD TESTADDRESS PEERADDRESS VALUE; do
 if [ -z "$ssldist" ] || [[ "$ssldist" == \#* ]]; then continue; fi
 #
@@ -12741,7 +12704,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #
 done <<<"
@@ -12813,7 +12775,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #
 done <<<"
@@ -12889,7 +12850,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #
 done <<<"
@@ -12960,7 +12920,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #
 done <<<"
@@ -13029,7 +12988,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 #
 done <<<"
@@ -13061,6 +13019,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.pem,verify=0 SYSTEM:cat"
 CMD1="$SOCAT $opts - OPENSSL-CONNECT:$LOCALHOST:$PORT,verify=0"
 printf "test $F_n $TEST... " $N
@@ -13096,7 +13055,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13140,7 +13098,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13180,6 +13137,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,openssl-method=$method,cert=testsrv.pem,verify=0 PIPE"
 CMD1="$SOCAT $opts - OPENSSL-CONNECT:$LOCALHOST:$PORT,opensslmethod=$method,verify=0"
 printf "test $F_n $TEST... " $N
@@ -13213,7 +13171,6 @@ fi # !DTLS1 hang
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 done
@@ -13246,6 +13203,11 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+if [[ "$method" =~ DTLS* ]]; then
+    newport udp4
+else
+    newport tcp4
+fi
 CMD0="$SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,openssl-method=$method,cert=testsrv.pem,verify=0 PIPE"
 CMD1="$SOCAT $opts - OPENSSL-CONNECT:$LOCALHOST:$PORT,openssl-method=$method,verify=0"
 printf "test $F_n $TEST... " $N
@@ -13286,7 +13248,6 @@ fi # !DTLS1 hang
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 done
@@ -13314,11 +13275,11 @@ elif ! [ "$OPENSSL_LATEST_PROTO_VERSION" -a "$OPENSSL_BEFORELAST_PROTO_VERSION" 
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-gentestcert testsrv
-testserversec "$N" "$TEST" "$opts -4" "SSL-L:$PORT,pf=ip4,reuseaddr,$SOCAT_EGD,verify=0,cert=testsrv.crt,key=testsrv.key" "" "openssl-min-proto-version=$OPENSSL_LATEST_PROTO_VERSION" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,$SOCAT_EGD,openssl-max-proto-version=$OPENSSL_BEFORELAST_PROTO_VERSION" 4 tcp $PORT -1
+    gentestcert testsrv
+    newport tcp4
+    testserversec "$N" "$TEST" "$opts -4" "SSL-L:$PORT,pf=ip4,reuseaddr,$SOCAT_EGD,verify=0,cert=testsrv.crt,key=testsrv.key" "" "openssl-min-proto-version=$OPENSSL_LATEST_PROTO_VERSION" "SSL:$LOCALHOST:$PORT,cafile=testsrv.crt,$SOCAT_EGD,openssl-max-proto-version=$OPENSSL_BEFORELAST_PROTO_VERSION" 4 tcp $PORT -1
 fi ;; # NUMCOND, $fets
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13352,7 +13313,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13386,7 +13346,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13420,7 +13379,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13441,7 +13399,7 @@ elif ! feat=$(testoptions so-reuseaddr); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-tp="$PORT"
+newport tcp4; tp="$PORT"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
@@ -13495,7 +13453,6 @@ fi
 fi # NUMCOND, SO_REUSEADDR
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13515,7 +13472,7 @@ elif ! feat=$(testoptions so-reuseport); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-tp="$PORT"
+newport; tp="$PORT"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
@@ -13592,7 +13549,6 @@ fi
 fi # NUMCOND, SO_REUSEPORT
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13626,7 +13582,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-#PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13655,6 +13610,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 #TESTSRV=./testsrvec; gentesteccert $TESTSRV
 TESTSRV=./testsrv; gentestcert $TESTSRV
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=$TESTSRV.crt,key=$TESTSRV.pem,verify=0 PIPE"
 CMD1="$TRACE $SOCAT $opts - OPENSSL-CONNECT:$LOCALHOST:$PORT,cipher=ECDHE-ECDSA-AES256-GCM-SHA384,cafile=$TESTSRV.crt,verify=0"
 printf "test $F_n $TEST... " $N
@@ -13692,7 +13648,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13711,6 +13666,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport udp6
 CMD0="$TRACE $SOCAT $opts UDP6-RECV:$PORT,ipv6-join-group=[ff02::2]:$MCINTERFACE /dev/null"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0"
@@ -13728,7 +13684,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13769,7 +13724,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13834,7 +13788,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -13954,7 +13907,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # Test if unbalanced quoting in Socat addresses is detected
@@ -14002,7 +13954,7 @@ TEST="$NAME: Service name resolution works with SCTP"
 # invoke socat with address SCTP4-CONNECT:$LOCALHOST:http; when this fails with
 # "Connection refused", or does not fail at all, the test succeeded
 if ! eval $NUMCOND; then :;
-elif ! runssctp4 "$((PORT))" >/dev/null; then
+elif ! runssctp4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}SCTP4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -14208,6 +14160,7 @@ tdiff="$td/test$N.diff"
 #set -vx
 da="test$N $(date) $RANDOM"
 init_openssl_s_server
+newport udp4
 CMD1="$TRACE openssl s_server $OPENSSL_S_SERVER_4 $OPENSSL_S_SERVER_DTLS -accept $PORT -quiet $OPENSSL_S_SERVER_NO_IGN_EOF -cert testsrv.pem"
 CMD="$TRACE $SOCAT $opts -T 3 - OPENSSL-DTLS-CLIENT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -14232,7 +14185,6 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 set +vx
 
@@ -14271,6 +14223,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 init_openssl_s_client
+newport udp4
 CMD1="$TRACE $SOCAT $opts OPENSSL-DTLS-SERVER:$PORT,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD="openssl s_client $OPENSSL_S_CLIENT_4 -host $LOCALHOST -port $PORT $OPENSSL_S_CLIENT_DTLS"
 printf "test $F_n $TEST... " $N
@@ -14296,7 +14249,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -14319,6 +14271,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,$SOCAT_EGD,cert=testalt.crt,key=testalt.key,verify=0 pipe"
 CMD1="$TRACE $SOCAT $opts - OPENSSL:$LOCALHOST:$PORT,verify=1,cafile=testalt.crt,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -14344,7 +14297,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSL_SERVERALTIP4AUTH
@@ -14366,6 +14318,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,$SOCAT_EGD,cert=testalt.crt,key=testalt.key,verify=0 pipe"
 CMD1="$TRACE $SOCAT $opts - OPENSSL:127.0.0.1:$PORT,verify=1,cafile=testalt.crt,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -14391,7 +14344,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 NAME=OPENSSL_SERVERALTIP6AUTH
@@ -14413,6 +14365,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp6
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip6,$REUSEADDR,$SOCAT_EGD,cert=testalt.crt,key=testalt.key,verify=0 pipe"
 CMD1="$TRACE $SOCAT $opts - OPENSSL:[::1]:$PORT,verify=1,cafile=testalt.crt,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -14438,7 +14391,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -14614,6 +14566,7 @@ te2="$td/test$N.stderr2"
 tk2="$td/test$N.kill2"
 $PRINTF "test $F_n $TEST... " $N
 # First, try to make socat hang and see if it can be killed
+newport tcp4
 CMD1="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr PIPE"
 $CMD1 >"$te1" 2>&1 </dev/null &
 pid1=$!
@@ -14667,12 +14620,15 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -u UDP-DATAGRAM:$LOCALHOST:$((PORT+1)),bind=:$((PORT)) -"
-CMD1="$TRACE $SOCAT $opts -u - UDP-DATAGRAM:$LOCALHOST:$((PORT)),bind=:$((PORT+2))"
+newport udp4; PORT1=$PORT
+newport udp4; PORT2=$PORT
+newport udp4; PORT3=$PORT
+CMD0="$TRACE $SOCAT $opts -u UDP-DATAGRAM:$LOCALHOST:$PORT2,bind=:$PORT1 -"
+CMD1="$TRACE $SOCAT $opts -u - UDP-DATAGRAM:$LOCALHOST:$PORT1,bind=:$PORT3"
 printf "test $F_n $TEST... " $N
 $CMD0 >${tf}0 2>"${te}0" &
 pid0=$!
-waitudp4port $PORT 1
+waitudp4port $PORT1 1
 echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
 psleep 0.1
@@ -14693,7 +14649,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -14721,6 +14676,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
+newport tcp4
 CMD0="{ echo -e \"HTTP/1.0 200 OK\\n\"; sleep 2; } |$TRACE $SOCAT $opts - TCP4-L:$PORT,$REUSEADDR,crlf"
 CMD1="$TRACE $SOCAT $opts FILE:/dev/null PROXY-CONNECT:$LOCALHOST:127.0.0.1:1000,pf=ip4,proxyport=$PORT,proxy-authorization-file=$ta"
 printf "test $F_n $TEST... " $N
@@ -14760,7 +14716,6 @@ kill $pid 2>/dev/null
 wait
 fi ;; # NUMCOND, feats
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -14781,6 +14736,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+#newport vsock 	# nope
 CMD0="$TRACE $SOCAT $opts VSOCK-LISTEN:$PORT PIPE"
 CMD1="$TRACE $SOCAT $opts - VSOCK-CONNECT:1:$PORT"
 printf "test $F_n $TEST... " $N
@@ -14825,7 +14781,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -14860,6 +14815,7 @@ to="$td/test$N.dataout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts -u OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.pem,verify=0 CREAT:$to"
 CMD1="$TRACE $SOCAT $opts -u OPEN:$ti OPENSSL-CONNECT:$LOCALHOST:$PORT,cafile=testsrv.crt"
 printf "test $F_n $TEST... " $N
@@ -14897,7 +14853,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # File transfer with OpenSSL stream connection was incomplete
@@ -14931,6 +14886,7 @@ to="$td/test$N.dataout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts -U OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.pem,verify=0 OPEN:$ti"
 CMD1="$TRACE $SOCAT $opts -u OPENSSL-CONNECT:$LOCALHOST:$PORT,cafile=testsrv.crt CREAT:$to"
 printf "test $F_n $TEST... " $N
@@ -14968,7 +14924,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # Test file transfer from client to server using DTLS
@@ -15005,6 +14960,7 @@ to="$td/test$N.dataout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport udp4
 CMD0="$TRACE $SOCAT $opts -u OPENSSL-DTLS-LISTEN:$PORT,cert=testsrv.pem,verify=0 CREAT:$to"
 CMD1="$TRACE $SOCAT $opts -u OPEN:$ti OPENSSL-DTLS-CONNECT:$LOCALHOST:$PORT,cafile=testsrv.crt"
 printf "test $F_n $TEST... " $N
@@ -15042,7 +14998,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 # Test file transfer from server to client using DTLS
@@ -15079,6 +15034,7 @@ to="$td/test$N.dataout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport udp4
 CMD0="$TRACE $SOCAT $opts -U OPENSSL-DTLS-LISTEN:$PORT,cert=testsrv.pem,verify=0 OPEN:$ti"
 CMD1="$TRACE $SOCAT $opts -u OPENSSL-DTLS-CONNECT:$LOCALHOST:$PORT,cafile=testsrv.crt CREAT:$to"
 printf "test $F_n $TEST... " $N
@@ -15116,7 +15072,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -15148,6 +15103,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 trc0="$td/test$N.rc0"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,accept-timeout=4.5,$SOCAT_EGD,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD1="$TRACE $SOCAT $opts /dev/null OPENSSL-CONNECT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
@@ -15176,7 +15132,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -15204,6 +15159,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4
 CMD0="$TRACE $SOCAT $opts -u OPENSSL-LISTEN:$PORT,reuseaddr,cert=./testsrv.pem,cafile=./testalt.crt -"
 CMD1="$TRACE $SOCAT $opts -u - OPENSSL-CONNECT:localhost:$PORT,cafile=testsrv.crt,cert=testalt.pem,verify=0"
 printf "test $F_n $TEST... " $N
@@ -15228,7 +15184,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -15266,7 +15221,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -15309,7 +15263,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -15536,7 +15489,6 @@ fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))
 
 
@@ -15584,13 +15536,16 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: UDP4-SEND with lowport"
 # Run Socat with UDP4-SEND:...,lowport and full logging and check the
-# parameters of bind() call. It port is in the range 640..1023 the test
+# parameters of bind() call. If port is in the range 640..1023 the test
 # succeeded.
+# This test does not require root because it just checks log of bind() but does
+# not require success
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+#newport udp4 	# not needed in this test
 CMD="$TRACE $SOCAT $opts -d -d -d -d /dev/null UDP4-SENDTO:$LOCALHOST:$PORT,lowport"
 printf "test $F_n $TEST... " $N
 $CMD >/dev/null 2>"${te}"
