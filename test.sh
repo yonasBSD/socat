@@ -11,13 +11,56 @@
 # you can eg strace socat with: export TRACE="strace -v -tt -ff -D -x -s 1024 -o /tmp/$USER/socat.strace"
 #set -vx
 
+#TODO: Add options for interface, broadcast-interface
+
+[ -z "$USER" ] && USER="$LOGNAME"      # HP-UX
+if [ -z "$TMPDIR" ]; then
+    if [ -z "$TMP" ]; then
+	TMP=/tmp
+    fi
+    TMPDIR="$TMP"
+fi
+#E=-e  # Linux
+if   [ $(echo "x\c") = "x" ]; then E=""
+elif [ $(echo -e "x\c") = "x" ]; then E="-e"
+else
+    echo "cannot suppress trailing newline on echo" >&2
+    exit 1
+fi
+ECHO="echo $E"
+PRINTF="printf"
+
+usage() {
+    $ECHO "Usage: $0 <options> [<test-spec> ...]"
+    $ECHO "options:"
+    $ECHO "\t-h \t\tShow this help"
+    $ECHO "\t-t <sec> \tBase for timeouts in seconds, default: 0.1"
+    $ECHO "\t-v \t\tBe more verbose, show failed commands"
+    $ECHO "\t-n <num> \tOnly perform test with given number"
+    $ECHO "\t-N <num> \tOnly perform tests starting with given number"
+    $ECHO "\t-C \t\tClear/remove left over certificates from previous runs"
+    $ECHO "\t-x \t\tShow commands executed, even when test succeeded"
+    #$ECHO "\t-d \t\tShow log output of commands, even when they did not fail"
+    $ECHO "\t-foreign \tAllow tests that send packets to Internet"
+    $ECHO "\t-expect-fail N1,N2,... \tIgnore failure of these tests"
+    $ECHO "\ttest-spec \Number of test or name of test"
+    $ECHO "Contents of environment variable OPTS are passed to Socat invokations, e.'g:"
+    $ECHO "OPTS=\"-d -d -d -d -lu\" ./test.sh"
+    $ECHO "TRACE=\"strace -tt -v\" 	Use trace,valgrind etc.on socat"
+    $ECHO "SOCAT=/path/to/socat \tselect socat executable for test"
+    $ECHO "FILAN=... PROCAN=..."
+    $ECHO "Find the tests' stdout,stderr,diff in $TMPDIR/$USER/\$PID"
+}
+
 val_t=0.1
 NUMCOND=true
 #NUMCOND="test \$N -gt 70"
 VERBOSE=
 FOREIGN=
+EXPECT_FAIL=
 while [ "$1" ]; do
     case "X$1" in
+	X-h)   usage; exit 0 ;;
 	X-t?*) val_t="${1#-t}" ;;
 	X-t)   shift; val_t="$1" ;;
 	X-v)   VERBOSE=1 ;; 	# show commands
@@ -27,6 +70,10 @@ while [ "$1" ]; do
 	X-N)   shift; NUMCOND="test \$N -ge $1" ;;
 	X-C)   rm -f testcert*.conf testcert.dh testcli*.* testsrv*.* ;;
 	X-foreign)	FOREIGN=1 ;; 	# allow access to 3rd party Internet hosts
+	X-expect-fail|X--expect-fail) shift; EXPECT_FAIL="$1" ;;
+	X-*)   echo "Unknown option \"$1\"" >&2
+               usage >&2
+               exit 1 ;;
 	*) break;
     esac
     shift
@@ -4207,16 +4254,17 @@ esac
 N=$((N+1))
 
 
+# I cannot remember the clou of this test, seems rather useless
 NAME=CHILDDEFAULT
 case "$TESTS" in
 *%$N%*|*%functions%*|*%$NAME%*)
 if ! eval $NUMCOND; then :
-elif ! a=$(testfeats STDIO EXEC); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+elif ! F=$(testfeats STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! a=$(testaddrs STDIO EXEC); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+elif ! A=$(testaddrs STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -4231,8 +4279,9 @@ MYPPID=`expr "\`grep "process parent id =" $tf\`" : '[^0-9]*\([0-9]*\).*'`
 MYPGID=`expr "\`grep "process group id =" $tf\`" : '[^0-9]*\([0-9]*\).*'`
 MYSID=`expr "\`grep "process session id =" $tf\`" : '[^0-9]*\([0-9]*\).*'`
 #echo "PID=$MYPID, PPID=$MYPPID, PGID=$MYPGID, SID=$MYSID"
-if [ "$MYPID" = "$MYPPID" -o "$MYPID" = "$MYPGID" -o "$MYPID" = "$MYSID" -o \
-     "$MYPPID" = "$MYPGID" -o "$MYPPID" = "$MYSID" -o "$MYPGID" = "$MYSID" ];
+#if [ "$MYPID" = "$MYPPID" -o "$MYPID" = "$MYPGID" -o "$MYPID" = "$MYSID" -o \
+#     "$MYPPID" = "$MYPGID" -o "$MYPPID" = "$MYSID" -o "$MYPGID" = "$MYSID" ];
+if [ "$MYPID" = "$MYPPID" ];
 then
     $PRINTF "$FAILED:\n"
     echo "$CMD"
@@ -14569,10 +14618,10 @@ if ! kill $pid1 2>"$tk1"; then
     listCANT="$listCANT $N"
 else
 # Second, set accept-timeout and see if socat exits before kill
-CMD2="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr,accept-timeout=1 PIPE" &
+CMD2="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr,accept-timeout=1 PIPE"
 $CMD2 >"$te2" 2>&1 </dev/null &
 pid2=$!
-sleep 1
+sleep 2
 if kill $pid2 2>"$tk2"; then
     $PRINTF "$FAILED\n"
     echo "$CMD2" >&2
@@ -15985,14 +16034,42 @@ N=$((N+1))
 echo "Used temp directory $TD - you might want to remove it after analysis"
 echo "Summary: $((N-1)) tests, $((numOK+numFAIL+numCANT)) selected; $numOK ok, $numFAIL failed, $numCANT could not be performed"
 
+set -- $listCANT; while [ "$1" ]; do echo "$1"; shift; done >"$td/cannot.lst"
+ln -sf "$td/cannot.lst" .
+set -- $listFAIL; while [ "$1" ]; do echo "$1"; shift; done >"$td/failed.lst"
+ln -sf "$td/failed.lst" .
+sort -n <(cat "$td/cannot.lst" |while read x; do echo "$x CANT"; done) <(cat "$td/failed.lst" |while read x; do echo "$x FAILED"; done) >"$td/result.txt"
+ln -sf "$td/result.txt" .
 if [ "$numCANT" -gt 0 ]; then
     echo "CANT: $listCANT"
 fi
 if [ "$numFAIL" -gt 0 ]; then
     echo "FAILED: $listFAIL"
-    exit 1
 fi
-exit 0
+
+if [ -z "$EXPECT_FAIL" ]; then
+    [ "$numFAIL" -eq 0 ]
+    exit 	# with rc from above statement
+fi
+
+#set -vx
+
+if [ "$EXPECT_FAIL" ]; then
+    diff  <(set -- $(echo "$EXPECT_FAIL" |tr ',' ' '); while [ "$1" ]; do echo "$1"; shift; done) "$td/failed.lst" >"$td/failed.diff"
+    ln -sf "$td/failed.diff" .
+    #grep "^"
+    grep "^> " "$td/failed.diff" |awk '{print($2);}' >"$td/failed.unexp"
+    ln -s "$td/failed.unexp" .
+    echo "FAILED unexpected: $(cat "$td/failed.unexp" |xargs echo)"
+    grep "^< " "$td/failed.diff" |awk '{print($2);}' >"$td/ok.unexp"
+    ln -s "$td/ok.unexp" .
+    echo "OK unexpected: $(cat "$td/ok.unexp" |xargs echo)"
+fi
+listFAIL=$(cat "$td/failed.lst" |xargs echo)
+numFAIL="$(wc -l "$td/failed.lst" |awk '{print($1);}')"
+
+! test -s "$td/failed.unexp"
+exit
 
 #==============================================================================
 
@@ -16032,12 +16109,12 @@ elif ! $(type systemd-socket-activate >/dev/null 2>&1); then
     $PRINTF "test $F_n $TEST... ${YELLOW}systemd-socket-activate not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! a=$(testfeats STDIO IP4 TCP PIPE); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+elif ! F=$(testfeats STDIO IP4 TCP PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! a=$(testaddrs - TCP4 TCP4-LISTEN PIPE); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+elif ! A=$(testaddrs - TCP4 TCP4-LISTEN PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! o=$(testoptions so-reuseaddr fork ) >/dev/null; then

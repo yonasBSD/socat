@@ -76,6 +76,14 @@ Testing:
 	socktype=<val-of-SOCK_DGRAM>
 	Tests: EXECSOCKETPAIRPACKETS SYSTEMSOCKETPAIRPACKETS
 	
+	Cosmetic corrections of EXEC,SYSTEM tests.
+
+	test.sh: Added option --expect-fail to specify comma separated list of
+	test numbers whose failure shall not cause a failure of the whole
+	script.
+
+	test.sh: Added help text
+
 ####################### V 1.7.4.4:
 
 Corrections:
@@ -647,7 +655,7 @@ Corrections:
 	two settings were applied with two different get/set cycles, Thanks to
 	Alexandre Fenyo for providing an initial patch.
 	However, the actual fix is part of a conceptual change of the termios
-	module that aims for applying all changes in a single tcsetaddr call.
+	module that aims for applying all changes in a single tcsetattr call.
 	Fixes FreeBSD Bug 198441
 
 	Termios options TAB0,TAB1,TAB2,TAB3, and XTABS did not have an effect.
