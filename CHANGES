@@ -157,6 +157,10 @@ Porting:
 	Solaris derivatives no longer need librt for clock_gettime()
 	Thanks to Andy Fiddaman to directing me to the patch.
 
+	LibreSSL does not have OPENSSL_INIT_new(). This function is now
+	guarded. Socat might build with LibreSSL.
+	Thanks to Orbea for reporting and helping.
+
 Building:
 	Failure during building documentation, e.g. due to missing Yodl
 	packages, now does not let the build process fail.

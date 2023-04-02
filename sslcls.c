@@ -31,7 +31,7 @@ int sycOPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings) {
 }
 #endif
 
-#if !HAVE_OPENSSL_INIT_SSL
+#if !(defined(HAVE_OPENSSL_INIT_SSL) && defined(HAVE_OPENSSL_INIT_new))
 void sycSSL_load_error_strings(void) {
    Debug("SSL_load_error_strings()");
    SSL_load_error_strings();
@@ -39,7 +39,7 @@ void sycSSL_load_error_strings(void) {
 }
 #endif
 
-#if !HAVE_OPENSSL_INIT_SSL
+#if HAVE_SSL_library_init
 int sycSSL_library_init(void) {
    int result;
    Debug("SSL_library_init()");

@@ -633,7 +633,7 @@ if test -n "$WITH_OPENSSL"; then
   fi
 fi
 
-AC_CHECK_FUNCS(OPENSSL_init_ssl SSL_library_init)
+AC_CHECK_FUNCS(OPENSSL_init_ssl SSL_library_init OPENSSL_INIT_new)
 
 #; sc_cv_have_SSL_library_init='yes'; AC_DEFINE(HAVE_SSL_library_init)
 #if test -n "$WITH_OPENSSL"; then

@@ -962,7 +962,7 @@ int
    openssl_delete_cert_info();
 
    /* OpenSSL preparation */
-#if HAVE_OPENSSL_INIT_SSL
+#if defined(HAVE_OPENSSL_INIT_SSL) && defined(HAVE_OPENSSL_INIT_new)
    {
       uint64_t opts = 0;
       OPENSSL_INIT_SETTINGS *settings;
@@ -973,12 +973,14 @@ int
       sycOPENSSL_init_ssl(opts, settings);
    }
 #else
+#  if defined(HAVE_SSL_library_init)
    sycSSL_library_init();
+#  endif
    OpenSSL_add_all_algorithms();
    OpenSSL_add_all_ciphers();
    OpenSSL_add_all_digests();
    sycSSL_load_error_strings();
-#endif
+#endif /* defined(HAVE_OPENSSL_INIT_SSL) && defined(HAVE OPENSSL_INIT_new) */
 
    /*! actions_to_seed_PRNG();*/
 
