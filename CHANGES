@@ -77,11 +77,14 @@ Documentation:
 	Syntax and semantics of some options (esp.unlink-close) were not clear.
 	Thanks to Anthony Chavez for reporting this and making suggestions.
 
-Documentation:
 	socat-tun.html described TCP as tunnel medium but this does not keep
 	packet boundaries. Changed to UDP.
 
 	Added examples for DCCP client and server.
+
+	Complex Socat examples are now displayed in two or three lines for
+	better overview.
+	dest-unreach.css stylesheet has been improved to support this.
 
 Testing:
 	Idea: EXEC,SYSTEM addresses can keep packet boundaries when option
