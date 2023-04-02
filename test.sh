@@ -574,7 +574,7 @@ init_openssl_s_server () {
 
 [ -z "$TESTS" ] && TESTS="consistency functions filan"
 # use '%' as separation char
-TESTS="%$(echo "$TESTS" |tr ' ' '%')%"
+TESTS="%$(echo " $TESTS " |tr ' ' '%')%"
 
 [ -z "$USER" ] && USER="$LOGNAME"	# HP-UX
 if [ -z "$TMPDIR" ]; then
@@ -15923,6 +15923,43 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
+
+# Test if EXEC'd program inherits only the stdio file descriptors
+# thus there are no FD leaks from Socat to EXEC'd program
+NAME=EXEC_FDS
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%filan%*|*%$NAME%*)
+TEST="$NAME: Socat does not leak FDs to EXEC'd program"
+# Run Socat with EXEC address, execute Filan to display its file descriptors
+# Test succeeds when only FDs 0, 1, 2 are in use.
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT $opts - EXEC:\"$FILAN -s\",stderr"
+printf "test $F_n $TEST... " $N
+eval "$CMD" >"${tf}" 2>"${te}"
+# "door" is a special FD type on Solaris/SunOS
+if [ "$(cat  "${tf}" |grep -v ' door ' |wc -l)" -eq 3 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "$CMD" >&2
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD" >&2
+    cat "${tf}" >&2
+    cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
 
 # end of common tests
 

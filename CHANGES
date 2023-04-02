@@ -89,6 +89,8 @@ Testing:
 
 	test.sh: Check if ports are free before using them for tests
 
+	Test EXEC_FDS checks with Filan if EXEC address only passes stdio FDs.
+
 ####################### V 1.7.4.4:
 
 Corrections:
