@@ -59,6 +59,9 @@ Testing:
 Documentation:
 	Removed obselete file doc/xio.help
 
+	Added doc for option ipv6-join-group (ipv6-add-membership)
+	Thanks to Martin Buck for sending the patch.
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

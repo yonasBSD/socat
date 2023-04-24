@@ -412,6 +412,7 @@ label(ADDRESS_IP_DATAGRAM)dit(bf(tt(IP-DATAGRAM:<address>:<protocol>)))
    link(ip-multicast-if)(OPTION_IP_MULTICAST_IF),
    link(ip-add-membership)(OPTION_IP_ADD_MEMBERSHIP),
    link(ip-add-source-membership)(OPTION_IP_ADD_SOURCE_MEMBERSHIP),
+   link(ipv6-join-group)(OPTION_IPV6_JOIN_GROUP),
    link(ttl)(OPTION_TTL),
    link(tos)(OPTION_TOS),
    link(pf)(OPTION_PROTOCOL_FAMILY)nl()
@@ -1127,6 +1128,7 @@ label(ADDRESS_UDP_DATAGRAM)dit(bf(tt(UDP-DATAGRAM:<address>:<port>)))
    link(ip-multicast-if)(OPTION_IP_MULTICAST_IF),
    link(ip-add-membership)(OPTION_IP_ADD_MEMBERSHIP),
    link(ip-add-source-membership)(OPTION_IP_ADD_SOURCE_MEMBERSHIP),
+   link(ipv6-join-group)(OPTION_IPV6_JOIN_GROUP),
    link(ttl)(OPTION_TTL),
    link(tos)(OPTION_TOS),
    link(sourceport)(OPTION_SOURCEPORT),
@@ -2160,11 +2162,12 @@ dit(bf(tt(ip-add-membership=<multicast-address:interface-name>)))
 dit(bf(tt(ip-add-membership=<multicast-address:interface-index>)))
 dit(bf(tt(ip-add-membership=<multicast-address:interface-address:interface-name>)))
 dit(bf(tt(ip-add-membership=<multicast-address:interface-address:interface-index>)))
-   Makes the socket member of the specified multicast group. This is currently
-   only implemented for IPv4. The option takes the IP address of the multicast
-   group and info about the desired network interface. The most common syntax
-   is the first one, while the others are only available on systems that
-   provide tt(struct mreqn) (Linux).nl()
+   Makes the socket member of the specified multicast group. This only works
+   for IPv4, see link(ipv6-join-group)(OPTION_IPV6_JOIN_GROUP) for the IPv6
+   variant. The option takes the IP address of the multicast group and info
+   about the desired network interface. The most common syntax is the first
+   one, while the others are only available on systems that provide
+   tt(struct mreqn) (Linux).nl()
    The indices of active network interfaces can be shown using the utility
    procan().
 label(OPTION_IP_ADD_SOURCE_MEMBERSHIP)
@@ -2172,6 +2175,15 @@ dit(bf(tt(ip-add-source-membership=<multicast-address:interface-address:source-a
    Makes the socket member of the specified multicast group for the specified
    source, i.e. only multicast traffic from this address is to be delivered.
    This is currently only implemented for IPv4.nl()
+label(OPTION_IPV6_JOIN_GROUP)
+dit(bf(tt(ipv6-join-group=<multicast-address:interface-name>)))
+dit(bf(tt(ipv6-join-group=<multicast-address:interface-index>)))
+   Makes the socket member of the specified multicast group. This only works
+   for IPv6, see link(ip-add-membership)(OPTION_IP_ADD_MEMBERSHIP) for the
+   IPv4 variant. The option takes the IP address of the multicast
+   group and info about the desired network interface.
+   The indices of active network interfaces can be shown using the utility
+   procan().
 label(OPTION_IP_MULTICAST_IF)
 dit(bf(tt(ip-multicast-if=<hostname>)))
    Specifies hostname or address of the network interface to be used for
