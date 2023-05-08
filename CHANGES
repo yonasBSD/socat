@@ -56,6 +56,9 @@ Corrections:
 
 	Procan tries to find out VSOCK CID only when running as root
 
+	The mechanism for deferring logs from signal handlers had an issue that
+	caused lots of unwanted recvfrom() calls.
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)

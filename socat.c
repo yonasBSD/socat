@@ -85,7 +85,6 @@ const char copyright_ssleay[] = "This product includes software written by Tim H
 
 bool havelock;
 
-
 int main(int argc, const char *argv[]) {
    const char **arg1, *a;
    char *mainwaitstring;

@@ -58,9 +58,9 @@ static void msg2(
 		 int level, int exitcode, int handler, const char *text);
 static void _msg(int level, const char *buff, const char *syslp);
 
-sig_atomic_t diag_in_handler;	/* !=0 indicates to msg() that in signal handler */
-sig_atomic_t diag_immediate_msg;	/* !=0 prints messages even from within signal handler instead of deferring them */
-sig_atomic_t diag_immediate_exit;	/* !=0 calls exit() from diag_exit() even when in signal handler. For system() */
+volatile sig_atomic_t diag_in_handler;	/* !=0 indicates to msg() that in signal handler */
+volatile sig_atomic_t diag_immediate_msg;	/* !=0 prints messages even from within signal handler instead of deferring them */
+volatile sig_atomic_t diag_immediate_exit;	/* !=0 calls exit() from diag_exit() even when in signal handler. For system() */
 
 static struct wordent facilitynames[] = {
    {"auth",     (void *)LOG_AUTH},
@@ -108,7 +108,7 @@ struct sermsg {
 static int diaginitialized;
 static int diag_sock_send = -1;
 static int diag_sock_recv = -1;
-static int diag_msg_avail = 0;	/* !=0: messages from within signal handler may be waiting */
+static volatile sig_atomic_t diag_msg_avail = 0;	/* !=0: messages from within signal handler may be waiting */
 
 
 static int diag_sock_pair(void) {
@@ -278,7 +278,6 @@ void msg(int level, const char *format, ...) {
    /* in normal program flow (not in signal handler) */
    /* first flush the queue of datagrams from the socket */
    if (diag_msg_avail && !diag_in_handler) {
-      diag_msg_avail = 0;	/* _before_ flush to prevent inconsistent state when signal occurs inbetween */
       diag_flush();
    }
 
@@ -418,6 +417,11 @@ void diag_flush(void) {
    struct diag_dgram recv_dgram;
    char exitmsg[20];
 
+   if (diag_msg_avail == 0) {
+      return;
+   }
+   diag_msg_avail = 0;
+
    if (!diagopts.signalsafe) {
       return;
    }
@@ -500,6 +504,7 @@ void diag_exit(int status) {
 	   |MSG_NOSIGNAL
 #endif
 	   );
+      diag_msg_avail = 1;
       return;
    }
    _diag_exit(status);
