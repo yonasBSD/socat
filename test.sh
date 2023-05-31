@@ -56,11 +56,13 @@ val_t=0.1
 NUMCOND=true
 #NUMCOND="test \$N -gt 70"
 VERBOSE=
+DEBUG=
 FOREIGN=
 EXPECT_FAIL=
 while [ "$1" ]; do
     case "X$1" in
 	X-h)   usage; exit 0 ;;
+	X-d)   DEBUG="1" ;;
 	X-t?*) val_t="${1#-t}" ;;
 	X-t)   shift; val_t="$1" ;;
 	X-v)   VERBOSE=1 ;; 	# show commands
@@ -78,6 +80,7 @@ while [ "$1" ]; do
     esac
     shift
 done
+debug=$DEBUG
 
 opt_t="-t $val_t"
 
@@ -122,8 +125,6 @@ MISCDELAY=1
 
 opts="$opt_t $OPTS"
 export SOCAT_OPTS="$opts"
-#debug="1"
-debug=
 TESTS="$*"; export TESTS
 if ! SOCAT_MAIN_WAIT= $SOCAT -V >/dev/null 2>&1; then
     echo "Failed to execute $SOCAT, exiting" >&2
@@ -292,6 +293,13 @@ if ! type usleep >/dev/null 2>&1 ||
     }
 fi
 #USLEEP=usleep
+
+# A sleep with configurable clocking ($vat_t)
+# val_t should be at least the time that a Socat invocation, no action, and
+# termination takes
+relsleep () {
+    usleep $(($1*MICROS))
+}
 
 if type ping6 >/dev/null 2>&1; then
     PING6=ping6
@@ -1810,6 +1818,7 @@ numFAIL=0
 numCANT=0
 listFAIL=
 listCANT=
+namesFAIL=
 
 #==============================================================================
 # test if selected socat features work ("FUNCTIONS")
@@ -9234,8 +9243,24 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%udp%*|*%udp6%*|*%ip6%*|*%dgram%*|*%multicast%*|*%$NAME%*)
 TEST="$NAME: UDP/IPv6 multicast"
 if ! eval $NUMCOND; then :;
-elif ! feat=$(testfeats ip6 udp && runsip6); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
+elif ! f=$(testfeats ip6 udp); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $f not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testaddrs - STDIO UDP6-RECV UDP6-SENDTO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions ipv6-join-group) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip6 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 does not work on $HOSTNAME${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! echo |$SOCAT -u -t 0.1 - UDP6-SENDTO:[ff02::2]:12002 >/dev/null 2>&1; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 multicasting dos not work${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -9247,8 +9272,8 @@ if1="$MCINTERFACE"
 ts1a="[::1]"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT -u $opts UDP6-RECV:$ts1p,reuseaddr,ipv6-join-group=[ff02::2]:$if1 -"
-CMD2="$TRACE $SOCAT -u $opts - UDP6-SENDTO:[ff02::2]:$ts1p,bind=$ts1a"
-#CMD2="$TRACE $SOCAT -u $opts - UDP6-SENDTO:[ff02::2]:$ts1p"
+#CMD2="$TRACE $SOCAT -u $opts - UDP6-SENDTO:[ff02::2]:$ts1p,bind=$ts1a"
+CMD2="$TRACE $SOCAT -u $opts - UDP6-SENDTO:[ff02::2]:$ts1p"
 printf "test $F_n $TEST... " $N
 $CMD1 2>"${te}1"  >"${tf}" &
 pid1="$!"
@@ -9259,29 +9284,35 @@ usleep $MICROS
 kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo -e "$CMD1 &\n$CMD2"
+   echo "$CMD1 &"
    cat "${te}1"
+   echo "$CMD2"
    cat "${te}2"
    numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-    if ! [ "$UNAME" = Linux ] || ! [[ $(uname -r) =~ ^2\.* ]] || ! [[ ^3\.* ]] || ! [[ ^4\.[0-4]\.* ]]; then
-   $PRINTF "${YELLOW}works only on Linux up to about 4.4${NORMAL}\n" $N
-   numCANT=$((numCANT+1))
-   listCANT="$listCANT $N"
-    else
+#    if ! [ "$UNAME" = Linux ] || ! [[ $(uname -r) =~ ^2\.* ]] || ! [[ ^3\.* ]] || ! [[ ^4\.[0-4]\.* ]]; then
+#   $PRINTF "${YELLOW}works only on Linux up to about 4.4${NORMAL}\n" $N
+#   numCANT=$((numCANT+1))
+#   listCANT="$listCANT $N"
+#    else
    $PRINTF "$FAILED\n"
    echo "$CMD1 &"
+   cat "${te}1"
    echo "$CMD2"
+   cat "${te}2"
    cat "$tdiff"
    numFAIL=$((numFAIL+1))
    listFAIL="$listFAIL $N"
-    fi
+#    fi
 else
     $PRINTF "$OK\n"
-   if [ "$VERBOSE" ]; then echo -e "$CMD1 &\n$CMD2"; fi
-   if [ -n "$debug" ]; then cat $te; fi
-   numOK=$((numOK+1))
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND, feats
 esac

@@ -22,6 +22,7 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
+#CCOPT=-fcf-protection=none 	# for gdb on Ubuntu-20.04
 CCOPTS = $(CCOPT)
 
 SYSDEFS = @SYSDEFS@

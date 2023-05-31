@@ -108,6 +108,8 @@ Testing:
 
 	Test EXEC_FDS checks with Filan if EXEC address only passes stdio FDs.
 
+	Improved template; prepared namesFAIL, -d (DEBUG)
+
 ####################### V 1.7.4.4:
 
 Corrections:
@@ -770,7 +772,7 @@ New features:
 
 porting:
 	ext2 options are now fs options.
-	
+
 ####################### V 1.7.3.2:
 
 corrections:
