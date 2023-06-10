@@ -59,6 +59,7 @@ struct {
 void socat_usage(FILE *fd);
 void socat_opt_hint(FILE *fd, char a, char b);
 void socat_version(FILE *fd);
+static int xio_openauxwr(const char *path, const char *hint);
 int socat(const char *address1, const char *address2);
 int _socat(void);
 int cv_newline(unsigned char *buff, ssize_t *bytes, int lineterm1, int lineterm2);
@@ -187,21 +188,9 @@ int main(int argc, const char *argv[]) {
 	       break;
 	    }
 	 }
-	 if ((socat_opts.sniffleft = Open(a, O_CREAT|O_WRONLY|O_APPEND|
-#ifdef O_LARGEFILE
-					  O_LARGEFILE|
-#endif
-					  O_NONBLOCK, 0664)) < 0) {
-	    if (errno == ENXIO) {
-	       if ((socat_opts.sniffleft = Open(a, O_CREAT|O_RDWR|O_APPEND|
-#ifdef O_LARGEFILE
-						O_LARGEFILE|
-#endif
-						O_NONBLOCK, 0664)) > 0)
-		  break; 	/* try to open pipe rdwr */
-	    }
-	    Error2("option -r \"%s\": %s", a, strerror(errno));
-         }
+	 if ((socat_opts.sniffleft = xio_openauxwr(a, "option -r")) < 0) {
+	    Error2("option -r: failed to open \"%s\": %s", a, strerror(errno));
+	 }
 	 break;
       case 'R': if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -212,21 +201,9 @@ int main(int argc, const char *argv[]) {
 	       break;
 	    }
 	 }
-	 if ((socat_opts.sniffright = Open(a, O_CREAT|O_WRONLY|O_APPEND|
-#ifdef O_LARGEFILE
-					   O_LARGEFILE|
-#endif
-					   O_NONBLOCK, 0664)) < 0) {
-	    if (errno == ENXIO) {
-	       if ((socat_opts.sniffright = Open(a, O_CREAT|O_RDWR|O_APPEND|
-#ifdef O_LARGEFILE
-						O_LARGEFILE|
-#endif
-						O_NONBLOCK, 0664)) > 0)
-		  break; 	/* try to open pipe rdwr */
-	    }
-	    Error2("option -R \"%s\": %s", a, strerror(errno));
-         }
+	 if ((socat_opts.sniffright = xio_openauxwr(a, "option -R")) < 0) {
+	    Error2("option -R: failed to open \"%s\": %s", a, strerror(errno));
+	 }
 	 break;
       case 'b': if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -626,6 +603,47 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_MSGLEVEL\n", fd);
 #endif
+}
+
+
+/* Opens a path for logging or tracing.
+   Return the filedescriptor, or -1 when an error occurred (errn0).
+   Prints messages but no Error().
+*/
+static int xio_openauxwr(const char *path, const char *hint)
+{
+	int fd;
+	int _errno;
+
+	if ((fd = Open(path, O_CREAT|O_WRONLY|O_APPEND|
+#ifdef O_LARGEFILE
+		       O_LARGEFILE|
+#endif
+#ifdef O_CLOEXEC
+		       O_CLOEXEC|
+#endif
+		       O_NONBLOCK, 0664)) < 0) {
+		if (errno != ENXIO)
+			return -1;
+		/* Possibly a named pipe that does not yet have a reader */
+		_errno = errno;
+		Notice3("%s \"%s\": %s, retrying r/w", hint, path, strerror(errno));
+		if ((fd = Open(path, O_CREAT|O_RDWR|O_APPEND|
+#ifdef O_LARGEFILE
+			       O_LARGEFILE|
+#endif
+#ifdef O_CLOEXEC
+			       O_CLOEXEC|
+#endif
+			       O_NONBLOCK, 0664)) < 0) {
+			errno = _errno;
+			return -1;
+		}
+	}
+#ifndef O_CLOEXEC
+	 Fcntl_l(fd, F_SETFD, FD_CLOEXEC);
+#endif
+	 return fd;
 }
 
 
@@ -1281,6 +1299,7 @@ static int
 int xiotransfer(xiofile_t *inpipe, xiofile_t *outpipe,
 		unsigned char *buff, size_t bufsiz, bool righttoleft) {
    ssize_t bytes, writt = 0;
+   ssize_t sniffed;
 
 	 bytes = xioread(inpipe, buff, bufsiz);
 	 if (bytes < 0) {
@@ -1331,9 +1350,23 @@ int xiotransfer(xiofile_t *inpipe, xiofile_t *outpipe,
 	    }
 
 	    if (!righttoleft && socat_opts.sniffleft >= 0) {
-	       Write(socat_opts.sniffleft, buff, bytes);
+	       if ((sniffed = Write(socat_opts.sniffleft, buff, bytes)) < bytes) {
+		  if (sniffed < 0)
+		     Warn3("-r: write(%d, buff, "F_Zu"): %s",
+			   socat_opts.sniffleft, bytes, strerror(errno));
+		  else if (sniffed < bytes)
+		     Warn3("-r: write(%d, buff, "F_Zu") -> "F_Zd,
+			   socat_opts.sniffleft, bytes, sniffed);
+	       }
 	    } else if (righttoleft && socat_opts.sniffright >= 0) {
-	       Write(socat_opts.sniffright, buff, bytes);
+	       if ((sniffed = Write(socat_opts.sniffright, buff, bytes)) < bytes) {
+		  if (sniffed < 0)
+		     Warn3("-R: write(%d, buff, "F_Zu"): %s",
+			   socat_opts.sniffright, bytes, strerror(errno));
+		  else if (sniffed < bytes)
+		     Warn3("-R: write(%d, buff, "F_Zu") -> "F_Zd,
+			   socat_opts.sniffright, bytes, sniffed);
+	       }
 	    }
 
 	    if (socat_opts.verbose && socat_opts.verbhex) {

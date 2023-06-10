@@ -74,6 +74,13 @@ Coding:
 
 	fcntl() trace prints flags now in hexadecimal.
 
+	Stream dump options -r and -R now open their pathes with CLOEXEC to
+	prevent leaking into sub processes.
+	Test: EXEC_SNIFF
+
+	Stream dump write now warn on write errors and partial writes (but
+	still do not recover).
+
 Porting:
 	Small correction in configure.ac makes Socat C99 able.
 	Thanks to Florian Weimer from Red Hat for providing a patch.
