@@ -4,6 +4,11 @@ Coding:
 	starting the data transfer loop. Useful, e.g., to accumulate multiple
 	packets in a receiving datagram socket before starting to process them.
 
+Testing:
+	Idea: EXEC,SYSTEM addresses can keep packet boundaries when option
+	socktype=<val-of-SOCK_DGRAM>
+	Tests: EXECSOCKETPAIRPACKETS SYSTEMSOCKETPAIRPACKETS
+	
 ####################### V 1.7.4.4:
 
 Corrections:

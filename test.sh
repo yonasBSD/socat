@@ -116,6 +116,16 @@ PORT=12002
 SOURCEPORT=2002
 REUSEADDR=reuseaddr 	# use this with LISTEN addresses and bind options
 
+# get some system constants for use in tests
+SOCK_DGRAM="$($PROCAN -c |grep "^#define[[:space:]]*SOCK_DGRAM[[:space:]]" |cut -d' ' -f3)"
+FOPEN_MAX=$($PROCAN -c 2>/dev/null |grep '^#define[ ][ ]*FOPEN_MAX' |awk '{print($3);}')
+PF_INET6="$($PROCAN -c |grep "^#define[[:space:]]*PF_INET6[[:space:]]" |cut -d' ' -f3)"
+TIOCEXCL="$($PROCAN -c |grep "^#define[[:space:]]*TIOCEXCL[[:space:]]" |cut -d' ' -f3)"
+SOL_SOCKET="$($PROCAN -c |grep "^#define[[:space:]]*SOL_SOCKET[[:space:]]" |cut -d' ' -f3)"
+SO_REUSEADDR="$($PROCAN -c |grep "^#define[[:space:]]*SO_REUSEADDR[[:space:]]" |cut -d' ' -f3)"
+TCP_MAXSEG="$($PROCAN -c |grep "^#define[[:space:]]*TCP_MAXSEG[[:space:]]" |cut -d' ' -f3)"
+SIZE_T=$($PROCAN |grep size_t |awk '{print($3);}')
+
 # SSL certificate contents
 TESTCERT_CONF=testcert.conf
 TESTCERT6_CONF=testcert6.conf
@@ -2639,38 +2649,36 @@ esac
 N=$((N+1))
 
 
-NAME=EXECSOCKET
+NAME=EXECSOCKETPAIR
 case "$TESTS" in
-*%$N%*|*%functions%*|*%exec%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%exec%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: simple echo via exec of cat with socketpair"
-testecho "$N" "$TEST" "" "exec:$CAT" "$opts"
+testecho "$N" "$TEST" "" "EXEC:$CAT" "$opts"
 esac
 N=$((N+1))
 
-
-NAME=SYSTEMSOCKET
+NAME=SYSTEMSOCKETPAIR
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: simple echo via system() of cat with socketpair"
-testecho "$N" "$TEST" "" "system:$CAT" "$opts" "$val_t"
+testecho "$N" "$TEST" "" "SYSTEM:$CAT" "$opts" "$val_t"
 esac
 N=$((N+1))
 
 
 NAME=EXECPIPES
 case "$TESTS" in
-*%$N%*|*%functions%*|*%pipe%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%exec%*|*%pipe%*|*%$NAME%*)
 TEST="$NAME: simple echo via exec of cat with pipes"
-testecho "$N" "$TEST" "" "exec:$CAT,pipes" "$opts"
+testecho "$N" "$TEST" "" "EXEC:$CAT,pipes" "$opts"
 esac
 N=$((N+1))
 
-
 NAME=SYSTEMPIPES
 case "$TESTS" in
-*%$N%*|*%functions%*|*%pipes%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%pipes%*|*%$NAME%*)
 TEST="$NAME: simple echo via system() of cat with pipes"
-testecho "$N" "$TEST" "" "system:$CAT,pipes" "$opts"
+testecho "$N" "$TEST" "" "sYSTEM:$CAT,pipes" "$opts"
 esac
 N=$((N+1))
 
@@ -2685,11 +2693,10 @@ elif ! testfeats pty >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testecho "$N" "$TEST" "" "exec:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts"
+testecho "$N" "$TEST" "" "EXEC:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts"
 fi
 esac
 N=$((N+1))
-
 
 NAME=SYSTEMPTY
 case "$TESTS" in
@@ -2701,7 +2708,7 @@ elif ! testfeats pty >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-testecho "$N" "$TEST" "" "system:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts"
+testecho "$N" "$TEST" "" "SYSTEM:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts"
 fi
 esac
 N=$((N+1))
@@ -2709,58 +2716,56 @@ N=$((N+1))
 
 NAME=SYSTEMPIPESFDS
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%pipes%*|*%$NAME%*)
 TEST="$NAME: simple echo via system() of cat with pipes, non stdio"
-testecho "$N" "$TEST" "" "system:$CAT>&9 <&8,pipes,fdin=8,fdout=9" "$opts"
+testecho "$N" "$TEST" "" "SYSTEM:$CAT>&9 <&8,pipes,fdin=8,fdout=9" "$opts"
 esac
 N=$((N+1))
 
 
 NAME=DUALSYSTEMFDS
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: echo via dual system() of cat"
-testecho "$N" "$TEST" "system:$CAT>&6,fdout=6!!system:$CAT<&7,fdin=7" "" "$opts" "$val_t"
+testecho "$N" "$TEST" "SYSTEM:$CAT>&6,fdout=6!!system:$CAT<&7,fdin=7" "" "$opts" "$val_t"
 esac
 N=$((N+1))
 
 
 # test: send EOF to exec'ed sub process, let it finish its operation, and 
 # check if the sub process returns its data before terminating.
-NAME=EXECSOCKETFLUSH
+NAME=EXECSOCKETPAIRFLUSH
 # idea: have socat exec'ing od; send data and EOF, and check if the od'ed data
 # arrives.
 case "$TESTS" in
-*%$N%*|*%functions%*|*%exec%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%exec%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: call to od via exec with socketpair"
-testod "$N" "$TEST" "" "exec:$OD_C" "$opts"
+testod "$N" "$TEST" "" "EXEC:$OD_C" "$opts"
 esac
 N=$((N+1))
 
-
-NAME=SYSTEMSOCKETFLUSH
+NAME=SYSTEMSOCKETPAIRFLUSH
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: call to od via system() with socketpair"
-testod "$N" "$TEST" "" "system:$OD_C" "$opts" $val_t
+testod "$N" "$TEST" "" "SYSTEM:$OD_C" "$opts" $val_t
 esac
 N=$((N+1))
 
 
 NAME=EXECPIPESFLUSH
 case "$TESTS" in
-*%$N%*|*%functions%*|*%exec%*|*%$NAME%*)
-TEST="$NAME: call to od via exec with pipes"
-testod "$N" "$TEST" "" "exec:$OD_C,pipes" "$opts"
+*%$N%*|*%functions%*|*%exec%*|*%pipes%*|*%$NAME%*)
+TEST="$NAME: call to od via EXEC with pipes"
+testod "$N" "$TEST" "" "EXEC:$OD_C,pipes" "$opts"
 esac
 N=$((N+1))
 
-
 NAME=SYSTEMPIPESFLUSH
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%pipes%*|*%$NAME%*)
 TEST="$NAME: call to od via system() with pipes"
-testod "$N" "$TEST" "" "system:$OD_C,pipes" "$opts" "$val_t"
+testod "$N" "$TEST" "" "SYSTEM:$OD_C,pipes" "$opts" "$val_t"
 esac
 N=$((N+1))
 
@@ -2799,18 +2804,17 @@ N=$((N+1))
 
 NAME=SYSTEMPIPESFDSFLUSH
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%pipes%*|*%$NAME%*)
 TEST="$NAME: call to od via system() with pipes, non stdio"
-testod "$N" "$TEST" "" "system:$OD_C>&9 <&8,pipes,fdin=8,fdout=9" "$opts" "$val_t"
+testod "$N" "$TEST" "" "SYSTEM:$OD_C>&9 <&8,pipes,fdin=8,fdout=9" "$opts" "$val_t"
 esac
 N=$((N+1))
 
-
 NAME=DUALSYSTEMFDSFLUSH
 case "$TESTS" in
-*%$N%*|*%functions%*|*%system%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%system%*|*%pipes%*|*%$NAME%*)
 TEST="$NAME: call to od via dual system()"
-testod "$N" "$TEST" "system:$OD_C>&6,fdout=6!!system:$CAT<&7,fdin=7" "pipe" "$opts" "$val_t"
+testod "$N" "$TEST" "SYSTEM:$OD_C>&6,fdout=6!!SYSTEM:$CAT<&7,fdin=7" "pipe" "$opts" "$val_t"
 esac
 N=$((N+1))
 
@@ -9900,7 +9904,6 @@ elif [ "$UNAME" != Linux ]; then
 else
 REDIR=
 #set -vx
-FOPEN_MAX=$($PROCAN -c 2>/dev/null |grep '^#define[ ][ ]*FOPEN_MAX' |awk '{print($3);}')
 if [ -z "$FOPEN_MAX" ]; then
     $PRINTF "test $F_n $TEST... ${YELLOW}could not determine FOPEN_MAX${NORMAL}\n" "$N"
     numCANT=$((numCANT+1))
@@ -10818,7 +10821,6 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
-PF_INET6="$($PROCAN -c |grep "^#define[[:space:]]*PF_INET6[[:space:]]" |cut -d' ' -f3)"
 
 # test the SOCKET-CONNECT address (against TCP6-LISTEN)
 NAME=SOCKET_CONNECT_TCP6
@@ -10983,8 +10985,6 @@ fi ;; # NUMCOND
 esac
 PORT=$((PORT+1))
 N=$((N+1))
-
-SOCK_DGRAM="$($PROCAN -c |grep "^#define[[:space:]]*SOCK_DGRAM[[:space:]]" |cut -d' ' -f3)"
 
 # test the SOCKET-SENDTO address (against UDP4-RECVFROM)
 NAME=SOCKET_SENDTO
@@ -11227,8 +11227,6 @@ PORT=$((PORT+1))
 N=$((N+1))
 
 
-TIOCEXCL="$($PROCAN -c |grep "^#define[[:space:]]*TIOCEXCL[[:space:]]" |cut -d' ' -f3)"
-
 # test the generic ioctl-void option
 NAME=IOCTL_VOID
 case "$TESTS" in
@@ -11290,10 +11288,6 @@ fi # NUMCOND, TIOCEXCL
 esac
 N=$((N+1))
 
-
-SOL_SOCKET="$($PROCAN -c |grep "^#define[[:space:]]*SOL_SOCKET[[:space:]]" |cut -d' ' -f3)"
-SO_REUSEADDR="$($PROCAN -c |grep "^#define[[:space:]]*SO_REUSEADDR[[:space:]]" |cut -d' ' -f3)"
-TCP_MAXSEG="$($PROCAN -c |grep "^#define[[:space:]]*TCP_MAXSEG[[:space:]]" |cut -d' ' -f3)"
 
 # Test the generic setsockopt option
 NAME=SETSOCKOPT
@@ -13860,8 +13854,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 dat="$td/test$N.dat"
 # calculate the minimal length with integer overflow
-BYTES=$($PROCAN |grep size_t |awk '{print($3);}')
-case $BYTES in
+case $SIZE_T in
     2) CHKSIZE=32768 ;;
     4) CHKSIZE=2147483648 ;;
     8) CHKSIZE=9223372036854775808 ;;
@@ -15655,6 +15648,76 @@ wait
 fi ;; # NUMCOND
 esac
 N=$((N+1))
+
+
+# Test preservation of packet boundaries from Socat to sub processes of
+# various kind and back to Socat via socketpair with socket type datagram.
+# (EXECSOCKETPAIRPACKETS SYSTEMSOCKETPAIRPACKETS)
+for addr in exec system; do
+  ADDR=$(echo $addr |tr a-z A-Z)
+  NAME=${ADDR}SOCKETPAIRPACKETS
+  case "$TESTS" in
+    *%$N%*|*%functions%*|*%exec%*|*%socketpair%*|*%packets%*|*%$NAME%*)
+	TEST="$NAME: simple echo via $addr of cat with socketpair, keeping packet boundaries"
+# Start a Socat process with a UNIX datagram socket on the left side and with
+# a sub process connected via datagram socketpair that keeps packet boundaries
+# (here: another Socat process in unidirectional mode).
+# Pass two packets to the UNIX datagram socket; let Socat wait a little time
+# before processing,
+# so the packets are at the same time in the receive queue.
+# The process that sends thes packet uses a short packet size (-b),
+# so the returned data is truncated in case the packets were merged.
+# When the complete data is returned, the test succeeded.
+	if ! eval $NUMCOND; then :; else
+	    ts0="$td/test$N.sock0"
+	    ts1="$td/test$N.sock1"
+	    tf="$td/test$N.stdout"
+	    te="$td/test$N.stderr"
+	    tdiff="$td/test$N.diff"
+	    da="test$N $(date) $RANDOM"
+	    #CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0 $ADDR:\"$SOCAT -lp echoer -u - -\",pty,echo=0,pipes" 	# test the test
+	    CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0 $ADDR:\"$SOCAT -lp echoer -u - -\",socktype=$SOCK_DGRAM"
+	    CMD1="$SOCAT $opts -lp client -b 24 -t 2 -T 3 - UNIX-SENDTO:$ts0,bind=$ts1"
+	    printf "test $F_n $TEST... " $N
+	    export SOCAT_TRANSFER_WAIT=2
+	    eval "$CMD0" >/dev/null 2>"${te}0" &
+	    pid0="$!"
+	    unset SOCAT_TRANSFER_WAIT
+	    waitunixport $ts0 1
+	    { echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1 >"${tf}1" 2>"${te}1"
+	    rc1=$?
+	    kill $pid0 2>/dev/null; wait
+	    if [ "$rc1" -ne 0 ]; then
+		$PRINTF "$FAILED (rc1=$rc1): $TRACE $SOCAT:\n"
+		echo "$CMD0 &"
+		cat "${te}0"
+		echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1"
+		cat "${te}1"
+		numFAIL=$((numFAIL+1))
+		listFAIL="$listFAIL $N"
+	    elif ! echo "$da" |diff - "${tf}1" >"$tdiff"; then
+		$PRINTF "$FAILED (diff)\n"
+		echo "$CMD0 &" >&2
+		cat "${te}0" >&2
+		echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1" >&2
+		cat "${te}1" >&2
+		echo "diff:" >&2
+		cat $tdiff >&2
+		numFAIL=$((numFAIL+1))
+		listFAIL="$listFAIL $N"
+	    else
+		$PRINTF "$OK\n"
+		if [ "$VERBOSE" ]; then
+		    echo "$CMD0 &" >&2
+		    echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1" >&2
+		fi
+		numOK=$((numOK+1))
+	    fi
+	fi # NUMCOND
+	;;
+  esac
+  N=$((N+1))
+done  # for
 
 
 # end of common tests
