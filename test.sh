@@ -549,8 +549,8 @@ case "$TESTS" in
 $ECHO "testing if address array is sorted...\c"
 TF="$TD/socat-q"
 IFS="$($ECHO ' \n\t')"
-$SOCAT -? |sed '1,/address-head:/ d' |egrep 'groups=' |while IFS="$IFS:" read x y; do echo "$x"; done >"$TF"
-$SOCAT -? |sed '1,/address-head:/ d' |egrep 'groups=' |while IFS="$IFS:" read x y; do echo "$x"; done |LC_ALL=C sort |diff "$TF" - >"$TF-diff"
+$SOCAT -hhh |sed -n '/^   address-head:/,/^   opts:/ p' |grep -v -e "^   address-head:" -e "^   opts:" |sed -e 's/^[[:space:]]*//' -e 's/[: ].*//' |grep -v '^<' >"$TF"
+$SOCAT -hhh |sed -n '/^   address-head:/,/^   opts:/ p' |grep -v -e "^   address-head:" -e "^   opts:" |sed -e 's/^[[:space:]]*//' -e 's/[: ].*//' |grep -v '^<' |LC_ALL=C sort |diff "$TF" - >"$TF-diff"
 if [ -s "$TF-diff" ]; then
     $ECHO "\n*** address array is not sorted. Wrong entries:" >&2
     cat "$TD/socat-q-diff" >&2
@@ -15676,8 +15676,8 @@ for addr in exec system; do
 	    tdiff="$td/test$N.diff"
 	    da="test$N $(date) $RANDOM"
 	    #CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0 $ADDR:\"$SOCAT -lp echoer -u - -\",pty,echo=0,pipes" 	# test the test
-	    CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0 $ADDR:\"$SOCAT -lp echoer -u - -\",socktype=$SOCK_DGRAM"
-	    CMD1="$SOCAT $opts -lp client -b 24 -t 2 -T 3 - UNIX-SENDTO:$ts0,bind=$ts1"
+	    CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0,null-eof $ADDR:\"$SOCAT -lp echoer -u - -\",socktype=$SOCK_DGRAM",shut-null
+	    CMD1="$SOCAT $opts -lp client -b 24 -t 2 -T 3 - UNIX-SENDTO:$ts0,bind=$ts1",shut-null
 	    printf "test $F_n $TEST... " $N
 	    export SOCAT_TRANSFER_WAIT=2
 	    eval "$CMD0" >/dev/null 2>"${te}0" &
@@ -15719,6 +15719,56 @@ for addr in exec system; do
   N=$((N+1))
 done  # for
 
+
+# Test if a special quote based syntax error in dalan module does not raise
+# SIGSEGV
+NAME=DALAN_NO_SIGSEGV
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%dalan%*|*%$NAME%*)
+TEST="$NAME: Dalan syntax error does not raise SIGSEGV"
+# Invoke Socat with an address that has this quote based syntax error.
+# When exit code is 1 (due to syntax error) the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! a=$(testfeats GOPEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testaddrs - GOPEN SOCKET-LISTEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD="$TRACE $SOCAT $opts /dev/null SOCKET-LISTEN:1:1:'"/tmp/sock"'"
+printf "test $F_n $TEST... " $N
+$CMD >/dev/null 2>"${te}"
+rc1=$?
+if [ $rc1 -eq 1 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD"; fi
+    if [ "$DEBUG" ];   then cat "${te}" >&2; fi
+    numOK=$((numOK+1))
+elif [ $rc1 -eq 139 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD"
+    cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    # soemthing unexpected happened
+    $PRINTF "$CANT\n"
+    echo "$CMD"
+    cat "${te}" >&2
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
 
 # end of common tests
 
@@ -15827,38 +15877,83 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: give a one line description of test"
 # Describe how the test is performed, and what's the success criteria
-if ! eval $NUMCOND; then :; else
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Must be root${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! $(type systemd-socket-activate >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}systemd-socket-activate not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testfeats STDIO IP4 TCP PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testaddrs - TCP4 TCP4-LISTEN PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions so-reuseaddr fork ) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ -z "$FOREIGN" ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+newport tcp4 	# or whatever proto, or drop this line
 CMD0="$TRACE $SOCAT $opts server-address PIPE"
 CMD1="$TRACE $SOCAT $opts - client-address"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 wait<something>port $PORT 1
+#relsleep 1 	# if no matching wait*port function
 echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
 if [ !!! ]; then
     $PRINTF "$OK\n"
-    if [ "$VERBOSE" ]; then
-	echo "$CMD0 &" >&2
-	echo "$CMD1" >&2
-    fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+elif [ !!! ]; then
+    # The test could not run meaningfully
+    $PRINTF "$CANT\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
     $PRINTF "$FAILED\n"
-    echo "$CMD0 &" >&2
+    echo "$CMD0 &"
     cat "${te}0" >&2
-    echo "$CMD1" >&2
+    echo "$CMD1"
     cat "${te}1" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 fi
 fi # NUMCOND
  ;;
 esac
-PORT=$((PORT+1))
 N=$((N+1))

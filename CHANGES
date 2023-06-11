@@ -9,6 +9,10 @@ Corrections:
 	the ip-add-source-membership option.
 	Thanks to Benjamin Poirier for sending a patch.
 
+	Fixed a bug in dalan module that caused SIGSEGV in, e.g.,
+	SOCKET-LISTEN:1:1:'"/tmp/sock"'
+	Test: DALAN_NO_SIGSEGV
+
 Coding:
 	New Environment variable SOCAT_TRANSFER_WAIT that Socat sleep before
 	starting the data transfer loop. Useful, e.g., to accumulate multiple
