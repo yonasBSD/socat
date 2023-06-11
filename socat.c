@@ -782,6 +782,7 @@ bool maywr2;		/* sock2 can be written to, according to poll() */
    and their options are set/applied
    returns -1 on error or 0 on success */
 int _socat(void) {
+   char *transferwaitstring;
    struct pollfd fds[4],
        *fd1in  = &fds[0],
        *fd1out = &fds[1],
@@ -851,6 +852,10 @@ int _socat(void) {
    }
    total_timeout = socat_opts.total_timeout;
 
+   if (transferwaitstring = getenv("SOCAT_TRANSFER_WAIT")) {
+      Info1("before starting data transfer loop: sleeping %ds (env:SOCAT_TRANSFER_WAIT)", atoi(transferwaitstring));
+      sleep(atoi(transferwaitstring));
+   }
    Notice4("starting data transfer loop with FDs [%d,%d] and [%d,%d]",
 	   XIO_GETRDFD(sock1), XIO_GETWRFD(sock1),
 	   XIO_GETRDFD(sock2), XIO_GETWRFD(sock2));

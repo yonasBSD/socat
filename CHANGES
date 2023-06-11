@@ -1,4 +1,9 @@
 ﻿
+Coding:
+	New Environment variable SOCAT_TRANSFER_WAIT that Socat sleep before
+	starting the data transfer loop. Useful, e.g., to accumulate multiple
+	packets in a receiving datagram socket before starting to process them.
+
 ####################### V 1.7.4.4:
 
 Corrections:

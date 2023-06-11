@@ -3652,8 +3652,16 @@ address format. If name resolution does not return a matching entry, the first
 result (with differing IP version) is taken. With value 0, socat always selects
 the first record and its IP version. 
 
+dit(bf(SOCAT_MAIN_WAIT) (input)) Specifies the time (seconds) to sleep the
+main process on begin of main\(). Useful for debugging.
+
+dit(bf(SOCAT_TRANSFER_WAIT) (input)) Specifies the time (seconds) to sleep the
+process after opening addresses before entering the transfer loop. Useful for
+debugging.
+
 dit(bf(SOCAT_FORK_WAIT) (input)) Specifies the time (seconds) to sleep the
-parent and child processes after successful NOEXPAND(fork()). Useful for debugging.
+parent and child processes after successful NOEXPAND(fork()). Useful for
+debugging.
 
 dit(bf(SOCAT_VERSION) (output)) Socat sets this variable to its version string,
 e.g. tt("1.7.0.0") for released versions or e.g. tt("1.6.0.1+envvar") for
