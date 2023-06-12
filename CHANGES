@@ -34,6 +34,9 @@ Corrections:
 
 	Fixed an internal FD leak in the EXEC,SYSTEM addresses.
 
+	The FDs of the socketpair that queues messages from signal handlers
+	lacked FD_CLOEXEC and thus leaked into EXEC and SYSTEM child processes.
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)

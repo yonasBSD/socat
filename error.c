@@ -119,6 +119,8 @@ static int diag_sock_pair(void) {
       diag_sock_recv = -1;
       return -1;
    }
+   fcntl(handlersocks[0], F_SETFD, FD_CLOEXEC);
+   fcntl(handlersocks[1], F_SETFD, FD_CLOEXEC);
    diag_sock_send = handlersocks[1];
    diag_sock_recv = handlersocks[0];
 #if !defined(MSG_DONTWAIT)
