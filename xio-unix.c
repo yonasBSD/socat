@@ -127,7 +127,7 @@ static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, i
    struct opt *opts0 = NULL;
    pid_t pid = Getpid();
    bool opt_unlink_early = false;
-   bool opt_unlink_close = true;
+   bool opt_unlink_close = (abstract != 1);
    int result;
 
    if (argc != 2) {
@@ -217,7 +217,7 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
    struct sockaddr_un them, us;
    socklen_t themlen, uslen = sizeof(us);
    bool needbind = false;
-   bool opt_unlink_close = true;
+   bool opt_unlink_close = (abstract != 1);
    bool dofork = false;
    struct opt *opts0;
    char infobuff[256];
@@ -365,7 +365,7 @@ static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, i
    union sockaddr_union us;
    socklen_t uslen = sizeof(us);
    bool needbind = false;
-   bool opt_unlink_close = true;
+   bool opt_unlink_close = (abstract != 1);
 
    if (argc != 2) {
       Error2("%s: wrong number of parameters (%d instead of 1)",
@@ -429,7 +429,7 @@ int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
    socklen_t uslen;
    bool needbind = true;
    bool opt_unlink_early = false;
-   bool opt_unlink_close = true;
+   bool opt_unlink_close = (abstract != 1);
 
    if (argc != 2) {
       Error2("%s: wrong number of parameters (%d instead of 1)",
@@ -514,7 +514,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
    union sockaddr_union us;
    socklen_t uslen;
    bool opt_unlink_early = false;
-   bool opt_unlink_close = true;
+   bool opt_unlink_close = (abstract != 1);
    int result;
 
    if (argc != 2) {
