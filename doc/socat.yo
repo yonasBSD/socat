@@ -1471,55 +1471,55 @@ provides another, non-fd based mechanism.
 For these options, it depends on the actual address type and its option groups 
 which mechanism is used. The second, non-fd based mechanism is prioritized.
 startdit()
-label(OPTION_CLOEXEC)dit(bf(tt(cloexec=<bool>)))
+label(OPTION_CLOEXEC)dit(bf(tt(cloexec[=<bool>])))
    Sets the code(FD_CLOEXEC) flag with the code(fcntl()) system call to value
    link(<bool>)(TYPE_BOOL). If set,
    the file descriptor is closed on code(exec()) family function calls. Socat()
    internally handles 
    this flag for the fds it controls, so in most cases there will be no need to
    apply this option. 
-label(OPTION_SETLK_WR)dit(bf(tt(setlk)))
+label(OPTION_SETLK_WR)dit(bf(tt(setlk[=<bool>])))
    Tries to set a discretionary write lock to the whole file using the code(fcntl(fd,
    F_SETLK, ...)) system call. If the file is already locked, this call results
    in an error. 
    On Linux, when the file permissions for group are "S" (g-x,g+s), and the
    file system is locally mounted with the "mand" option, the lock is
    mandatory, i.e. prevents other processes from opening the file.
-label(OPTION_SETLKW_WR)dit(bf(tt(setlkw)))
+label(OPTION_SETLKW_WR)dit(bf(tt(setlkw[=<bool>])))
    Tries to set a discretionary waiting write lock to the whole file using the
    code(fcntl(fd, F_SETLKW, ...)) system call. If the file is already locked,
    this call blocks. 
    See option link(setlk)(OPTION_SETLK_WR) for information about making this
    lock mandatory. 
-label(OPTION_SETLK_RD)dit(bf(tt(setlk-rd)))
+label(OPTION_SETLK_RD)dit(bf(tt(setlk-rd[=<bool>])))
    Tries to set a discretionary read lock to the whole file using the code(fcntl(fd,
    F_SETLK, ...)) system call. If the file is already write locked, this call
    results in an error. 
    See option link(setlk)(OPTION_SETLK_WR) for information about making this
    lock mandatory. 
-label(OPTION_SETLKW_RD)dit(bf(tt(setlkw-rd)))
+label(OPTION_SETLKW_RD)dit(bf(tt(setlkw-rd[=<bool>])))
    Tries to set a discretionary waiting read lock to the whole file using the
    code(fcntl(fd, F_SETLKW, ...)) system call. If the file is already write
    locked, this call blocks. 
    See option link(setlk)(OPTION_SETLK_WR) for information about making this
    lock mandatory. 
-label(OPTION_FLOCK_EX)dit(bf(tt(flock-ex)))
+label(OPTION_FLOCK_EX)dit(bf(tt(flock-ex[=<bool>])))
    Tries to set a blocking exclusive advisory lock to the file using the
    code(flock(fd, LOCK_EX)) system call. Socat() hangs in this call if the file
    is locked by another process.
-label(OPTION_FLOCK_EX_NB)dit(bf(tt(flock-ex-nb)))
+label(OPTION_FLOCK_EX_NB)dit(bf(tt(flock-ex-nb[=<bool>])))
    Tries to set a nonblocking exclusive advisory lock to the file using the
    code(flock(fd, LOCK_EX|LOCK_NB)) system call. If the file is already locked,
    this option results in an error.
-label(OPTION_FLOCK_SH)dit(bf(tt(flock-sh)))
+label(OPTION_FLOCK_SH)dit(bf(tt(flock-sh[=<bool>])))
    Tries to set a blocking shared advisory lock to the file using the
    code(flock(fd, LOCK_SH)) system call. Socat() hangs in this call if the file
    is locked by another process.
-label(OPTION_FLOCK_SH_NB)dit(bf(tt(flock-sh-nb)))
+label(OPTION_FLOCK_SH_NB)dit(bf(tt(flock-sh-nb[=<bool>])))
    Tries to set a nonblocking shared advisory lock to the file using the
    code(flock(fd, LOCK_SH|LOCK_NB)) system call. If the file is already locked,
    this option results in an error.
-label(OPTION_LOCK)dit(bf(tt(lock)))
+label(OPTION_LOCK)dit(bf(tt(lock[=<bool>])))
    Sets a blocking lock on the file. Uses the setlk or flock mechanism
    depending on availability on the particular platform. If both are available,
    the POSIX variant (setlkw) is used.
@@ -1564,40 +1564,40 @@ label(OPTION_PERM_LATE)dit(bf(tt(perm-late=<mode>)))
    [link(mode_t)(TYPE_MODE_T)] using the code(fchmod()) system call after
    opening or connecting the channel.
    This is useful only on file system entries. 
-label(OPTION_APPEND)dit(bf(tt(append=<bool>)))
+label(OPTION_APPEND)dit(bf(tt(append[=<bool>])))
    Always writes data to the actual end of file.
    If the address is member of the OPEN option group, 
    socat() uses the code(O_APPEND) flag with the code(open()) system call
    (link(example)(EXAMPLE_OPTION_APPEND)).
    Otherwise, socat() applies the code(fcntl(fd, F_SETFL, O_APPEND)) call.
-label(OPTION_NONBLOCK)dit(bf(tt(nonblock=<bool>)))
+label(OPTION_NONBLOCK)dit(bf(tt(nonblock[=<bool>])))
    Tries to open or use file in nonblocking mode. Its only effects are that the
    code(connect()) call of TCP addresses does not block, and that opening a
    named pipe for reading does not block.
    If the address is member of the OPEN option group,
    socat() uses the code(O_NONBLOCK) flag with the code(open()) system call.
    Otherwise, socat() applies the code(fcntl(fd, F_SETFL, O_NONBLOCK)) call.
-COMMENT(label(OPTION_NDELAY)dit(bf(tt(ndelay=<bool>)))
+COMMENT(label(OPTION_NDELAY)dit(bf(tt(ndelay[=<bool>])))
    Tries to open or use file in nonblocking mode. Has no effect because socat()
    works with code(select()).) 
-COMMENT(label(OPTION_ASYNC)dit(bf(tt(async=<bool>)))
+COMMENT(label(OPTION_ASYNC)dit(bf(tt(async[=<bool>])))
    Enables SIGIO for this fd. Has no effect, because socat() ignores SIGIO.)
-label(OPTION_O_BINARY)dit(bf(tt(binary)))
+label(OPTION_O_BINARY)dit(bf(tt(binary[=<bool>])))
    Opens the file in binary mode to avoid implicit line terminator
    conversions (Cygwin).
-label(OPTION_O_TEXT)dit(bf(tt(text)))
+label(OPTION_O_TEXT)dit(bf(tt(text[=<bool>])))
    Opens the file in text mode to force implicit line terminator conversions
    (Cygwin).
-label(OPTION_O_NOINHERIT)dit(bf(tt(noinherit)))
+label(OPTION_O_NOINHERIT)dit(bf(tt(noinherit[=<bool>])))
    Does not keep this file open in a spawned process (Cygwin).
-label(OPTION_COOL_WRITE)dit(bf(tt(cool-write)))
+label(OPTION_COOL_WRITE)dit(bf(tt(cool-write[=<bool>])))
    Takes it easy when write fails with EPIPE or ECONNRESET and logs the message
    with em(notice) level instead of em(error).
    This prevents the log file from being filled with useless error messages
    when socat is used as a high volume server or proxy where clients often
    abort the connection.nl()
    This option is experimental.
-label(OPTION_END_CLOSE)dit(bf(tt(end-close)))
+label(OPTION_END_CLOSE)dit(bf(tt(end-close[=<bool>])))
    Changes the (address dependent) method of ending a connection to just close
    the file descriptors. This is useful when the connection is to be reused by
    or shared with other processes (link(example)(EXAMPLE_END_CLOSE)).nl()
@@ -1608,21 +1608,21 @@ label(OPTION_END_CLOSE)dit(bf(tt(end-close)))
    Similarly, when an address of type EXEC or SYSTEM is ended, socat usually
    will explicitly kill the sub process. With this option, it will just close
    the file descriptors.
-label(OPTION_SHUT_NONE)dit(bf(tt(shut-none)))
+label(OPTION_SHUT_NONE)dit(bf(tt(shut-none[=<bool>])))
    Changes the (address dependent) method of shutting down the write part of a
    connection to not do anything.
-label(OPTION_SHUT_DOWN)dit(bf(tt(shut-down)))
+label(OPTION_SHUT_DOWN)dit(bf(tt(shut-down[=<bool>])))
    Changes the (address dependent) method of shutting down the write part of a
    connection to NOEXPAND(shutdown(fd, SHUT_WR)). Is only useful with sockets.
-label(OPTION_SHUT_CLOSE)dit(bf(tt(shut-close)))
+label(OPTION_SHUT_CLOSE)dit(bf(tt(shut-close[=<bool>])))
    Changes the (address dependent) method of shutting down the write part of a
    connection to NOEXPAND(close(fd)).
-label(OPTION_SHUT_NULL)dit(bf(tt(shut-null)))
+label(OPTION_SHUT_NULL)dit(bf(tt(shut-null[=<bool>])))
    When one address indicates EOF, socat() will send a zero sized packet to the
    write channel of the other address to transfer the EOF condition. This is
    useful with UDP and other datagram protocols. Has been tested against
    netcat and socat with option link(null-eof)(OPTION_NULL_EOF).
-label(OPTION_NULL_EOF)dit(bf(tt(null-eof)))
+label(OPTION_NULL_EOF)dit(bf(tt(null-eof[=<bool>])))
    Normally socat() will ignore empty (zero size payload) packets arriving on
    datagram sockets, so it survives port scans. With this option socat()
    interprets empty datagram packets as EOF indicator (see
@@ -1678,15 +1678,15 @@ label(OPTION_UMASK)dit(bf(tt(umask=<mode>)))
    accessing the file system entry (useful 
    with unixdomain() sockets!). This call might affect all further operations
    of the socat() process!  
-label(OPTION_UNLINK_EARLY)dit(bf(tt(unlink-early)))
+label(OPTION_UNLINK_EARLY)dit(bf(tt(unlink-early[=<bool>])))
    Unlinks (removes) the file before opening it and even before applying
    user-early etc. 
-label(OPTION_UNLINK)dit(bf(tt(unlink)))
+label(OPTION_UNLINK)dit(bf(tt(unlink[=<bool>])))
    Unlinks (removes) the file before accessing it, but after user-early etc.
-label(OPTION_UNLINK_LATE)dit(bf(tt(unlink-late)))
+label(OPTION_UNLINK_LATE)dit(bf(tt(unlink-late[=<bool>])))
    Unlinks (removes) the file after opening it to make it inaccessible for
    other processes after a short race condition. 
-label(OPTION_UNLINK_CLOSE)dit(bf(tt(unlink-close)))
+label(OPTION_UNLINK_CLOSE)dit(bf(tt(unlink-close[=<bool>])))
    Removes the addresses file system entry when closing the address.
    For link(named pipes)(ADDRESS_NAMED_PIPE),
    link(UNIX domain sockets)(ADDRESS_UNIX_LISTEN),
@@ -1702,46 +1702,48 @@ startdit()enddit()nl()
 label(GROUP_OPEN)em(bf(OPEN option group))
 
 The OPEN group options allow setting flags with the code(open()) system call. 
-E.g., option `creat' sets the code(O_CREAT) flag.nl()
+E.g., option `creat' sets the code(O_CREAT) flag. When the used address does
+not use code(open()) (e.g.STDIO), the code(fcntl(..., F_SETFL, ...)) call is
+used instead.nl()
 See also options link(append)(OPTION_APPEND) and
 link(nonblock)(OPTION_NONBLOCK).
 startdit()
-label(OPTION_O_CREAT)dit(bf(tt(creat=<bool>)))
+label(OPTION_O_CREAT)dit(bf(tt(creat[=<bool>])))
    Creates the file if it does not exist (link(example)(EXAMPLE_OPTION_CREAT)).
-label(OPTION_DSYNC)dit(bf(tt(dsync=<bool>)))
+label(OPTION_DSYNC)dit(bf(tt(dsync[=<bool>])))
    Blocks code(write()) calls until metainfo is physically written to media.
-label(OPTION_EXCL)dit(bf(tt(excl=<bool>)))
+label(OPTION_EXCL)dit(bf(tt(excl[=<bool>])))
    With option creat, if file exists this is an error.
-label(OPTION_LARGEFILE)dit(bf(tt(largefile=<bool>)))
+label(OPTION_LARGEFILE)dit(bf(tt(largefile[=<bool>])))
    On 32 bit systems, allows a file larger than 2^31 bytes.
-label(OPTION_O_NOATIME)dit(bf(tt(noatime)))
+label(OPTION_O_NOATIME)dit(bf(tt(noatime[=<bool>])))
    Sets the O_NOATIME options, so reads do not change the access timestamp.
-label(OPTION_NOCTTY)dit(bf(tt(noctty=<bool>)))
+label(OPTION_NOCTTY)dit(bf(tt(noctty[=<bool>])))
    Does not make this file the controlling terminal.
-label(OPTION_NOFOLLOW)dit(bf(tt(nofollow=<bool>)))
+label(OPTION_NOFOLLOW)dit(bf(tt(nofollow[=<bool>])))
    Does not follow symbolic links.
-label(OPTION_NSHARE)dit(bf(tt(nshare=<bool>)))
+label(OPTION_NSHARE)dit(bf(tt(nshare[=<bool>])))
    Does not allow sharing this file with other processes.
-label(OPTION_RSHARE)dit(bf(tt(rshare=<bool>)))
+label(OPTION_RSHARE)dit(bf(tt(rshare[=<bool>])))
    Does not allow other processes to open this file for writing.
-label(OPTION_RSYNC)dit(bf(tt(rsync=<bool>)))
+label(OPTION_RSYNC)dit(bf(tt(rsync[=<bool>])))
    Blocks code(write()) until metainfo is physically written to media.
-label(OPTION_SYNC)dit(bf(tt(sync=<bool>)))
+label(OPTION_SYNC)dit(bf(tt(sync[=<bool>])))
    Blocks code(write()) until data is physically written to media.
-COMMENT(label(OPTION_DEFER)dit(bf(tt(defer=<bool>)))
+COMMENT(label(OPTION_DEFER)dit(bf(tt(defer[=<bool>])))
    Temporarily stores write data in paging space.)
-COMMENT(label(OPTION_DELAY)dit(bf(tt(delay=<bool>)))
+COMMENT(label(OPTION_DELAY)dit(bf(tt(delay[=<bool>])))
    Blocks code(open()) until share conditions are fulfilled.)
-COMMENT(label(OPTION_DIRECT)dit(bf(tt(direct=<bool>))))	
-COMMENT(label(OPTION_DIRECTORY)dit(bf(tt(directory=<bool>)))
+COMMENT(label(OPTION_DIRECT)dit(bf(tt(direct[=<bool>]))))
+COMMENT(label(OPTION_DIRECTORY)dit(bf(tt(directory[=<bool>])))
    Fails if file is not a directory. Not useful with socat().)
-label(OPTION_RDONLY)dit(bf(tt(rdonly=<bool>)))
+label(OPTION_RDONLY)dit(bf(tt(rdonly[=<bool>])))
    Opens the file for reading only.
-COMMENT(label(OPTION_RDWR)dit(bf(tt(rdwr=<bool>)))
+COMMENT(label(OPTION_RDWR)dit(bf(tt(rdwr[=<bool>])))
    Opens the file for reading and writing.)
-label(OPTION_WRONLY)dit(bf(tt(wronly=<bool>)))
+label(OPTION_WRONLY)dit(bf(tt(wronly[=<bool>])))
    Opens the file for writing only.
-label(OPTION_O_TRUNC)dit(bf(tt(trunc)))
+label(OPTION_O_TRUNC)dit(bf(tt(trunc[=<bool>])))
    Truncates the file to size 0 during opening it.
 enddit()
 
@@ -1776,17 +1778,17 @@ label(OPTION_FTRUNCATE)dit(bf(tt(ftruncate=<offset>)))
    link(off64_t)(TYPE_OFF64)]. Please note that a missing value defaults to 1,
    not 0.
 
-label(OPTION_FS_SECRM_FL)dit(bf(tt(secrm=<bool>)))
-label(OPTION_FS_UNRM)dit(bf(tt(unrm=<bool>)))
-label(OPTION_FS_COMPR)dit(bf(tt(compr=<bool>)))
-label(OPTION_FS_SYNC)dit(bf(tt(fs-sync=<bool>)))
-label(OPTION_FS_IMMUTABLE)dit(bf(tt(immutable=<bool>)))
-label(OPTION_FS_APPEND)dit(bf(tt(fs-append=<bool>)))
-label(OPTION_FS_NODUMP)dit(bf(tt(nodump=<bool>)))
-label(OPTION_FS_NOATIME)dit(bf(tt(fs-noatime=<bool>)))
-label(OPTION_FS_JOURNAL_DATA)dit(bf(tt(journal-data=<bool>)))
-label(OPTION_FS_NOTAIL)dit(bf(tt(notail=<bool>)))
-label(OPTION_FS_DIRSYNC)dit(bf(tt(dirsync=<bool>)))
+label(OPTION_FS_SECRM_FL)dit(bf(tt(secrm[=<bool>])))
+label(OPTION_FS_UNRM)dit(bf(tt(unrm[=<bool>])))
+label(OPTION_FS_COMPR)dit(bf(tt(compr[=<bool>])))
+label(OPTION_FS_SYNC)dit(bf(tt(fs-sync[=<bool>])))
+label(OPTION_FS_IMMUTABLE)dit(bf(tt(immutable[=<bool>])))
+label(OPTION_FS_APPEND)dit(bf(tt(fs-append[=<bool>])))
+label(OPTION_FS_NODUMP)dit(bf(tt(nodump[=<bool>])))
+label(OPTION_FS_NOATIME)dit(bf(tt(fs-noatime[=<bool>])))
+label(OPTION_FS_JOURNAL_DATA)dit(bf(tt(journal-data[=<bool>])))
+label(OPTION_FS_NOTAIL)dit(bf(tt(notail[=<bool>])))
+label(OPTION_FS_DIRSYNC)dit(bf(tt(dirsync[=<bool>])))
    These options change non standard file attributes on operating systems and
    file systems that support these features, like Linux with ext2fs and
    successors, xfs, or reiserfs. See man 1 chattr for information on these
@@ -2157,7 +2159,7 @@ dit(bf(tt(ip-multicast-if=<hostname>)))
    Specifies hostname or address of the network interface to be used for
    multicast traffic.
 label(OPTION_IP_MULTICAST_LOOP)
-dit(bf(tt(ip-multicast-loop=<bool>)))
+dit(bf(tt(ip-multicast-loop[=<bool>])))
    Specifies if outgoing multicast traffic should loop back to the interface.
 label(OPTION_IP_MULTICAST_TTL)
 dit(bf(tt(ip-multicast-ttl=<byte>)))
@@ -2191,7 +2193,7 @@ These options can only be used on IPv6 based sockets. See link(IP
 options)(GROUP_IP) for options that can be applied to both IPv4 and IPv6
 sockets.
 startdit()
-label(OPTION_IPV6_V6ONLY)dit(bf(tt(ipv6only=<bool>)))
+label(OPTION_IPV6_V6ONLY)dit(bf(tt(ipv6only[=<bool>])))
    Sets the IPV6_V6ONLY socket option. If 0, the TCP stack will also accept
    connections using IPv4 protocol on the same port. The default is system
    dependent.
@@ -2570,9 +2572,9 @@ your implementation.nl()
 Note: On some operating systems, these options may not be
 available. Use link(ispeed)(OPTION_ISPEED) or link(ospeed)(OPTION_OSPEED)
 instead.
-label(OPTION_ECHO)dit(bf(tt(echo=<bool>)))
+label(OPTION_ECHO)dit(bf(tt(echo[=<bool>])))
    Enables or disables local echo.
-label(OPTION_ICANON)dit(bf(tt(icanon=<bool>)))
+label(OPTION_ICANON)dit(bf(tt(icanon[=<bool>])))
    Sets or clears canonical mode, enabling line buffering and some special
    characters. 
 label(OPTION_RAW)dit(bf(tt(raw)))
@@ -2581,13 +2583,13 @@ label(OPTION_TERMIOS_RAWER)dit(bf(tt(rawer)))
    Makes terminal rawer than link(raw)(OPTION_RAW) option. This option implicitly turns off echo. (link(example)(EXAMPLE_OPTION_TERMIOS_RAWER)).
 label(OPTION_TERMIOS_CFMAKERAW)dit(bf(tt(cfmakeraw)))
    Sets raw mode by invoking tt(cfmakeraw()) or by simulating this call. This option implicitly turns off echo.
-label(OPTION_IGNBRK)dit(bf(tt(ignbrk=<bool>)))
+label(OPTION_IGNBRK)dit(bf(tt(ignbrk[=<bool>])))
    Ignores or interpretes the BREAK character (e.g., ^C)
-label(OPTION_BRKINT)dit(bf(tt(brkint=<bool>)))
+label(OPTION_BRKINT)dit(bf(tt(brkint[=<bool>])))
 label(OPTION_BS0)dit(bf(tt(bs0)))
 label(OPTION_BS1)dit(bf(tt(bs1)))
 label(OPTION_BSDLY)dit(bf(tt(bsdly=<0|1>)))
-label(OPTION_CLOCAL)dit(bf(tt(clocal=<bool>)))
+label(OPTION_CLOCAL)dit(bf(tt(clocal[=<bool>])))
 
 label(OPTION_CR0)label(OPTION_CR1)label(OPTION_CR2)label(OPTION_CR3)
 mancommand(\.LP)
@@ -2606,8 +2608,8 @@ htmlcommand(<dt><code><strong>cr0</strong><br>
    0 means no delay, the other values are terminal dependent.
 
 label(OPTION_CRDLY)dit(bf(tt(crdly=<0|1|2|3>)))
-label(OPTION_CREAD)dit(bf(tt(cread=<bool>)))
-label(OPTION_CRTSCTS)dit(bf(tt(crtscts=<bool>)))
+label(OPTION_CREAD)dit(bf(tt(cread[=<bool>])))
+label(OPTION_CRTSCTS)dit(bf(tt(crtscts[=<bool>])))
 
 label(OPTION_CS5)label(OPTION_CS6)label(OPTION_CS7)label(OPTION_CS8)
 mancommand(\.LP)
@@ -2625,18 +2627,18 @@ htmlcommand(<dt><code><strong>cs5</strong><br>
    Sets the character size to 5, 6, 7, or 8 bits, respectively.
 
 label(OPTION_CSIZE)dit(bf(tt(csize=<0|1|2|3>)))
-label(OPTION_CSTOPB)dit(bf(tt(cstopb=<bool>)))
+label(OPTION_CSTOPB)dit(bf(tt(cstopb[=<bool>])))
    Sets two stop bits, rather than one.
 label(OPTION_VDSUSP)dit(bf(tt(dsusp=<byte>)))
    Sets the value for the VDSUSP character that suspends the current foreground
    process and reactivates the shell (all except Linux).
-label(OPTION_ECHOCTL)dit(bf(tt(echoctl=<bool>)))
+label(OPTION_ECHOCTL)dit(bf(tt(echoctl[=<bool>])))
    Echos control characters in hat notation (e.g. ^A)
-label(OPTION_ECHOE)dit(bf(tt(echoe=<bool>)))
-label(OPTION_ECHOK)dit(bf(tt(echok=<bool>)))
-label(OPTION_ECHOKE)dit(bf(tt(echoke=<bool>)))
-label(OPTION_ECHONL)dit(bf(tt(echonl=<bool>)))
-label(OPTION_ECHOPRT)dit(bf(tt(echoprt=<bool>)))
+label(OPTION_ECHOE)dit(bf(tt(echoe[=<bool>])))
+label(OPTION_ECHOK)dit(bf(tt(echok[=<bool>])))
+label(OPTION_ECHOKE)dit(bf(tt(echoke[=<bool>])))
+label(OPTION_ECHONL)dit(bf(tt(echonl[=<bool>])))
+label(OPTION_ECHOPRT)dit(bf(tt(echoprt[=<bool>])))
 label(OPTION_EOF)dit(bf(tt(eof=<byte>)))
 label(OPTION_EOL)dit(bf(tt(eol=<byte>)))
 label(OPTION_EOL2)dit(bf(tt(eol2=<byte>)))
@@ -2644,51 +2646,51 @@ label(OPTION_ERASE)dit(bf(tt(erase=<byte>)))
 label(OPTION_DISCARD)dit(bf(tt(discard=<byte>)))
 label(OPTION_FF0)dit(bf(tt(ff0)))
 label(OPTION_FF1)dit(bf(tt(ff1)))
-label(OPTION_FFDLY)dit(bf(tt(ffdly=<bool>)))
-label(OPTION_FLUSHO)dit(bf(tt(flusho=<bool>)))
-label(OPTION_HUPCL)dit(bf(tt(hupcl=<bool>)))
-label(OPTION_ICRNL)dit(bf(tt(icrnl=<bool>)))
-label(OPTION_IEXTEN)dit(bf(tt(iexten=<bool>)))
-label(OPTION_IGNCR)dit(bf(tt(igncr=<bool>)))
-label(OPTION_IGNPAR)dit(bf(tt(ignpar=<bool>)))
-label(OPTION_IMAXBEL)dit(bf(tt(imaxbel=<bool>)))
-label(OPTION_INLCR)dit(bf(tt(inlcr=<bool>)))
-label(OPTION_INPCK)dit(bf(tt(inpck=<bool>)))
+label(OPTION_FFDLY)dit(bf(tt(ffdly[=<bool>])))
+label(OPTION_FLUSHO)dit(bf(tt(flusho[=<bool>])))
+label(OPTION_HUPCL)dit(bf(tt(hupcl[=<bool>])))
+label(OPTION_ICRNL)dit(bf(tt(icrnl[=<bool>])))
+label(OPTION_IEXTEN)dit(bf(tt(iexten[=<bool>])))
+label(OPTION_IGNCR)dit(bf(tt(igncr[=<bool>])))
+label(OPTION_IGNPAR)dit(bf(tt(ignpar[=<bool>])))
+label(OPTION_IMAXBEL)dit(bf(tt(imaxbel[=<bool>])))
+label(OPTION_INLCR)dit(bf(tt(inlcr[=<bool>])))
+label(OPTION_INPCK)dit(bf(tt(inpck[=<bool>])))
 label(OPTION_INTR)dit(bf(tt(intr=<byte>)))
-label(OPTION_ISIG)dit(bf(tt(isig=<bool>)))
+label(OPTION_ISIG)dit(bf(tt(isig[=<bool>])))
 label(OPTION_ISPEED)dit(bf(tt(ispeed=<unsigned-int>)))
    Set the baud rate for incoming data on this line.nl()
    See also: link(ospeed)(OPTION_OSPEED), link(b19200)(OPTION_B19200)
-label(OPTION_ISTRIP)dit(bf(tt(istrip=<bool>)))
-label(OPTION_IUCLC)dit(bf(tt(iuclc=<bool>)))
-label(OPTION_IXANY)dit(bf(tt(ixany=<bool>)))
-label(OPTION_IXOFF)dit(bf(tt(ixoff=<bool>)))
-label(OPTION_IXON)dit(bf(tt(ixon=<bool>)))
+label(OPTION_ISTRIP)dit(bf(tt(istrip[=<bool>])))
+label(OPTION_IUCLC)dit(bf(tt(iuclc[=<bool>])))
+label(OPTION_IXANY)dit(bf(tt(ixany[=<bool>])))
+label(OPTION_IXOFF)dit(bf(tt(ixoff[=<bool>])))
+label(OPTION_IXON)dit(bf(tt(ixon[=<bool>])))
 label(OPTION_KILL)dit(bf(tt(kill=<byte>)))
 label(OPTION_LNEXT)dit(bf(tt(lnext=<byte>)))
 label(OPTION_MIN)dit(bf(tt(min=<byte>)))
 label(OPTION_NL0)dit(bf(tt(nl0)))
    Sets the newline delay to 0.
 label(OPTION_NL1)dit(bf(tt(nl1)))
-label(OPTION_NLDLY)dit(bf(tt(nldly=<bool>)))
-label(OPTION_NOFLSH)dit(bf(tt(noflsh=<bool>)))
-label(OPTION_OCRNL)dit(bf(tt(ocrnl=<bool>)))
-label(OPTION_OFDEL)dit(bf(tt(ofdel=<bool>)))
-label(OPTION_OFILL)dit(bf(tt(ofill=<bool>)))
-label(OPTION_OLCUC)dit(bf(tt(olcuc=<bool>)))
-label(OPTION_ONLCR)dit(bf(tt(onlcr=<bool>)))
-label(OPTION_ONLRET)dit(bf(tt(onlret=<bool>)))
-label(OPTION_ONOCR)dit(bf(tt(onocr=<bool>)))
-label(OPTION_OPOST)dit(bf(tt(opost=<bool>)))
+label(OPTION_NLDLY)dit(bf(tt(nldly[=<bool>])))
+label(OPTION_NOFLSH)dit(bf(tt(noflsh[=<bool>])))
+label(OPTION_OCRNL)dit(bf(tt(ocrnl[=<bool>])))
+label(OPTION_OFDEL)dit(bf(tt(ofdel[=<bool>])))
+label(OPTION_OFILL)dit(bf(tt(ofill[=<bool>])))
+label(OPTION_OLCUC)dit(bf(tt(olcuc[=<bool>])))
+label(OPTION_ONLCR)dit(bf(tt(onlcr[=<bool>])))
+label(OPTION_ONLRET)dit(bf(tt(onlret[=<bool>])))
+label(OPTION_ONOCR)dit(bf(tt(onocr[=<bool>])))
+label(OPTION_OPOST)dit(bf(tt(opost[=<bool>])))
    Enables or disables output processing; e.g., converts NL to CR-NL.
 label(OPTION_OSPEED)dit(bf(tt(ospeed=<unsigned-int>)))
    Set the baud rate for outgoing data on this line.nl()
    See also: link(ispeed)(OPTION_ISPEED), link(b19200)(OPTION_B19200)
-label(OPTION_PARENB)dit(bf(tt(parenb=<bool>)))
+label(OPTION_PARENB)dit(bf(tt(parenb[=<bool>])))
    Enable parity generation on output and parity checking for input.
-label(OPTION_PARMRK)dit(bf(tt(parmrk=<bool>)))
-label(OPTION_PARODD)dit(bf(tt(parodd=<bool>)))
-label(OPTION_PENDIN)dit(bf(tt(pendin=<bool>)))
+label(OPTION_PARMRK)dit(bf(tt(parmrk[=<bool>])))
+label(OPTION_PARODD)dit(bf(tt(parodd[=<bool>])))
+label(OPTION_PENDIN)dit(bf(tt(pendin[=<bool>])))
 label(OPTION_QUIT)dit(bf(tt(quit=<byte>)))
 label(OPTION_REPRINT)dit(bf(tt(reprint=<byte>)))
 label(OPTION_SANE)dit(bf(tt(sane)))
@@ -2703,12 +2705,12 @@ label(OPTION_TAB2)dit(bf(tt(tab2)))
 label(OPTION_TAB3)dit(bf(tt(tab3)))
 label(OPTION_TABDLY)dit(bf(tt(tabdly=<unsigned-int>)))
 label(OPTION_TIME)dit(bf(tt(time=<byte>)))
-label(OPTION_TOSTOP)dit(bf(tt(tostop=<bool>)))
+label(OPTION_TOSTOP)dit(bf(tt(tostop[=<bool>])))
 label(OPTION_VT0)dit(bf(tt(vt0)))
 label(OPTION_VT1)dit(bf(tt(vt1)))
-label(OPTION_VTDLY)dit(bf(tt(vtdly=<bool>)))
+label(OPTION_VTDLY)dit(bf(tt(vtdly[=<bool>])))
 label(OPTION_WERASE)dit(bf(tt(werase=<byte>)))
-label(OPTION_XCASE)dit(bf(tt(xcase=<bool>)))
+label(OPTION_XCASE)dit(bf(tt(xcase[=<bool>])))
 label(OPTION_XTABS)dit(bf(tt(xtabs)))
 label(OPTION_I_POP_ALL)dit(bf(tt(i-pop-all)))
    With UNIX System V STREAMS, removes all drivers from the stack.
@@ -2813,7 +2815,7 @@ label(OPTION_OPENSSL_MAX_PROTO_VERSION)dit(bf(tt(openssl-max-proto-version)))
    This option is similar to link(min-proto-version)(OPTION_OPENSSL_MIN_PROTO_VERSION),
    however, it disallows use of a higher protocol version. Useful for testing
    the peer.
-label(OPTION_OPENSSL_VERIFY)dit(bf(tt(verify=<bool>)))
+label(OPTION_OPENSSL_VERIFY)dit(bf(tt(verify[=<bool>])))
    Controls check of the peer's certificate. Default is 1 (true). Disabling
    verify might open your socket for everyone, making the encryption useless!
 label(OPTION_OPENSSL_CERTIFICATE)dit(bf(tt(cert=<filename>)))
@@ -2865,7 +2867,7 @@ label(OPTION_OPENSSL_COMMONNAME)dit(bf(tt(commonname=<string>)))
    certificates commonname. This option has only meaning when option
    link(verify)(OPTION_OPENSSL_VERIFY) is not disabled and the chosen cipher
    provides a peer certificate.
-label(OPTION_OPENSSL_NO_SNI)dit(bf(tt(no-sni=<bool>)))
+label(OPTION_OPENSSL_NO_SNI)dit(bf(tt(no-sni[=<bool>])))
    Do not use the client side Server Name Indication (SNI) feature that selects
    the desired server certificate.nl()
    Note: SNI is automatically used since socat() version 1.7.4.0 and uses

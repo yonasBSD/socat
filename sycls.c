@@ -580,7 +580,7 @@ int Fcntl(int fd, int cmd) {
    if (!diag_in_handler) diag_flush();
 #if WITH_SYCLS
    _errno = errno;
-   Debug1("fcntl() -> %d", result);
+   Debug1("fcntl() -> 0x%x", result);
    errno = _errno;
 #endif /* WITH_SYCLS */
    return result;
@@ -590,13 +590,13 @@ int Fcntl_l(int fd, int cmd, long arg) {
    int result, _errno;
    if (!diag_in_handler) diag_flush();
 #if WITH_SYCLS
-   Debug3("fcntl(%d, %d, %ld)", fd, cmd, arg);
+   Debug3("fcntl(%d, %d, 0x%lx)", fd, cmd, arg);
 #endif /* WITH_SYCLS */
    result = fcntl(fd, cmd, arg);
    _errno = errno;
    if (!diag_in_handler) diag_flush();
 #if WITH_SYCLS
-   Debug1("fcntl() -> %d", result);
+   Debug1("fcntl() -> 0x%x", result);
 #endif /* WITH_SYCLS */
    errno = _errno;
    return result;

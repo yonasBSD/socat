@@ -67,9 +67,15 @@ Coding:
 	have now been removed or disabled in other ways to make Socat compile
 	with C89/C90 standard again.
 
+	fcntl() trace prints flags now in hexadecimal.
+
 Porting:
 	Small correction in configure.ac makes Socat C99 able.
-	Thanks to Florian Weimer from Red Hat for provinding a patch.
+	Thanks to Florian Weimer from Red Hat for providing a patch.
+
+Documentation:
+	Syntax and semantics of some options (esp.unlink-close) were not clear.
+	Thanks to Anthony Chavez for reporting this and making suggestions.
 
 Documentation:
 	socat-tun.html described TCP as tunnel medium but this does not keep
