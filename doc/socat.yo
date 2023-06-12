@@ -3462,6 +3462,22 @@ as the parent process lives; NOEXPAND(shutdown(2)) would actively terminate the
 connection).
 
 
+label(EXAMPLE_GENERIC_DCCP_SERVER)
+dit(bf(tt(socat TCP-LISTEN:10021,reuseaddr,socktype=6,protocol=33,fork PIPE)))
+
+is a simple DCCP echo server. It uses socat()s TCP procedures, but changes the
+socket type to SOCK_DCCP=6 (on Linux) and the IP protocol to IPPROTO_DCCP=33.
+This works in contrast to attempts with UDP basis, even though DCCP is named a
+datagram protocol.
+
+
+label(EXAMPLE_GENERIC_DCCP_CLIENT)
+dit(bf(tt(socat - TCP:<server>:10021,reuseaddr,socktype=6,protocol=33,fork)))
+
+is a simple DCCP client. It uses socat()s TCP procedures, but changes the
+socket type to SOCK_DCCP=6 (on Linux) and the IP protocol to IPPROTO_DCCP=33.
+
+
 label(EXAMPLE_ADDRESS_UDP4_BROADCAST_CLIENT)
 dit(bf(tt(socat - UDP4-DATAGRAM:192.168.1.0:123,sp=123,broadcast,range=192.168.1.0/24)))
 

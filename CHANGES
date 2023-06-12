@@ -75,6 +75,8 @@ Documentation:
 	socat-tun.html described TCP as tunnel medium but this does not keep
 	packet boundaries. Changed to UDP.
 
+	Added examples for DCCP client and server.
+
 Testing:
 	Idea: EXEC,SYSTEM addresses can keep packet boundaries when option
 	socktype=<val-of-SOCK_DGRAM>
