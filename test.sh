@@ -15770,6 +15770,75 @@ fi # NUMCOND
 esac
 N=$((N+1))
 
+
+# Test if filan -s correctly displays TCP on appropriate FDs
+# This feature was broken in version 1.7.4.4
+NAME=FILAN_SHORT_TCP
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%filan%*|*%$NAME%*)
+TEST="$NAME: filan -s displays TCP etc"
+# Establish a TCP connection using Socat server and client; on the server
+# exec() filan -s using nofork option, so its output appears on the client.
+# When the second word in the first line is "tcp" the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! a=$(testfeats STDIO IP4 TCP LISTEN EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! a=$(testaddrs STDIO TCP4 TCP4-LISTEN EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions so-reuseaddr nofork ) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts TCP4-LISTEN:$PORT,reuseaddr EXEC:'$FILAN -s',nofork"
+CMD1="$TRACE $SOCAT $opts - TCP4:localhost:$PORT"
+printf "test $F_n $TEST... " $N
+eval "$CMD0" >/dev/null 2>"${te}0" &
+pid0=$!
+waittcp4port $PORT 1
+$CMD1 >"${tf}1" 2>"${te}1" </dev/null
+rc1=$?
+kill $pid0 2>/dev/null; wait
+result="$(head -n 1 ${tf}1 |awk '{print($2);}')"
+if [ $rc1 -eq 0 -a "$result" = tcp ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    if [ $rc1 -ne 0 ]; then
+	echo "rc=$rc1" >&2
+    else
+	echo "result is \"$result\" instead of \"tcp\"" >&2
+    fi
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
 # end of common tests
 
 ##################################################################################

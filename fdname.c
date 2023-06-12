@@ -232,7 +232,7 @@ int sockname(int fd, FILE *outfile, char style) {
 #define PROTONAMEMAX 1024 
    char protoname[PROTONAMEMAX] = "";
 #if defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)
-   int proto;
+   int proto = 0;
 #endif
    int opttype;
 #ifdef SO_ACCEPTCONN
@@ -268,7 +268,6 @@ int sockname(int fd, FILE *outfile, char style) {
 #endif
 	    ", &%p, {"F_socklen"}): errno=%d (%s)", fd, &proto, optlen, errno, strerror(errno));
    }
-   proto = 0;
 #endif /* defined(SO_PROTOCOL) || defined(SO_PROTOTYPE) */
    optlen = sizeof(opttype);
    Getsockopt(fd, SOL_SOCKET, SO_TYPE,       &opttype,       &optlen);
@@ -313,9 +312,29 @@ int sockname(int fd, FILE *outfile, char style) {
 #endif
 #else
    if (opttype == SOCK_STREAM) {
-      strcpy(protoname, "tcp");
+      strcpy(protoname, "(stream)");
    } else if (opttype == SOCK_DGRAM) {
-      strcpy(protoname, "udp");
+      strcpy(protoname, "(dgram)");
+#ifdef SOCK_RAW
+   } else if (opttype == SOCK_RAW) {
+      strcpy(protoname, "(raw)");
+#endif
+#ifdef SOCK_RDM
+   } else if (opttype == SOCK_RDM) {
+      strcpy(protoname, "(rdm)");
+#endif
+#ifdef SOCK_SEQPACKET
+   } else if (opttype == SOCK_SEQPACKET) {
+      strcpy(protoname, "(seqpacket)");
+#endif
+#ifdef SOCK_DCCP
+   } else if (opttype == SOCK_DCCP) {
+      strcpy(protoname, "(dccp)");
+#endif
+#ifdef SOCK_PACKET
+   } else if (opttype == SOCK_PACKET) {
+      strcpy(protoname, "(packet)");
+#endif
    } else {
       strcpy(protoname, "socket");
    }
