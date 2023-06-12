@@ -472,6 +472,7 @@ int diag_dup(void) {
       return -1;
    }
    newfd = dup(fileno(diagopts.logfile));
+   Fcntl_l(newfd, F_SETFD, FD_CLOEXEC);
    if (diagopts.logfile != stderr) {
       fclose(diagopts.logfile);
    }

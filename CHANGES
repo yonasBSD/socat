@@ -37,6 +37,9 @@ Corrections:
 	The FDs of the socketpair that queues messages from signal handlers
 	lacked FD_CLOEXEC and thus leaked into EXEC and SYSTEM child processes.
 
+	Option stderr on addresses EXEC and SYSTEM uses a temporary FD. It
+	lacked the FD_CLOEXEC setting and thus leakt into child processes.
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)
