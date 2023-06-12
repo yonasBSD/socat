@@ -270,7 +270,11 @@ static int
    }
 
 #if defined(HAVE_SSL_set_tlsext_host_name) || defined(SSL_set_tlsext_host_name)
-   if (opt_snihost == NULL) {
+   if (opt_snihost != NULL) {
+      if (check_ipaddr(opt_snihost) == 0) {
+	 Warn1("specified SNI host \"%s\" is an IP address", opt_snihost);
+      }
+   } else if (check_ipaddr(opt_commonname) != 0) {
       opt_snihost = strdup(opt_commonname);
       if (opt_snihost == NULL) {
 	 Error1("strdup("F_Zu"): out of memory", strlen(opt_commonname)+1);
@@ -444,6 +448,7 @@ int _xioopen_openssl_connect(struct single *xfd,
 
 #if defined(HAVE_SSL_set_tlsext_host_name) || defined(SSL_set_tlsext_host_name)
    if (!no_sni) {
+      /*Warn1("_xioopen_openssl_connect(): calling SSL_set_tlsext_host_name(snihost=\"%s\")", snihost?snihost:"NULL");*/
       if (!SSL_set_tlsext_host_name(ssl, snihost)) {
 	 Error1("Failed to set SNI host \"%s\"", snihost);
 	 sycSSL_free(xfd->para.openssl.ssl);

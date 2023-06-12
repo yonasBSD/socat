@@ -45,6 +45,10 @@ Corrections:
 	Thanks to Gordon W.Ross for reporting and fixing this issue.
 	Test: RESTORE_TTY
 
+	The OpenSSL client SNI parameter, when not explicitely specified, is
+	derived from option commonname or rom target server name. This is not
+	useful with IP addresses, which Socat now checks and avoids.
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)

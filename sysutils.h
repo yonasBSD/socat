@@ -80,6 +80,9 @@ extern int sockaddr_vm_parse(struct sockaddr_vm *sa, const char *cid_str,
 extern const char *inet_ntop(int pf, const void *binaddr,
 			     char *addrtext, socklen_t textlen);
 #endif
+extern int check_ip4addr(const char *address);
+extern int check_ip6addr(const char *address);
+extern int check_ipaddr(const char *address);
 
 #if defined(HAVE_SETGRENT) && defined(HAVE_GETGRENT) && defined(HAVE_ENDGRENT)
 extern int getusergroups(const char *user, gid_t *list, int *ngroups);

@@ -457,6 +457,72 @@ char *sockaddr_inet6_info(const struct sockaddr_in6 *sa, char *buff, size_t blen
 }
 #endif /* WITH_IP6 */
 
+
+#if WITH_IP4
+/* Checks if the given string is an IPv4 address.
+   Returns 0 when it is an address.
+   Returns 1 when it is not an address.
+   Returns -1 when an error occurred (bad regex - internal) */
+int check_ip4addr(
+	const char *address)
+{
+#if HAVE_REGEX_H
+	regex_t preg;
+	if (regcomp(&preg, "^(25[0-5]|(2[0-4]|1[0-9]|[1-9]?)[0-9])\\.(25[0-5]|(2[0-4]|1[0-9]|[1-9]?)[0-9])\\.(25[0-5]|(2[0-4]|1[0-9]|[1-9]?)[0-9])\\.(25[0-5]|(2[0-4]|1[0-9]|[1-9]?)[0-9])$", REG_EXTENDED|REG_NOSUB)
+	    != 0) {
+		return -1; 	/* do not handle, just state that no match */
+	}
+	if (regexec(&preg, address, 0, NULL, 0) == 0) {
+		return 0;
+	}
+#endif /* HAVE_REGEX_H */
+	/* Fallback when no regexec() compiled in */
+	return 1;
+}
+#endif /* WITH_IP4 */
+
+#if WITH_IP6
+/* Checks if the given string is an IPv6 address.
+   Currently a hack, just checks a few criteria.
+   Returns 0 when it is an address.
+   Returns 1 when it is not an address.
+   Returns -1 when an error occurred (bad regex - internal) */
+int check_ip6addr(
+	const char *address)
+{
+#if HAVE_REGEX_H
+	regex_t preg;
+	if (regcomp(&preg, "^\\[[0-9a-fA-F:]*\\]$", REG_EXTENDED|REG_NOSUB)
+	    != 0) {
+		return -1; 	/* do not handle, just state that no match */
+	}
+	if (regexec(&preg, address, 0, NULL, 0) == 0) {
+		return 0;
+	}
+#endif /* HAVE_REGEX_H */
+	/* Fallback when no regexec() compiled in */
+	return 1;
+}
+#endif /* WITH_IP6 */
+
+/* Checks if the given string is an IPv6 address.
+   Currently a hack, just checks a few criteria.
+   Returns 0 when it is an address.
+   Returns 1 when it is not an address or on error. */
+int check_ipaddr(
+	const char *address)
+{
+	int res4, res6;
+	if ((res4 = check_ip4addr(address)) == 0) {
+		return 0;
+	}
+	if ((res6 = check_ip6addr(address)) == 0) {
+		return 0;
+	}
+	return 1;
+}
+
+
 #if HAVE_GETGROUPLIST || (defined(HAVE_SETGRENT) && defined(HAVE_GETGRENT) && defined(HAVE_ENDGRENT))
 /* fills the list with the supplementary group ids of user.
    caller passes size of list in ngroups, function returns number of groups in
