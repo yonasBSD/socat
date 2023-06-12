@@ -367,7 +367,7 @@ int sockname(int fd, FILE *outfile, char style) {
 				 socknamebuff, sizeof(socknamebuff)));
       break;
      case 'S':
-	//sockettype(opttype, typename, TYPENAMEMAX);
+	/* sockettype(opttype, typename, TYPENAMEMAX); */
 	fprintf(outfile, "unix %s-%s %s %s",
 		sockaddr_unix_info(&sockname.un, socknamelen,
 				   socknamebuff, sizeof(socknamebuff)),

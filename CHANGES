@@ -49,6 +49,10 @@ Coding:
 	starting the data transfer loop. Useful, e.g., to accumulate multiple
 	packets in a receiving datagram socket before starting to process them.
 
+	"//" comments were used for disabling experimental code. These lines
+	have now been removed or disabled in other ways to make Socat compile
+	with C89/C90 standard again.
+
 Porting:
 	Small correction in configure.ac makes Socat C99 able.
 	Thanks to Florian Weimer from Red Hat for provinding a patch.

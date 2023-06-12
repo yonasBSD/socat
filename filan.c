@@ -952,9 +952,11 @@ int tcpan2(int fd, FILE *outfile) {
    fprintf(outfile, "%s={%u}\t", "TCPI_OPTIONS", 	tcpinfo.tcpi_options);
    fprintf(outfile, "%s={%u}\t", "TCPI_SND_WSCALE", 	tcpinfo.tcpi_snd_wscale);
    fprintf(outfile, "%s={%u}\t", "TCPI_RCV_WSCALE", 	tcpinfo.tcpi_rcv_wscale);
-   //fprintf(outfile, "%s={%u}\t", "TCPI_DELIVERY_RATE_APP_LIMITED", tcpinfo.tcpi_delivery_rate_app_limited);
-   //fprintf(outfile, "%s={%u}\t", "TCPI_FASTOPEN_CLIENT_FAIL", tcpinfo.tcpi_fastopen_client_fail);
-   // fprintf(outfile, "%s={%u}\t", "TCPI_", tcpinfo.tcpi_);
+#if LATER
+   fprintf(outfile, "%s={%u}\t", "TCPI_DELIVERY_RATE_APP_LIMITED", tcpinfo.tcpi_delivery_rate_app_limited);
+   fprintf(outfile, "%s={%u}\t", "TCPI_FASTOPEN_CLIENT_FAIL", tcpinfo.tcpi_fastopen_client_fail);
+   fprintf(outfile, "%s={%u}\t", "TCPI_", tcpinfo.tcpi_);
+#endif
 
    return 0;
 }

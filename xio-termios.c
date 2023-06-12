@@ -376,7 +376,6 @@ int xiotermios_speed(int fd, int n, speed_t speed) {
 	       &_xiotermios_data.termarg, speed, strerror(errno));
       }
    }
-// Tcgetattr(fd, &_xiotermios_data.termarg);
    return 0;
 }
 #endif /* HAVE_TERMIOS_ISPEED */

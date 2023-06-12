@@ -1543,9 +1543,8 @@ void socat_signal(int signum) {
    case SIGINT:
       Notice1("exiting on signal %d", signum); break;
    }
-   //Exit(128+signum);
    Notice1("socat_signal(): finishing signal %d", signum);
-   diag_exit(128+signum);	/*!!! internal cleanup + _exit() */
+   diag_exit(128+signum);	/* internal cleanup + _exit() */
    diag_in_handler = 0;
    errno = _errno;
 }

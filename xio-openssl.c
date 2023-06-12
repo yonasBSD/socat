@@ -927,8 +927,6 @@ int
    unsigned long err;
    int result;
 
-   //*ipproto = IPPROTO_TCP;
-
    xfd->dtype = XIODATA_OPENSSL;
 
    retropt_bool(opts, OPT_OPENSSL_FIPS, &opt_fips);

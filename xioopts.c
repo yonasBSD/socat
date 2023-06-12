@@ -2590,6 +2590,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	 break;
 #endif /* defined(WITH_IP4) */
 
+#if LATER
       case TYPE_GENERIC:
 	 if (!assign) {
 	    (*opts)[i].value.u_int = 1;
@@ -2606,6 +2607,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	    //(*opts)[i].value.u_bin.b_len
 	 }	 
 	 break;
+#endif /* LATER */
 
       default:
 	 Error2("parseopts_table(): internal error on option \"%s\": unimplemented type %d",
