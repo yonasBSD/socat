@@ -53,14 +53,14 @@ the two socat instances; the TUN interfaces both have the same quality.
 
 <h3>TUN Server</h3>
 
-<span class="frame"><span class="shell">socat -d -d TCP-LISTEN:11443,reuseaddr TUN:192.168.255.1/24,up</span></span>
+<span class="frame"><span class="shell">socat -d -d UDP-LISTEN:11443,reuseaddr TUN:192.168.255.1/24,up</span></span>
 <p>After starting this command, socat will wait for a connection and then
 create a TUN pseudo network device with address 192.168.255.1; the bit number
 specifies the mask of the network that is pretended to be connected on this
 interface.</p>
 
 <h3>TUN Client</h3>
-<span class="frame"><span class="shell">socat TCP:1.2.3.4:11443 TUN:192.168.255.2/24,up</span></span>
+<span class="frame"><span class="shell">socat UDP:1.2.3.4:11443 TUN:192.168.255.2/24,up</span></span>
 <p>This command should establish a connection to the server and create the TUN
 device on the client.</p>
 

@@ -71,6 +71,10 @@ Porting:
 	Small correction in configure.ac makes Socat C99 able.
 	Thanks to Florian Weimer from Red Hat for provinding a patch.
 
+Documentation:
+	socat-tun.html described TCP as tunnel medium but this does not keep
+	packet boundaries. Changed to UDP.
+
 Testing:
 	Idea: EXEC,SYSTEM addresses can keep packet boundaries when option
 	socktype=<val-of-SOCK_DGRAM>
