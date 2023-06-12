@@ -97,7 +97,7 @@ extern int _xioopen_connect(struct single *fd,
 			    bool alt, int level);
 
 /* common to xioopen_udp_sendto, ..unix_sendto, ..rawip */
-extern 
+extern
 int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 			union sockaddr_union *us, socklen_t uslen,
 			struct opt *opts,
@@ -115,7 +115,7 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 			int level);
 extern
 int xiodopacketinfo(struct msghdr *msgh, bool withlog, bool withenv);
-extern 
+extern
 int xiogetpacketsrc(int fd, struct msghdr *msgh, int flags);
 extern
 int xiocheckpeer(xiosingle_t *xfd,
@@ -126,12 +126,12 @@ int xiosetsockaddrenv(const char *lr, union sockaddr_union *sau, socklen_t salen
 extern
 int xioparsenetwork(const char *rangename, int pf,
 		    struct xiorange *range);
-extern 
+extern
 int xioparserange(const char *rangename, int pf, struct xiorange *range);
 
 extern int
 xiosocket(struct opt *opts, int pf, int socktype, int proto, int level);
-extern int 
+extern int
 xiosocketpair(struct opt *opts, int pf, int socktype, int proto, int sv[2]);
 
 #endif /* !defined(__xio_socket_h_included) */

@@ -85,7 +85,7 @@ int applyopts_named(const char *filename, struct opt *opts, unsigned int phase) 
 }
 
 
-/* perform actions that are common to all NAMED group addresses: checking if 
+/* perform actions that are common to all NAMED group addresses: checking if
    the entry exists, parsing options, ev.removing old filesystem entry or
    setting early owners and permissions.
    It applies options of PH_EARLY and PH_PREOPEN.

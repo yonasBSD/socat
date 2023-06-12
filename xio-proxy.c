@@ -220,7 +220,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
       {
 	 break;
       }
-  
+
    } while (true);	/* end of complete open loop - drop out on success */
 
    Notice4("successfully connected to %s:%u via proxy %s:%s",
@@ -258,7 +258,7 @@ int _xioopen_proxy_prepare(struct proxyvars *proxyvars, struct opt *opts,
 	 Error2("open(\"%s\", O_RDONLY): %s", proxyvars->authfile, strerror(errno));
 	 return STAT_NORETRY;
       }
-      /* go to the end of our proxy auth file to 
+      /* go to the end of our proxy auth file to
 	 figure out how long our proxy auth is */
       if ((length = Lseek(authfd, 0, SEEK_END)) < 0) {
 	 Error2("lseek(<%s>, 0, SEEK_END): %s",
@@ -323,7 +323,7 @@ int _xioopen_proxy_connect(struct single *xfd,
    int rv;
    char buff[BUFLEN+1];		/* for receiving HTTP reply headers */
 #if CONNLEN > BUFLEN
-#error not enough buffer space 
+#error not enough buffer space
 #endif
    char textbuff[2*BUFLEN+1];	/* just for sanitizing print data */
    char *eol = buff;
@@ -410,7 +410,7 @@ int _xioopen_proxy_connect(struct single *xfd,
 	 state = XIOSTATE_ERROR;
 	 break;	/* leave read cycles */
       }
-      
+
       switch (state) {
 
       case XIOSTATE_HTTP1:
@@ -448,7 +448,7 @@ int _xioopen_proxy_connect(struct single *xfd,
 	 }
 	 state = XIOSTATE_HTTP4;
 	 break;
-	 
+
       case XIOSTATE_HTTP4:
 	 /* within header */
 	 if (*(buff+offset) == '\r') {
@@ -564,7 +564,7 @@ int _xioopen_proxy_connect(struct single *xfd,
 	    */
 	    ptr += 3;
 	    while (*ptr == ' ')  ++ptr;
-	    
+
 	    Msg2(level, "%s: %s", request, ptr);
 	    return STAT_RETRYLATER;
 	 }

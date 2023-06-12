@@ -89,7 +89,7 @@ static int procgetfdname(int fd, char *filepath, size_t pathsize) {
       }
    }
 #endif /* !HAVE_STAT64 */
-       
+
    if (pid < 0)  pid = Getpid();
    snprintf(procpath, sizeof(procpath), "/proc/"F_pid"/"
 #if HAVE_PROC_DIR_PATH
@@ -107,7 +107,7 @@ static int procgetfdname(int fd, char *filepath, size_t pathsize) {
    return 0;
 }
 #endif /* HAVE_PROC_DIR_FD || HAVE_PROC_DIR_PATH */
-   
+
 int statname(const char *file, int fd, int filetype, FILE *outfile,
 	     char style) {
    char filepath[PATH_MAX];
@@ -229,7 +229,7 @@ int sockname(int fd, FILE *outfile, char style) {
 #if HAVE_GETPROTOBYNUMBER || HAVE_GETPROTOBYNUMBER_R
    struct protoent protoent, *protoentp;
 #endif
-#define PROTONAMEMAX 1024 
+#define PROTONAMEMAX 1024
    char protoname[PROTONAMEMAX] = "";
 #if defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)
    int proto = 0;
@@ -304,8 +304,8 @@ int sockname(int fd, FILE *outfile, char style) {
    }
 #else
    switch (proto) {
-   case IPPROTO_TCP:  strcpy(protoname, "tcp"); break; 
-   case IPPROTO_UDP:  strcpy(protoname, "udp"); break; 
+   case IPPROTO_TCP:  strcpy(protoname, "tcp"); break;
+   case IPPROTO_UDP:  strcpy(protoname, "udp"); break;
    case IPPROTO_SCTP: strcpy(protoname, "sctp"); break;
    default: sprintf(protoname, "proto%d", proto); break;
    }

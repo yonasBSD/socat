@@ -43,7 +43,7 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
    bool opt_unlink_close = true;	/* remove symlink afterwards */
    bool wait_slave = false;	/* true would be better for many platforms, but
 				   some OSes cannot handle this, and for common
-				   default behaviour as well as backward 
+				   default behaviour as well as backward
 				   compatibility we choose "no" as default */
    struct timespec pollintv = { PTY_INTERVALL };
 

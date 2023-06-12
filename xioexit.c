@@ -11,7 +11,7 @@
 
 
 /* this function closes all open xio sockets on exit, if they are still open.
-   It must be registered with atexit(). */ 
+   It must be registered with atexit(). */
 void xioexit(void) {
    int i;
 

@@ -187,7 +187,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 	 Warn2("xiogetaddrinfo(, \"%s\", ...): extra trailing data \"%s\"",
 	       service, extra);
       }
-      service = NULL; 
+      service = NULL;
    }
 
    /* the resolver functions might handle numeric forms of node names by
@@ -448,7 +448,7 @@ int xiogetaddrinfo(const char *node, const char *service,
       case PF_INET6: sau->ip6.sin6_port = port; break;
 #endif /* WITH_IP6 */
       }
-   }      
+   }
 #endif /* WITH_TCP || WITH_UDP */
 
    if (numnode)  free(numnode);
@@ -506,7 +506,7 @@ int xiolog_ancillary_ip(struct cmsghdr *cmsg, int *num,
       *num = 3;
       typbuff[0] = '\0'; strncat(typbuff, "IP_PKTINFO", typlen-1);
       snprintf(nambuff, namlen, "%s%c%s%c%s", "if", '\0', "locaddr", '\0', "dstaddr");
-      snprintf(envbuff, envlen, "%s%c%s%c%s", "IP_IF", '\0', 
+      snprintf(envbuff, envlen, "%s%c%s%c%s", "IP_IF", '\0',
 	       "IP_LOCADDR", '\0', "IP_DSTADDR");
       snprintf(valbuff, vallen, "%s%c%s%c%s",
 	       xiogetifname(pktinfo->ipi_ifindex, scratch1, -1), '\0',

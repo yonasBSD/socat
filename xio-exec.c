@@ -37,7 +37,7 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
    if (argc != 2) {
       Error3("\"%s:%s\": wrong number of parameters (%d instead of 1)", argv[0], argv[1], argc-1);
    }
-      
+
    retropt_bool(opts, OPT_DASH, &dash);
 
    status = _xioopen_foxec(xioflags, &fd->stream, groups, &opts, &duptostderr);
@@ -126,11 +126,17 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
       Execvp(token, pargv);
       /* here we come only if execvp() failed */
       switch (pargc) {
-      case 1: Error3("execvp(\"%s\", \"%s\"): %s", token, pargv[0], strerror(errno)); break; 
-      case 2: Error4("execvp(\"%s\", \"%s\", \"%s\"): %s", token, pargv[0], pargv[1], strerror(errno)); break; 
+      case 1:
+	 Error3("execvp(\"%s\", \"%s\"): %s",
+		token, pargv[0], strerror(errno)); break;
+      case 2:
+	 Error4("execvp(\"%s\", \"%s\", \"%s\"): %s",
+		token, pargv[0], pargv[1], strerror(errno)); break;
       case 3:
       default:
-	 Error5("execvp(\"%s\", \"%s\", \"%s\", \"%s\", ...): %s", token, pargv[0], pargv[1], pargv[2], strerror(errno)); break; 
+	 Error5("execvp(\"%s\", \"%s\", \"%s\", \"%s\", ...): %s", token,
+		pargv[0], pargv[1], pargv[2], strerror(errno));
+	 break;
       }
       Exit(1);	/* this child process */
    }

@@ -230,7 +230,7 @@ int main(int argc, const char *argv[]) {
 	 rto = Strtod(a, (char **)&a, "-t");
 	 socat_opts.closwait.tv_sec = rto;
 	 socat_opts.closwait.tv_usec =
-	    (rto-socat_opts.closwait.tv_sec) * 1000000; 
+	    (rto-socat_opts.closwait.tv_sec) * 1000000;
 	 break;
       case 'T':  if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -244,7 +244,7 @@ int main(int argc, const char *argv[]) {
 	 rto = Strtod(a, (char **)&a, "-T");
 	 socat_opts.total_timeout.tv_sec = rto;
 	 socat_opts.total_timeout.tv_usec =
-	    (rto-socat_opts.total_timeout.tv_sec) * 1000000; 
+	    (rto-socat_opts.total_timeout.tv_sec) * 1000000;
 	 break;
       case 'u':  if (arg1[0][2])  { socat_opt_hint(stderr, arg1[0][1], arg1[0][2]); Exit(1); }
 	 socat_opts.lefttoright = true; break;
@@ -738,8 +738,7 @@ int socat(const char *address1, const char *address2) {
 #endif
 
    Info("resolved and opened all sock addresses");
-   return 
-      _socat();	/* nsocks, sockets are visible outside function */
+   return _socat();	/* nsocks, sockets are visible outside function */
 }
 
 /* checks if this is a connection to a child process, and if so, sees if the
@@ -1041,7 +1040,7 @@ int _socat(void) {
 	 if (closing) {
 	    break;
 	 }
-	 /* one possibility to come here is ignoreeof on some fd, but no EOF 
+	 /* one possibility to come here is ignoreeof on some fd, but no EOF
 	    and no data on any descriptor - this is no indication for end! */
 	 continue;
       }
@@ -1051,7 +1050,7 @@ int _socat(void) {
 	 if (fd1in->revents & POLLNVAL) {
 	    /* this is what we find on Mac OS X when poll()'ing on a device or
 	       named pipe. a read() might imm. return with 0 bytes, resulting
-	       in a loop? */ 
+	       in a loop? */
 	    Error1("poll(...[%d]: invalid request", fd1in->fd);
 		  free(buff);
 	    return -1;
@@ -1137,7 +1136,7 @@ int _socat(void) {
 		XIO_RDSTREAM(sock2)->actbytes == 0) {
 	       /* avoid idle when all readbytes already there */
 	       mayrd2 = true;
-	    }          
+	    }
 	    /* escape char occurred? */
 	    if (XIO_RDSTREAM(sock2)->actescape) {
 	       bytes2 = 0;	/* indicate EOF */
@@ -1287,7 +1286,7 @@ static int
 /* inpipe is suspected to have read data available; read at most bufsiz bytes
    and transfer them to outpipe. Perform required data conversions.
    buff must be a malloc()'ed storage and might be realloc()'ed in this
-   function if more space is required after conversions. 
+   function if more space is required after conversions.
    Returns the number of bytes written, or 0 on EOF or <0 if an
    error occurred or when data was read but none written due to conversions
    (with EAGAIN). EAGAIN also occurs when reading from a nonblocking FD where
@@ -1571,7 +1570,7 @@ void socat_signal(int signum) {
       break;
    case SIGTERM:
       Warn1("exiting on signal %d", signum); break;
-   case SIGHUP:  
+   case SIGHUP:
    case SIGINT:
       Notice1("exiting on signal %d", signum); break;
    }

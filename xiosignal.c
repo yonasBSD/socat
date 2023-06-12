@@ -79,7 +79,7 @@ void socatsignalpass(int sig) {
 }
 
 
-/* register the sub process pid for passing of signals of type signum. 
+/* register the sub process pid for passing of signals of type signum.
    Only for SIGHUP, SIGINT, and SIGQUIT!
    returns 0 on success or <0 if an error occurred */
 int xio_opt_signal(pid_t pid, int signum) {

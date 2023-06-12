@@ -228,7 +228,7 @@ int xiocheckrange_ip6(struct sockaddr_in6 *pa, struct xiorange *range) {
        masked.u6_addr32[1] != rangeaddr->u6_addr32[1] ||
        masked.u6_addr32[2] != rangeaddr->u6_addr32[2] ||
        masked.u6_addr32[3] != rangeaddr->u6_addr32[3]) {
-      Debug1("client address %s is not permitted", peername); 
+      Debug1("client address %s is not permitted", peername);
       return -1;
    }
    return 0;

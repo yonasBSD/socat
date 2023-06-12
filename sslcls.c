@@ -348,7 +348,7 @@ int sycSSL_connect(SSL *ssl) {
    Debug1("SSL_connect(%p)", ssl);
    result = SSL_connect(ssl);
    Debug1("SSL_connect() -> %d", result);
-   return result;   
+   return result;
 }
 
 int sycSSL_accept(SSL *ssl) {
@@ -356,7 +356,7 @@ int sycSSL_accept(SSL *ssl) {
    Debug1("SSL_accept(%p)", ssl);
    result = SSL_accept(ssl);
    Debug1("SSL_accept() -> %d", result);
-   return result;   
+   return result;
 }
 
 int sycSSL_read(SSL *ssl, void *buf, int num) {
@@ -392,7 +392,7 @@ X509 *sycSSL_get_peer_certificate(SSL *ssl) {
    } else {
       Debug("SSL_get_peer_certificate() -> NULL");
    }
-   return result;   
+   return result;
 }
 
 int sycSSL_shutdown(SSL *ssl) {

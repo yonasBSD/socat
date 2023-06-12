@@ -608,7 +608,7 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    xfd->stream.flags     |= (xioflags & XIO_ACCMODE);
    addrdesc = xfd->stream.addr;
    result = (*addrdesc->func)(xfd->stream.argc, xfd->stream.argv,
-			      xfd->stream.opts, xioflags, xfd, 
+			      xfd->stream.opts, xioflags, xfd,
 			      addrdesc->groups, addrdesc->arg1,
 			      addrdesc->arg2, addrdesc->arg3);
    return result;

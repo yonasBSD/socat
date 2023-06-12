@@ -112,7 +112,7 @@ static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xio
       applyopts_cloexec(fd->stream.fd, opts);
    }
 
-   if ((result = applyopts2(fd->stream.fd, opts, PH_PASTSOCKET, PH_CONNECTED)) < 0) 
+   if ((result = applyopts2(fd->stream.fd, opts, PH_PASTSOCKET, PH_CONNECTED)) < 0)
       return result;
 
    if ((result = _xio_openlate(&fd->stream, opts)) < 0)

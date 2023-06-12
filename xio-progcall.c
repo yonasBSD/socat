@@ -484,7 +484,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 		  /*0 Info2("dup(%d) -> %d", rdpip[1], tmpo);*/
 		  wrpip[0] = tmpo;
 	       }
-	       
+
 	       if (rw != XIO_WRONLY && rdpip[1] != fdo) {
 		  /* make sure that the internal diagnostic socket pair fds do not conflict
 		     with our choices */

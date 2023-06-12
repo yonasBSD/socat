@@ -85,7 +85,7 @@ int xioclose1(struct single *pipe) {
    if (pipe->havelock) {
       xiounlock(pipe->lock.lockfile);
       pipe->havelock = false;
-   }      
+   }
    if (pipe->opt_unlink_close && pipe->unlink_close) {
       if (Unlink(pipe->unlink_close) < 0) {
 	 Info2("unlink(\"%s\"): %s", pipe->unlink_close, strerror(errno));

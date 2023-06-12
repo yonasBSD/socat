@@ -83,6 +83,8 @@ Coding:
 	Stream dump write now warn on write errors and partial writes (but
 	still do not recover).
 
+	Removed trailing white space from *.h and *.c files.
+
 Porting:
 	Small correction in configure.ac makes Socat C99 able.
 	Thanks to Florian Weimer from Red Hat for providing a patch.

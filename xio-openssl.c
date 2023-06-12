@@ -21,7 +21,7 @@
 #include "xio-openssl.h"
 
 /* the openssl library requires a file descriptor for external communications.
-   so our best effort is to provide any possible kind of un*x file descriptor 
+   so our best effort is to provide any possible kind of un*x file descriptor
    (not only tcp, but also pipes, stdin, files...)
    for tcp we want to provide support for socks and proxy.
    read and write functions must use the openssl crypt versions.
@@ -261,7 +261,7 @@ static int
    retropt_bool(opts, OPT_OPENSSL_NO_SNI, &opt_no_sni);
    retropt_string(opts, OPT_OPENSSL_SNIHOST, (char **)&opt_snihost);
 #endif
-   
+
    if (opt_commonname == NULL) {
       opt_commonname = strdup(hostname);
       if (opt_commonname == NULL) {
@@ -530,7 +530,7 @@ static int
 #else
    pf = PF_INET;
 #endif
-   
+
    portname = argv[1];
 
    xfd->howtoend = END_SHUTDOWN;
@@ -1643,7 +1643,7 @@ static bool openssl_check_peername(X509_NAME *name, const char *peername) {
    const unsigned char *text;
    ind = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
    if (ind < 0) {
-      Info("no COMMONNAME field in peer certificate");	
+      Info("no COMMONNAME field in peer certificate");
       return false;
    }
    entry = X509_NAME_get_entry(name, ind);
@@ -1740,7 +1740,7 @@ static int openssl_handle_peer_certificate(struct single *xfd,
 	 extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
 	 if (!strcasecmp(extstr, "subjectAltName")) {
 	    void *names;
-	    if (!(meth = X509V3_EXT_get(ext))) break;   
+	    if (!(meth = X509V3_EXT_get(ext))) break;
 	    names = X509_get_ext_d2i(peer_cert, NID_subject_alt_name, NULL, NULL);
 	    if (names) {
 	       int numalts;

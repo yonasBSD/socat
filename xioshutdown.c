@@ -84,9 +84,9 @@ int xioshutdown(xiofile_t *sock, int how) {
 	 if (Close(sock->stream.para.bipipe.fdout) < 0) {
 	    Info2("close(%d): %s",
 		  sock->stream.para.bipipe.fdout, strerror(errno));
-	 } 
+	 }
       }
-      
+
    } else if ((sock->stream.dtype & XIODATA_MASK) == XIODATA_2PIPE) {
       if ((how+1)&1) {
 	 if (Close(sock->stream.fd) < 0) {
@@ -98,7 +98,7 @@ int xioshutdown(xiofile_t *sock, int how) {
 	 if (Close(sock->stream.para.exec.fdout) < 0) {
 	    Info2("close(%d): %s",
 		  sock->stream.para.exec.fdout, strerror(errno));
-	 } 
+	 }
       }
 #if _WITH_SOCKET
    } else if (sock->stream.howtoend == END_SHUTDOWN) {

@@ -661,7 +661,7 @@ int xiopoll(struct pollfd fds[], unsigned long nfds, struct timeval *timeout) {
 #endif /* !HAVE_POLL */
    }
 }
-   
+
 
 #if WITH_TCP || WITH_UDP
 /* returns port in network byte order;

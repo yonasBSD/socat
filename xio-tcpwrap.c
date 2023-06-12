@@ -125,7 +125,7 @@ int xio_tcpwrap_check(xiosingle_t *xfd, union sockaddr_union *us,
    if (inet_ntop(us->soa.sa_family,
 #if WITH_IP6
 		 us->soa.sa_family==PF_INET6 ?
-		 (void *)&us->ip6.sin6_addr : 
+		 (void *)&us->ip6.sin6_addr :
 #endif
 		 (void *)&us->ip4.sin_addr,
 		 serveraddr, sizeof(serveraddr)) == NULL) {

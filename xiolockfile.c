@@ -49,7 +49,7 @@ int xiogetlock(const char *lockfile) {
       Error2("mkstemp(\"%s\"): %s", s, strerror(errno));
       return -1;
    }
-  
+
    pid = Getpid();
    bytes = sprintf(pidbuf, F_pid"\n", pid);
    if (writefull(fd, pidbuf, bytes) < 0) {

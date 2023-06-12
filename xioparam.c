@@ -47,7 +47,7 @@ int xiosetopt(char what, const char *arg) {
 	     what, arg?arg:"NULL");
       return -1;
    }
-   return 0;   
+   return 0;
 }
 
 
@@ -64,5 +64,5 @@ int xioinqopt(char what, char *arg, size_t n) {
 	     what, arg, n);
       return -1;
    }
-   return 0;   
+   return 0;
 }

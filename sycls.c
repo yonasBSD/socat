@@ -1097,13 +1097,13 @@ int Connect(int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen) {
    Debug18("connect(%d,{0x%02x%02x%02x%02x %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x}, "F_Zd")",
 	   sockfd,
 	   ((unsigned char *)serv_addr)[0],  ((unsigned char *)serv_addr)[1],
-	   ((unsigned char *)serv_addr)[2],  ((unsigned char *)serv_addr)[3], 
-	   ((unsigned char *)serv_addr)[4],  ((unsigned char *)serv_addr)[5], 
-	   ((unsigned char *)serv_addr)[6],  ((unsigned char *)serv_addr)[7], 
-	   ((unsigned char *)serv_addr)[8],  ((unsigned char *)serv_addr)[9], 
-	   ((unsigned char *)serv_addr)[10], ((unsigned char *)serv_addr)[11], 
-	   ((unsigned char *)serv_addr)[12], ((unsigned char *)serv_addr)[13], 
-	   ((unsigned char *)serv_addr)[14], ((unsigned char *)serv_addr)[15], 
+	   ((unsigned char *)serv_addr)[2],  ((unsigned char *)serv_addr)[3],
+	   ((unsigned char *)serv_addr)[4],  ((unsigned char *)serv_addr)[5],
+	   ((unsigned char *)serv_addr)[6],  ((unsigned char *)serv_addr)[7],
+	   ((unsigned char *)serv_addr)[8],  ((unsigned char *)serv_addr)[9],
+	   ((unsigned char *)serv_addr)[10], ((unsigned char *)serv_addr)[11],
+	   ((unsigned char *)serv_addr)[12], ((unsigned char *)serv_addr)[13],
+	   ((unsigned char *)serv_addr)[14], ((unsigned char *)serv_addr)[15],
 	   addrlen);
 #else
    Debug4("connect(%d, {%d,%s}, "F_socklen")",
@@ -1536,7 +1536,7 @@ int Tcgetattr(int fd, struct termios *termios_p) {
 #else
    Debug6("tcgetattr(, {%08x,%08x,%08x,%08x,%s}) -> %d",
 	  termios_p->c_iflag, termios_p->c_oflag,
-	  termios_p->c_cflag, termios_p->c_lflag, 
+	  termios_p->c_cflag, termios_p->c_lflag,
 	  chars, result);
 #endif
    errno = _errno;

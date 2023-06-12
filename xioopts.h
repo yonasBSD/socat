@@ -120,10 +120,10 @@ enum e_func {
 
 /* for simpler handling of option-to-connection-type relations we define
    groups. to keep the search for options simple, we allow each option to
-   belong to at most one group only. (we have a dummy GROUP_NONE for those 
+   belong to at most one group only. (we have a dummy GROUP_NONE for those
    that don't want to belong to any...)
    The caller of parseopts() specifies per bitpatter a set of groups where it
-   accepts options from. 
+   accepts options from.
 */
 
 /*- the group bits are:

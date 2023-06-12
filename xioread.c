@@ -12,7 +12,7 @@
 #include "xio-readline.h"
 #include "xio-openssl.h"
 
- 
+
 /* xioread() performs read() or recvfrom()
    If result is < 0, errno is valid */
 ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
@@ -97,7 +97,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
    case XIOREAD_READLINE:
       if ((bytes = xioread_readline(pipe, buff, bufsiz)) < 0) {
 	 return -1;
-      }      
+      }
       break;
 #endif /* WITH_READLINE */
 
@@ -163,7 +163,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	 }
       }
 #endif /* defined(PF_PACKET) && defined(PACKET_OUTGOING) */
-	    
+
       Notice2("received packet with "F_Zu" bytes from %s",
 	      bytes,
 	      sockaddr_info(&from.soa, fromlen, infobuff, sizeof(infobuff)));

@@ -51,7 +51,7 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
 			    int dummy1, int socktype, int dummy3);
 static
 int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
-			int xioflags, xiofile_t *xfd, unsigned groups, 
+			int xioflags, xiofile_t *xfd, unsigned groups,
 			int dumy1, int dummy2, int dummy3);
 
 static
@@ -257,7 +257,7 @@ int xioopen_socket_connect(int argc, const char *argv[], struct opt *opts,
       Error1("data too long: \"%s\"", address);
    } else if (result > 0) {
       Error1("syntax error in \"%s\"", address);
-   }      
+   }
    them.soa.sa_family = pf;
    themlen = themsize +
 #if HAVE_STRUCT_SOCKADDR_SALEN
@@ -522,7 +522,7 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
       Error1("data too long: \"%s\"", address);
    } else if (result > 0) {
       Error1("syntax error in \"%s\"", address);
-   }      
+   }
    us->soa.sa_family = pf;
    uslen = ussize + sizeof(us->soa.sa_family)
 #if HAVE_STRUCT_SOCKADDR_SALEN
@@ -599,7 +599,7 @@ int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
       Error1("data too long: \"%s\"", address);
    } else if (result > 0) {
       Error1("syntax error in \"%s\"", address);
-   }      
+   }
    us.soa.sa_family = pf;
    uslen = ussize + sizeof(sa_family_t)
 #if HAVE_STRUCT_SOCKADDR_SALEN
@@ -751,10 +751,10 @@ int xiogetpacketinfo(int fd)
 
 /* A subroutine that is common to all socket addresses that want to connect()
    a socket to a peer.
-   Applies and consumes the following options: 
+   Applies and consumes the following options:
    PH_PASTSOCKET, PH_FD, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_CONNECT,
    PH_CONNECTED, PH_LATE,
-   OFUNC_OFFSET, 
+   OFUNC_OFFSET,
    OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_USER, OPT_GROUP, OPT_CLOEXEC
    Does not fork, does not retry.
    returns 0 on success.
@@ -777,7 +777,7 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 #endif
 
    if ((xfd->fd = xiosocket(opts, pf, socktype, protocol, level)) < 0) {
-      return STAT_RETRYLATER;	    
+      return STAT_RETRYLATER;
    }
 
    applyopts_offset(xfd, opts);
@@ -923,7 +923,7 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
    applies and consumes the following option:
    PH_PASTSOCKET, PH_FD, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_CONNECT,
    PH_CONNECTED, PH_LATE,
-   OFUNC_OFFSET, 
+   OFUNC_OFFSET,
    OPT_FORK, OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_USER, OPT_GROUP, OPT_CLOEXEC
    returns 0 on success.
 */
@@ -1042,7 +1042,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 #endif
 
    if ((xfd->fd = xiosocket(opts, pf, socktype, ipproto, level)) < 0) {
-      return STAT_RETRYLATER;	    
+      return STAT_RETRYLATER;
    }
 
    applyopts_offset(xfd, opts);
@@ -1187,7 +1187,7 @@ void xiosigaction_hasread(int signum
    This function does not retry. If you need retries, handle this is a
    loop in the calling function.
    after fork, we set the forever/retry of the child process to 0
-   applies and consumes the following options: 
+   applies and consumes the following options:
    PH_INIT, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_EARLY, PH_PREOPEN, PH_FD,
    PH_CONNECTED, PH_LATE, PH_LATE2
    OPT_FORK, OPT_SO_TYPE, OPT_SO_PROTOTYPE, cloexec, OPT_RANGE, tcpwrap
@@ -1967,7 +1967,7 @@ int xioparsenetwork(const char *rangename, int pf, struct xiorange *range) {
 	Error1("syntax error in \"%s\"", addrname);
 	free(addrname); return STAT_NORETRY;
      }
-     free(addrname); 
+     free(addrname);
      result =
 	dalan(maskname, (uint8_t *)&range->netmask.soa.sa_data, &masklen,
 	      sizeof(range->netaddr)-(size_t)(&((struct sockaddr *)0)->sa_data)
@@ -1998,7 +1998,7 @@ int xioparsenetwork(const char *rangename, int pf, struct xiorange *range) {
 }
 
 
-/* parses a string of form address/bits or address:mask, and fills the fields 
+/* parses a string of form address/bits or address:mask, and fills the fields
    of the range union. The addr component is masked with mask. */
 int xioparserange(const char *rangename, int pf, struct xiorange *range) {
    int i;
@@ -2031,10 +2031,10 @@ int xioparserange(const char *rangename, int pf, struct xiorange *range) {
 }
 
 
-/* set environment variables describing (part of) a socket address, e.g. 
+/* set environment variables describing (part of) a socket address, e.g.
    SOCAT_SOCKADDR. lr (local/remote) specifies a string like  "SOCK" or "PEER".
-   proto should correspond to the third parameter of socket(2) and is used to 
-   determine the presence of port information. */ 
+   proto should correspond to the third parameter of socket(2) and is used to
+   determine the presence of port information. */
 int xiosetsockaddrenv(const char *lr,
 		      union sockaddr_union *sau, socklen_t salen,
 		      int proto) {
@@ -2064,7 +2064,7 @@ int xiosetsockaddrenv(const char *lr,
 	 xiosetenv(namebuff, valuebuff, 1, NULL);
 	 namebuff[strlen(lr)] = '\0';  ++idx;
       } while (result > 0);
-      break; 
+      break;
 #endif /* WITH_IP4 */
 #if WITH_IP6
    case PF_INET6:
@@ -2111,7 +2111,7 @@ int xiosetsockaddrenv(const char *lr,
 /* retrieves options so-type and so-prototype from opts, calls socket, and
    ev. generates an appropriate error message.
    returns 0 on success or -1 if an error occurred. */
-int 
+int
 xiosocket(struct opt *opts, int pf, int socktype, int proto, int msglevel) {
    int result;
 
@@ -2131,7 +2131,7 @@ xiosocket(struct opt *opts, int pf, int socktype, int proto, int msglevel) {
 /* retrieves options so-type and so-prototype from opts, calls socketpair, and
    ev. generates an appropriate error message.
    returns 0 on success or -1 if an error occurred. */
-int 
+int
 xiosocketpair(struct opt *opts, int pf, int socktype, int proto, int sv[2]) {
    int result;
 

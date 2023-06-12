@@ -132,7 +132,7 @@ struct para_ip {
 } ;
 #endif /* _WITH_IP4 || _WITH_IP6 */
 
-/* a non-dual file descriptor */ 
+/* a non-dual file descriptor */
 typedef struct single {
    enum xiotag tag;	/* see  enum xiotag  */
    const struct addrdesc *addr;
@@ -145,7 +145,7 @@ typedef struct single {
 #endif /* WITH_RETRY */
    bool   ignoreeof;	/* option ignoreeof; do not pass eof condition to app*/
    int    eof;		/* 1..exec'd child has died, but no explicit eof
-			   occurred 
+			   occurred
 			   2..fd0 has reached EOF, but check for ignoreeof
 			   3..fd0 has reached EOF (definitely; never with
 			   ignoreeof! */
@@ -360,7 +360,7 @@ union integral {
 #if HAVE_STRUCT_LINGER
    struct linger  u_linger;
 #endif /* HAVE_STRUCT_LINGER */
-#if HAVE_STRUCT_TIMESPEC	
+#if HAVE_STRUCT_TIMESPEC
    struct timespec u_timespec;
 #endif /* HAVE_STRUCT_TIMESPEC */
 #if HAVE_STRUCT_IP_MREQ || HAVE_STRUCT_IP_MREQN

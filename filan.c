@@ -3,7 +3,7 @@
 /* Published under the GNU General Public License V.2, see file COPYING */
 
 /* the subroutine filan makes a "FILe descriptor ANalysis". It checks the
-   type of file descriptor and tries to retrieve as much info about it as 
+   type of file descriptor and tries to retrieve as much info about it as
    possible without modifying its state.
    NOTE: it works on UNIX (kernel) file descriptors, not on libc files! */
 
@@ -79,7 +79,7 @@ int filan_file(const char *filename, FILE *outfile) {
    default:
       if ((fd =
 	   Open(filename,  O_RDONLY|O_NOCTTY|O_NONBLOCK
-#ifdef O_NOFOLLOW		
+#ifdef O_NOFOLLOW
 		|(filan_followsymlinks?0:O_NOFOLLOW)
 #endif
 #ifdef O_LARGEFILE
@@ -91,7 +91,7 @@ int filan_file(const char *filename, FILE *outfile) {
 	       filename, strerror(errno));
       }
    }
-     
+
    result = filan_stat(&buf, fd, -1, outfile, filename);
    fputc('\n', outfile);
    return result;
@@ -200,7 +200,7 @@ int filan_fd(int fd, FILE *outfile) {
 	       }
 	    }
 #endif /* _WITH_SOCKET && defined(MSG_DONTWAIT) */
-	 }	 
+	 }
 #endif /* HAVE_POLL */
       }
    }
@@ -642,7 +642,7 @@ int sockan(int fd, FILE *outfile) {
 #     define TYPENAMEMAX 16
       char typename[TYPENAMEMAX];
       sockettype(*optval.i, typename, sizeof(typename));
-      
+
       Debug3("fd %d: socket of type %d (\"%s\")", fd, *optval.i,
 	  typename);
    }
@@ -790,7 +790,7 @@ int ipan(int fd, FILE *outfile) {
    const struct sockopt *optname;
    int optproto;
    socklen_t optlen = sizeof(optproto);
-   
+
    optname = ipopts; while (optname->so) {
       sockoptan(fd, optname, SOL_IP, outfile);
       ++optname;
@@ -825,7 +825,7 @@ int ip6an(int fd, FILE *outfile) {
 #endif
       {0, NULL} } ;
    const struct sockopt *optname;
-   
+
    optname = ip6opts; while (optname->so) {
       sockoptan(fd, optname, SOL_IPV6, outfile);
       ++optname;
@@ -1059,4 +1059,4 @@ static int printtime(FILE *outfile, time_t time) {
       fputs(s, outfile);
    }
    return 0;
-}   
+}

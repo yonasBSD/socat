@@ -82,7 +82,7 @@ int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
 }
 
 /*
-   applies and consumes the following options: 
+   applies and consumes the following options:
    PH_PASTSOCKET, PH_FD, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_CONNECTED, PH_LATE
    OFUNC_OFFSET
    OPT_PROTOCOL_FAMILY, OPT_BIND, OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_USER,

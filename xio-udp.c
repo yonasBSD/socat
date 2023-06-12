@@ -520,7 +520,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
    {
       union sockaddr_union la;
       socklen_t lalen = sizeof(la);
-     
+
       if (retropt_bind(opts, pf, socktype, ipproto, &la.soa, &lalen, 1,
 		       xfd->stream.para.socket.ip.res_opts[0],
 		       xfd->stream.para.socket.ip.res_opts[1])
@@ -594,7 +594,7 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
    {
       union sockaddr_union la;
       socklen_t lalen = sizeof(la);
-     
+
       if (retropt_bind(opts, pf, socktype, ipproto,
 		       &xfd->stream.para.socket.la.soa, &lalen, 1,
 		       xfd->stream.para.socket.ip.res_opts[0],

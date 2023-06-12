@@ -17,7 +17,7 @@
 
 /* to avoid unneccessary runtime if () conditionals when no abstract support is
    compiled in (or at least to give optimizing compilers a good chance) we need
-   a constant that can be used in C expressions */ 
+   a constant that can be used in C expressions */
 #if WITH_ABSTRACT_UNIXSOCKET
 #  define ABSTRACT 1
 #else
@@ -589,7 +589,7 @@ static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, i
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
-   return 
+   return
       _xioopen_unix_client(&xxfd->stream, xioflags, groups, abstract, opts,
 			   argv[1]);
 }
@@ -600,11 +600,11 @@ static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, i
    applies and consumes the following option:
    PH_INIT, PH_PASTSOCKET, PH_FD, PH_PREBIND, PH_BIND, PH_PASTBIND,
    PH_CONNECTED, PH_LATE, ?PH_CONNECT
-   OFUNC_OFFSET, 
+   OFUNC_OFFSET,
    OPT_PROTOCOL_FAMILY, OPT_UNIX_TIGHTSOCKLEN, OPT_UNLINK_CLOSE, OPT_BIND,
-   OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_CLOEXEC, OPT_USER, OPT_GROUP, ?OPT_FORK, 
+   OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_CLOEXEC, OPT_USER, OPT_GROUP, ?OPT_FORK,
 */
-int 
+int
 _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
 		     int abstract, struct opt *opts, const char *name) {
    const struct opt *namedopt;
