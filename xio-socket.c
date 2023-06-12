@@ -2090,7 +2090,7 @@ int xiosetsockaddrenv(const char *lr,
 	 xiosetenv(namebuff, valuebuff, 1, NULL);
 	 namebuff[strlen(lr)] = '\0';  ++idx;
       } while (result > 0);
-      break; 
+      break;
 #endif /* WITH_VSOCK */
 #if LATER
    case PF_PACKET:

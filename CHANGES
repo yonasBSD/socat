@@ -18,7 +18,7 @@ Corrections:
 
 	Filan: Corrected some syntax error messages
 
-	Filan: Fixed a bug introduces in 1.7.4.4 that broke displaying
+	Filan: Fixed a bug introduced in 1.7.4.4 that broke displaying
 	TCP/UDP on options -s, -S
 	Test: FILAN_SHORT_TCP
 
@@ -27,6 +27,14 @@ Corrections:
 
 	Filan: Fixed diag_set() call in filan_main.c, bug popped up with C23.
 	Thanks to Cristian Rodríguez from openSUSE for reporting this issue.
+
+	Querying the vsock Context Identifier (CID) requires an FD from opening
+	/dev/vsock.
+	Thanks to Volker Simonis for sending a patch.
+
+Features:
+	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
+	useless)
 
 Coding:
 	New Environment variable SOCAT_TRANSFER_WAIT that Socat sleep before

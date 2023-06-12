@@ -20,6 +20,8 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
         int xioflags, xiofile_t *xxfd, unsigned groups, int abstract,
         int dummy2, int dummy3);
 
+static void xiolog_vsock_cid(void);
+
 const struct addrdesc addr_vsock_connect = { "vsock-connect", 1 + XIO_RDWR,
     xioopen_vsock_connect,
     GROUP_FD|GROUP_SOCKET|GROUP_CHILD|GROUP_RETRY,
@@ -31,13 +33,15 @@ const struct addrdesc addr_vsock_listen  = { "vsock-listen", 1 + XIO_RDWR,
     0, 0, 0 HELP(":<port>") };
 #endif /* WITH_LISTEN */
 
+
+/* Initializes a sockaddr of type VSOCK */
 static int vsock_addr_init(struct sockaddr_vm *sa, const char *cid_str,
-        const char *port_str) {
+	   const char *port_str, int pf) {
    int ret;
 
    memset(sa, 0, sizeof(*sa));
 
-   sa->svm_family = AF_VSOCK;
+   sa->svm_family = pf;
    ret = sockaddr_vm_parse(sa, cid_str, port_str);
    if (ret < 0)
       return STAT_NORETRY;
@@ -45,6 +49,8 @@ static int vsock_addr_init(struct sockaddr_vm *sa, const char *cid_str,
    return STAT_OK;
 }
 
+
+/* Performs a few steps during opening an address of type VSOCK */
 static int vsock_init(struct opt *opts, struct single *xfd) {
 
    xfd->howtoend = END_SHUTDOWN;
@@ -79,7 +85,11 @@ static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   ret = vsock_addr_init(&sa, argv[1], argv[2]);
+   retropt_socket_pf(opts, &pf);
+   retropt_int(opts, OPT_SO_TYPE, &socktype);
+   retropt_int(opts, OPT_SO_PROTOTYPE, &protocol);
+
+   ret = vsock_addr_init(&sa, argv[1], argv[2], pf);
    if (ret) {
       return ret;
    }
@@ -88,6 +98,8 @@ static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
    if (ret) {
       return ret;
    }
+
+   xiolog_vsock_cid();
 
    ret = retropt_bind(opts, pf, socktype, protocol,
                       (struct sockaddr *)&sa_local, &sa_len, 3, 0, 0);
@@ -109,6 +121,7 @@ static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
    return STAT_OK;
 }
 
+
 #if WITH_LISTEN
 static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
         int xioflags, xiofile_t *xxfd, unsigned groups, int abstract,
@@ -129,7 +142,11 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   ret = vsock_addr_init(&sa, NULL, argv[1]);
+   retropt_socket_pf(opts, &pf);
+   retropt_int(opts, OPT_SO_TYPE, &socktype);
+   retropt_int(opts, OPT_SO_PROTOTYPE, &protocol);
+
+   ret = vsock_addr_init(&sa, NULL, argv[1], pf);
    if (ret) {
       return ret;
    }
@@ -137,16 +154,6 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
    ret = vsock_init(opts, xfd);
    if (ret) {
       return ret;
-   }
-
-   {
-      unsigned int cid;
-      if (Ioctl(xfd->fd, IOCTL_VM_SOCKETS_GET_LOCAL_CID, &cid) < 0) {
-	 Warn2("ioctl(%d, IOCTL_VM_SOCKETS_GET_LOCAL_CID, ...): %s",
-	       xfd->fd, strerror(errno));
-      } else {
-	 Notice1("VSOCK CID=%u", cid);
-      }
    }
 
    opts0 = copyopts(opts, GROUP_ALL);
@@ -158,12 +165,35 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
    if (ret == STAT_OK)
        sa.svm_cid = sa_bind.svm_cid;
 
+   xiolog_vsock_cid();
+
    /* this may fork() */
    return xioopen_listen(xfd, xioflags, (struct sockaddr *)&sa, sizeof(sa),
                          opts, opts0, pf, socktype, protocol);
 }
-
 #endif /* WITH_LISTEN */
+
+
+/* Just tries to query and log the VSOCK CID */
+static void xiolog_vsock_cid(void) {
+   int vsock;
+   unsigned int cid;
+#ifdef IOCTL_VM_SOCKETS_GET_LOCAL_CID
+   if ((vsock = Open("/dev/vsock", O_RDONLY, 0)) < 0 ) {
+      Warn1("open(\"/dev/vsock\", ...): %s", strerror(errno));
+   } else if (Ioctl(vsock, IOCTL_VM_SOCKETS_GET_LOCAL_CID, &cid) < 0) {
+      Warn2("ioctl(%d, IOCTL_VM_SOCKETS_GET_LOCAL_CID, ...): %s",
+	    vsock, strerror(errno));
+   } else {
+      Notice1("VSOCK CID=%u", cid);
+   }
+   if (vsock >= 0) {
+      Close(vsock);
+   }
+#endif /* IOCTL_VM_SOCKETS_GET_LOCAL_CID */
+   return;
+}
+
 
 /* Returns information that can be used for constructing an environment
    variable describing the socket address.

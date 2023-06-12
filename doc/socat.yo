@@ -1365,7 +1365,6 @@ label(ADDRESS_VSOCK_CONNECT)dit(bf(tt(VSOCK-CONNECT:<cid>:<port>)))
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(CHILD)(GROUP_CHILD),link(RETRY)(GROUP_RETRY) nl()
    Useful options:
    link(bind)(OPTION_BIND),
-   link(pf)(OPTION_PROTOCOL_FAMILY),
    link(connect-timeout)(OPTION_CONNECT_TIMEOUT),
    link(retry)(OPTION_RETRY),
    link(readbytes)(OPTION_READBYTES)nl()
@@ -1380,7 +1379,6 @@ label(ADDRESS_VSOCK_LISTEN)dit(bf(tt(VSOCK-LISTEN:<port>)))
    Useful options:
    link(fork)(OPTION_FORK),
    link(bind)(OPTION_BIND),
-   link(pf)(OPTION_PROTOCOL_FAMILY),
    link(max-children)(OPTION_MAX_CHILDREN),
    link(backlog)(OPTION_BACKLOG),
    link(su)(OPTION_SUBSTUSER),

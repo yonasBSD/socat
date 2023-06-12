@@ -19,6 +19,8 @@
 
 
 static int iffan(FILE *outfile);
+static int vsockan(FILE *outfile);
+
 
 int hostan(FILE *outfile) {
    fprintf(outfile, "\nC TYPE SIZES\n");
@@ -40,6 +42,9 @@ int hostan(FILE *outfile) {
 #if _WITH_SOCKET && (_WITH_IP4 || _WITH_IP6)
    fprintf(outfile, "\nIP INTERFACES\n");
    iffan(outfile);
+#endif
+#if WITH_VSOCK
+   vsockan(outfile);
 #endif
    return 0;
 }
@@ -101,3 +106,24 @@ static int iffan(FILE *outfile) {
    return 0;
 }
 #endif /* _WITH_SOCKET */
+
+
+#if WITH_VSOCK
+static int vsockan(FILE *outfile) {
+	unsigned int cid;
+	int vsock;
+	if ((vsock = Open("/dev/vsock", O_RDONLY, 0)) < 0 ) {
+		Warn1("open(\"/dev/vsock\", ...): %s", strerror(errno));
+	} else if (Ioctl(vsock, IOCTL_VM_SOCKETS_GET_LOCAL_CID, &cid) < 0) {
+		Warn2("ioctl(%d, IOCTL_VM_SOCKETS_GET_LOCAL_CID, ...): %s",
+		      vsock, strerror(errno));
+	} else {
+		Notice1("VSOCK CID=%u", cid);
+		fprintf(outfile, "\nVSOCK_CID        = %u\n", cid);
+	}
+	if (vsock >= 0) {
+		Close(vsock);
+	}
+	return 0;
+}
+#endif /* WITH_VSOCK */
