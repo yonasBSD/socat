@@ -75,7 +75,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
    bool nofork = false;
    bool withfork;
    char *tn = NULL;
-   int trigger[2];
+   int trigger[2]; 	/* [0] watched by parent, [1] closed by child when ready */
 
    popts = moveopts(*copts, GROUP_ALL);
    if (applyopts_single(fd, popts, PH_INIT) < 0)  return -1;
@@ -391,11 +391,11 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
    }
    if (!withfork || pid == 0) {	/* child */
       if (withfork) {
+	 Close(trigger[0]); 	/* in child: not needed here */
 	 /* The child should have default handling for SIGCHLD. */
 	 /* In particular, it's not defined whether ignoring SIGCHLD is inheritable. */
 	 if (Signal(SIGCHLD, SIG_DFL) == SIG_ERR) {
 	    Warn1("signal(SIGCHLD, SIG_DFL): %s", strerror(errno));
-	    Close(trigger[0]);
 	 }
 
 #if HAVE_PTY
@@ -546,7 +546,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	    }
 	 if (withfork) {
 	    Info("Signalling parent ready");
-	    Close(trigger[1]);
+	    Close(trigger[1]); 	/* in child, notify parent that ready */
 	 }
       } /* withfork */
       else {
@@ -565,7 +565,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
    /* for parent (this is our socat process) */
    Notice1("forked off child process "F_pid, pid);
-   Close(trigger[1]);
+   Close(trigger[1]); 	/* in parent */
 
 #if 0
    if ((popts = copyopts(*copts,

@@ -32,6 +32,8 @@ Corrections:
 	/dev/vsock.
 	Thanks to Volker Simonis for sending a patch.
 
+	Fixed an internal FD leak in the EXEC,SYSTEM addresses.
+
 Features:
 	VSOCK, VSOCK-L support options pf, socktype, prototype (currently
 	useless)
