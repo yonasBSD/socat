@@ -1,4 +1,6 @@
 ﻿
+####################### V 1.7.4.5:
+
 Corrections:
 	On connect() failure and in some other situations Socat tries to get
 	detailled information about the error with recvmsg(). Error return of

@@ -58,7 +58,7 @@ NUMCOND=true
 VERBOSE=
 DEBUG=
 FOREIGN=
-EXPECT_FAIL=
+OPT_EXPECT_FAIL= EXPECT_FAIL=
 while [ "$1" ]; do
     case "X$1" in
 	X-h)   usage; exit 0 ;;
@@ -72,7 +72,7 @@ while [ "$1" ]; do
 	X-N)   shift; NUMCOND="test \$N -ge $1" ;;
 	X-C)   rm -f testcert*.conf testcert.dh testcli*.* testsrv*.* ;;
 	X-foreign)	FOREIGN=1 ;; 	# allow access to 3rd party Internet hosts
-	X-expect-fail|X--expect-fail) shift; EXPECT_FAIL="$1" ;;
+	X-expect-fail|X--expect-fail) OPT_EXPECT_FAIL=1; shift; EXPECT_FAIL="$1" ;;
 	X-*)   echo "Unknown option \"$1\"" >&2
                usage >&2
                exit 1 ;;
@@ -9260,7 +9260,7 @@ elif ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! echo |$SOCAT -u -t 0.1 - UDP6-SENDTO:[ff02::2]:12002 >/dev/null 2>&1; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 multicasting dos not work${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 multicasting does not work${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16062,6 +16062,7 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
+
 # end of common tests
 
 ##################################################################################
@@ -16149,14 +16150,14 @@ if [ "$numFAIL" -gt 0 ]; then
     echo "FAILED: $listFAIL"
 fi
 
-if [ -z "$EXPECT_FAIL" ]; then
+if [ -z "$OPT_EXPECT_FAIL" ]; then
     [ "$numFAIL" -eq 0 ]
     exit 	# with rc from above statement
 fi
 
 #set -vx
 
-if [ "$EXPECT_FAIL" ]; then
+if [ "$OPT_EXPECT_FAIL" ]; then
     diff  <(set -- $(echo "$EXPECT_FAIL" |tr ',' ' '); while [ "$1" ]; do echo "$1"; shift; done) "$td/failed.lst" >"$td/failed.diff"
     ln -sf "$td/failed.diff" .
     #grep "^"
