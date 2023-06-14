@@ -9,6 +9,9 @@ Features:
 	The number of warnings has been reduced, e.g.removing a non existing
 	file does in most cases no longer log a warning.
 
+Coding:
+	Introduced groups_t instead of uint32_t, for more flexibility
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

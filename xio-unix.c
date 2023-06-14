@@ -24,16 +24,16 @@
 #  define ABSTRACT 0
 #endif
 
-static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3);
-static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3);
-static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3);
-static int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3);
+static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3);
+static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3);
+static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3);
+static int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3);
 static
 int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
-		      int xioflags, xiofile_t *xxfd, unsigned groups,
+		      int xioflags, xiofile_t *xxfd, groups_t groups,
 		      int abstract, int dummy2, int dummy3);
 static
-int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3);
+int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3);
 
 /* the first free parameter is 0 for "normal" unix domain sockets, or 1 for
    abstract unix sockets (Linux); the second and third free parameter are
@@ -115,7 +115,7 @@ xiosetunix(int pf,
 }
 
 #if WITH_LISTEN
-static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3) {
+static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3) {
    /* we expect the form: filename */
    const char *name;
    xiosingle_t *xfd = &xxfd->stream;
@@ -200,7 +200,7 @@ static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, i
 #endif /* WITH_LISTEN */
 
 
-static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3) {
+static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3) {
    /* we expect the form: filename */
    const char *name;
    struct single *xfd = &xxfd->stream;
@@ -348,7 +348,7 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
 }
 
 
-static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy, int dummy3) {
+static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy, int dummy3) {
    /* we expect the form: filename */
    const char *name;
    xiosingle_t *xfd = &xxfd->stream;
@@ -411,7 +411,7 @@ static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, i
 
 static
 int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xxfd, unsigned groups,
+		     int xioflags, xiofile_t *xxfd, groups_t groups,
 		     int abstract, int dummy2, int dummy3) {
    /* we expect the form: filename */
    const char *name;
@@ -491,7 +491,7 @@ int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
 
 static
 int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
-		      int xioflags, xiofile_t *xxfd, unsigned groups,
+		      int xioflags, xiofile_t *xxfd, groups_t groups,
 		      int abstract, int dummy2, int dummy3) {
    /* we expect the form: filename */
    const char *name;
@@ -565,7 +565,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
 
 
 /* generic UNIX socket client, tries connect, SEQPACKET, send(to) */
-static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, unsigned groups, int abstract, int dummy2, int dummy3) {
+static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int abstract, int dummy2, int dummy3) {
    /* we expect the form: filename */
    if (argc != 2) {
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
@@ -586,8 +586,8 @@ static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, i
    OPT_PROTOCOL_FAMILY, OPT_UNIX_TIGHTSOCKLEN, OPT_UNLINK_CLOSE, OPT_BIND,
    OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_CLOEXEC, OPT_USER, OPT_GROUP, ?OPT_FORK,
 */
-int
-_xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
+int 
+_xioopen_unix_client(xiosingle_t *xfd, int xioflags, groups_t groups,
 		     int abstract, struct opt *opts, const char *name) {
    const struct opt *namedopt;
    int pf = PF_UNIX;

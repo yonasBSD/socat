@@ -32,7 +32,7 @@ xiosetsockaddrenv_unix(int idx, char *namebuff, size_t namelen,
 		       struct sockaddr_un *sa, socklen_t salen, int ipproto);
 
 extern int
-_xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
+_xioopen_unix_client(xiosingle_t *xfd, int xioflags, groups_t groups,
 		     int abstract, struct opt *opts, const char *name);
 
 #endif /* !defined(__xio_unix_h_included) */

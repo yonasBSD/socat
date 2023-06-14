@@ -16,7 +16,7 @@
 static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
 		int xioflags,	/* XIO_RDONLY etc. */
 		xiofile_t *fd,
-		unsigned groups,
+		groups_t groups,
 		int dummy1, int dummy2, int dummy3
 		);
 
@@ -27,7 +27,7 @@ const struct optdesc opt_dash = { "dash", "login", OPT_DASH, GROUP_EXEC, PH_PREE
 static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
 		int xioflags,	/* XIO_RDONLY, XIO_MAYCHILD etc. */
 		xiofile_t *fd,
-		unsigned groups,
+		groups_t groups,
 		int dummy1, int dummy2, int dummy3
 		) {
    int status;

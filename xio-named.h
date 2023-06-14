@@ -19,7 +19,7 @@ extern const struct optdesc opt_umask;
 extern int
    applyopts_named(const char *filename, struct opt *opts, unsigned int phase);
 extern int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
-				int groups,
+				groups_t groups,
 				bool *exists, struct opt *opts);
 extern int _xioopen_open(const char *path, int rw, struct opt *opts);
 

@@ -18,7 +18,7 @@
 
 #define MAXPTYNAMELEN 64
 
-static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, unsigned groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
 const struct addrdesc addr_pty = { "pty",   3, xioopen_pty, GROUP_NAMED|GROUP_FD|GROUP_TERMIOS|GROUP_PTY, 0, 0, 0 HELP("") };
 
@@ -28,7 +28,7 @@ const struct optdesc opt_pty_wait_slave = { "pty-wait-slave", "wait-slave", OPT_
 const struct optdesc opt_pty_intervall  = { "pty-interval",  NULL,         OPT_PTY_INTERVALL,  GROUP_PTY, PH_EARLY, TYPE_TIMESPEC, OFUNC_SPEC, 0, 0 };
 #endif /* HAVE_POLL */
 
-static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, unsigned groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
    /* we expect the form: filename */
    int ptyfd = -1, ttyfd = -1;
 #if defined(HAVE_DEV_PTMX) || defined(HAVE_DEV_PTC)

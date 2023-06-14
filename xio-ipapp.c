@@ -23,7 +23,7 @@ const struct optdesc opt_lowport = { "lowport", NULL, OPT_LOWPORT, GROUP_IPAPP, 
 /* we expect the form "host:port" */
 int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 			   int xioflags, xiofile_t *xxfd,
-			   unsigned groups, int socktype, int ipproto,
+			   groups_t groups, int socktype, int ipproto,
 			   int pf) {
    struct single *xfd = &xxfd->stream;
    struct opt *opts0 = NULL;
@@ -258,7 +258,7 @@ int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0,
 /* currently only used for TCP4 */
 int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 			  int xioflags, xiofile_t *fd,
-			 unsigned groups, int socktype,
+			 groups_t groups, int socktype,
 			 int ipproto, int pf) {
    struct opt *opts0 = NULL;
    union sockaddr_union us_sa, *us = &us_sa;

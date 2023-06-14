@@ -19,25 +19,25 @@
 
 static
 int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *fd, unsigned groups, int pf,
+			 int xioflags, xiofile_t *fd, groups_t groups, int pf,
 			 int dummy2, int dummy3);
 static
 int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *fd, unsigned groups, int pf,
+			 int xioflags, xiofile_t *fd, groups_t groups, int pf,
 			 int dummy2, int dummy3);
 static
 int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xfd, unsigned groups,
+			 int xioflags, xiofile_t *xfd, groups_t groups,
 			 int pf, int socktype, int dummy3);
 static
 int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
-		       int xioflags, xiofile_t *xfd, unsigned groups,
+		       int xioflags, xiofile_t *xfd, groups_t groups,
 		       int pf, int socktype, int ipproto);
 
 static
 int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 			  struct opt *opts, int xioflags,
-			  xiofile_t *xxfd, unsigned groups, int *pf);
+			  xiofile_t *xxfd, groups_t groups, int *pf);
 
 const struct addrdesc addr_rawip_sendto  = { "ip-sendto",      3, xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6, PF_UNSPEC, 0, 0 HELP(":<host>:<protocol>") };
 const struct addrdesc addr_rawip_datagram= { "ip-datagram",    3, xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_RANGE, PF_UNSPEC, 0, 0 HELP(":<host>:<protocol>") };
@@ -64,7 +64,7 @@ const struct addrdesc addr_rawip6_recv    = { "ip6-recv",       1, xioopen_rawip
 /* socklen_t salen;*/
 static
 int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xxfd, unsigned groups,
+			 int xioflags, xiofile_t *xxfd, groups_t groups,
 			 int pf, int dummy2, int dummy3) {
    int result;
 
@@ -91,7 +91,7 @@ int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
 static
 int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 			  struct opt *opts, int xioflags, xiofile_t *xxfd,
-			  unsigned groups, int *pf) {
+			  groups_t groups, int *pf) {
    char *garbage;
    xiosingle_t *xfd = &xxfd->stream;
    union sockaddr_union us;
@@ -150,7 +150,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 /* we expect the form: address:protocol */
 static
 int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xxfd, unsigned groups,
+			 int xioflags, xiofile_t *xxfd, groups_t groups,
 			 int pf, int dummy2, int dummy3) {
    xiosingle_t *xfd = &xxfd->stream;
    char *rangename;
@@ -196,7 +196,7 @@ int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
 
 static
 int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, unsigned groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int dummy3) {
    const char *protname = argv[1];
    char *garbage;
@@ -254,7 +254,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
 
 static
 int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
-		       int xioflags, xiofile_t *xfd, unsigned groups,
+		       int xioflags, xiofile_t *xfd, groups_t groups,
 		       int pf, int socktype, int dummy3) {
    const char *protname = argv[1];
    char *garbage;

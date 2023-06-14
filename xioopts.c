@@ -1847,7 +1847,7 @@ const struct optname optionnames[] = {
    to the array opts. Uses the option table 'optionnames'.
    returns 0 on success, -1 on error, 1 on unknown/wrong option
 */
-int parseopts(const char **a, unsigned int groups, struct opt **opts) {
+int parseopts(const char **a, groups_t groups, struct opt **opts) {
 
    return parseopts_table(a, groups, opts, optionnames,
 			  sizeof(optionnames)/sizeof(struct optname)-1);
@@ -1858,7 +1858,7 @@ int parseopts(const char **a, unsigned int groups, struct opt **opts) {
    to the array opts. Uses the specified option table.
    returns 0 on success, -1 on error, 1 on unknown/wrong option
 */
-int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
+int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	      const struct optname optionnames[], size_t optionnum) {
    int i=0;
    struct opt *opt;
@@ -1949,7 +1949,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 	  !xioopts_ignoregroups) {
 	 Error1("parseopts_table(): option \"%s\" not supported with this address type",
 		token /*a0*/);
-	 Info2("parseopts_table()  groups=%08x, ent->group=%08x",
+	 Info2("parseopts_table()  groups="F_groups_t", ent->group="F_groups_t,
 	       groups, ent->desc->group);
 #if 0
 	 continue;
@@ -2633,7 +2633,7 @@ int parseopts_table(const char **a, unsigned int groups, struct opt **opts,
 /* look for an option with the given properties
    return a pointer to the first matching valid option in the list
    Returns NULL when no matching option found */
-const struct opt *searchopt(const struct opt *opts, unsigned int groups, enum e_phase from, enum e_phase to,
+const struct opt *searchopt(const struct opt *opts, groups_t groups, enum e_phase from, enum e_phase to,
 		      enum e_func func) {
    int i;
 
@@ -2656,7 +2656,7 @@ const struct opt *searchopt(const struct opt *opts, unsigned int groups, enum e_
 
 /* copy the already parsed options for repeated application, but only those
    matching groups ANY and <groups> */
-struct opt *copyopts(const struct opt *opts, unsigned int groups) {
+struct opt *copyopts(const struct opt *opts, groups_t groups) {
    struct opt *new;
    int i, j, n;
 
@@ -2689,7 +2689,7 @@ struct opt *copyopts(const struct opt *opts, unsigned int groups) {
 
 /* move options to a new options list
    move only those matching <groups> */
-struct opt *moveopts(struct opt *opts, unsigned int groups) {
+struct opt *moveopts(struct opt *opts, groups_t groups) {
    struct opt *new;
    int i, j, n;
 
@@ -2756,8 +2756,8 @@ int showleft(const struct opt *opts) {
 
 /* determines the address group from mode_t */
 /* does not set GROUP_FD; cannot determine GROUP_TERMIOS ! */
-int _groupbits(mode_t mode) {
-   unsigned int result = 0;
+groups_t _groupbits(mode_t mode) {
+   groups_t result = 0;
 
    switch ((mode&S_IFMT)>>12) {
    case (S_IFIFO>>12):	/* 1, FIFO */
@@ -2785,13 +2785,13 @@ int _groupbits(mode_t mode) {
 }
 
 /* does not set GROUP_FD */
-int groupbits(int fd) {
+groups_t groupbits(int fd) {
 #if HAVE_STAT64
    struct stat64 buf;
 #else
    struct stat buf;
 #endif /* !HAVE_STAT64 */
-   int result;
+   groups_t result;
 
    if (
 #if HAVE_STAT64
@@ -3801,7 +3801,7 @@ int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to) {
 
 /* apply and consume all options of type FLAG and group.
    Return 0 if everything went right, or -1 if an error occurred. */
-int applyopts_flags(struct opt *opts, int group, flags_t *result) {
+int applyopts_flags(struct opt *opts, groups_t group, flags_t *result) {
    struct opt *opt = opts;
 
    if (!opts)  return 0;

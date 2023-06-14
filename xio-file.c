@@ -11,7 +11,7 @@
 #include "xio-file.h"
 
 
-static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, unsigned groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
 
 #if WITH_OPEN
@@ -72,7 +72,7 @@ const struct addrdesc addr_open   = { "open",   3, xioopen_open, GROUP_FD|GROUP_
    if the filesystem entry already exists, the data is appended
    if it does not exist, a file is created and the data is appended
 */
-static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, unsigned groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3) {
    const char *filename = argv[1];
    int rw = (xioflags & XIO_ACCMODE);
    bool exists;

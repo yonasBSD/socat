@@ -74,7 +74,7 @@ static char *optionphasenames[] = {
 /* print a line about a single option */
 static int xiohelp_option(FILE *of, const struct optname *on, const char *name) {
    int j;
-   unsigned int groups;
+   groups_t groups;
    bool occurred;
 
    fprintf(of, "      %s\tgroups=", name);
@@ -99,7 +99,7 @@ int xioopenhelp(FILE *of,
    const struct addrname *an;
    const struct optname *on;
    int i, j;
-   unsigned int groups;
+   groups_t groups;
    bool occurred;
 
    fputs("   bi-address:\n", of);

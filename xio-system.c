@@ -16,7 +16,7 @@
 static int xioopen_system(int arg, const char *argv[], struct opt *opts,
 		int xioflags,	/* XIO_RDONLY etc. */
 		xiofile_t *fd,
-		unsigned groups,
+		groups_t groups,
 		int dummy1, int dummy2, int dummy3
 		);
 
@@ -26,7 +26,7 @@ const struct addrdesc addr_system = { "system", 3, xioopen_system, GROUP_FD|GROU
 static int xioopen_system(int argc, const char *argv[], struct opt *opts,
 		int xioflags,	/* XIO_RDONLY etc. */
 		xiofile_t *fd,
-		unsigned groups,
+		groups_t groups,
 		int dummy1, int dummy2, int dummy3
 		) {
    int status;

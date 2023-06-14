@@ -12,7 +12,7 @@
 
 #if WITH_FDNUM
 
-static int xioopen_fdnum(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *xfd, unsigned groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_fdnum(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
 
 const struct addrdesc addr_fd     = { "fd",     3, xioopen_fdnum, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 0, 0, 0 HELP(":<num>") };
@@ -20,7 +20,7 @@ const struct addrdesc addr_fd     = { "fd",     3, xioopen_fdnum, GROUP_FD|GROUP
 
 /* use some file descriptor and apply the options. Set the FD_CLOEXEC flag. */
 static int xioopen_fdnum(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xfd, unsigned groups,
+			 int xioflags, xiofile_t *xfd, groups_t groups,
 			 int dummy1, int dummy2, int dummy3) {
    char *a1;
    int rw = (xioflags&XIO_ACCMODE);

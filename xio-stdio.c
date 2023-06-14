@@ -13,8 +13,8 @@
 
 #if WITH_STDIO
 
-static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, unsigned groups, int dummy1, int dummy2, int dummy3);
-static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, unsigned groups, int fd, int dummy2, int dummy3);
+static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int fd, int dummy2, int dummy3);
 
 
 /* we specify all option groups that we can imagine for a FD, becasue the
@@ -30,7 +30,7 @@ const struct addrdesc addr_stderr = { "stderr", 2, xioopen_stdfd, GROUP_FD|GROUP
    generate a dual address. */
 int xioopen_stdio_bi(xiofile_t *sock) {
    struct opt *optspr;
-   unsigned int groups1 = addr_stdio.groups;
+   groups_t groups1 = addr_stdio.groups;
    int result;
 
    if (xioopen_makedual(sock) < 0) {
@@ -135,7 +135,7 @@ int xioopen_stdio_bi(xiofile_t *sock) {
 
 /* wrap around unidirectional xioopensingle and xioopen_fd to automatically determine stdin or stdout fd depending on rw.
    Do not set FD_CLOEXEC flag. */
-static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, unsigned groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3) {
    int rw = (xioflags&XIO_ACCMODE);
 
    if (argc != 1) {
@@ -154,7 +154,7 @@ static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xio
 
 /* wrap around unidirectional xioopensingle and xioopen_fd to automatically determine stdin or stdout fd depending on rw.
    Do not set FD_CLOEXEC flag. */
-static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, unsigned groups, int fd, int dummy2, int dummy3) {
+static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int fd, int dummy2, int dummy3) {
    int rw = (xioflags&XIO_ACCMODE);
 
    if (argc != 1) {

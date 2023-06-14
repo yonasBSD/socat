@@ -89,6 +89,9 @@ enum xiotag {
 			   streams */
 } ;
 
+typedef uint32_t groups_t;
+#define F_groups_t F_uint32_x
+
 /* global XIO options/parameters */
 typedef struct {
    bool strictopts;
@@ -311,9 +314,9 @@ typedef union bipipe {
 struct addrdesc {
    const char *defname;	/* main (canonical) name of address */
    int directions;	/* 1..read, 2..write, 3..both */
-   int (*func)(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *fd, unsigned groups,
+   int (*func)(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *fd, groups_t groups,
 	       int arg1, int arg2, int arg3);
-   unsigned groups;
+   groups_t groups;
    int arg1;
    int arg2;
    int arg3;

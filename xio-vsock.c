@@ -14,10 +14,10 @@
 #include "xio-vsock.h"
 
 static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
-        int xioflags, xiofile_t *xxfd, unsigned groups, int abstract,
+        int xioflags, xiofile_t *xxfd, groups_t groups, int abstract,
         int dummy2, int dummy3);
 static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
-        int xioflags, xiofile_t *xxfd, unsigned groups, int abstract,
+        int xioflags, xiofile_t *xxfd, groups_t groups, int abstract,
         int dummy2, int dummy3);
 
 static void xiolog_vsock_cid(void);
@@ -67,7 +67,7 @@ static int vsock_init(struct opt *opts, struct single *xfd) {
 }
 
 static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
-        int xioflags, xiofile_t *xxfd, unsigned groups,
+        int xioflags, xiofile_t *xxfd, groups_t groups,
         int abstract, int dummy2, int dummy3) {
    /* we expect the form :cid:port */
    struct single *xfd = &xxfd->stream;
@@ -124,7 +124,7 @@ static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
 
 #if WITH_LISTEN
 static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
-        int xioflags, xiofile_t *xxfd, unsigned groups, int abstract,
+        int xioflags, xiofile_t *xxfd, groups_t groups, int abstract,
         int dummy2, int dummy3) {
    /* we expect the form :port */
    struct single *xfd = &xxfd->stream;

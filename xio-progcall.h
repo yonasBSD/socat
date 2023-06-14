@@ -20,7 +20,7 @@ extern const struct optdesc opt_sigquit;
 
 extern int _xioopen_foxec(int rw,	/* O_RDONLY etc. */
 		struct single *fd,
-		unsigned groups,
+			  groups_t groups,
 		struct opt **opts,
 			  int *duptostderr
 		);

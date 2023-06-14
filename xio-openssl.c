@@ -43,12 +43,12 @@
 
 /* static declaration of ssl's open function */
 static int xioopen_openssl_connect(int argc, const char *argv[], struct opt *opts,
-				   int xioflags, xiofile_t *fd, unsigned groups,
+				   int xioflags, xiofile_t *fd, groups_t groups,
 			   int dummy1, int dummy2, int dummy3);
 
 /* static declaration of ssl's open function */
 static int xioopen_openssl_listen(int argc, const char *argv[], struct opt *opts,
-				  int xioflags, xiofile_t *fd, unsigned groups,
+				  int xioflags, xiofile_t *fd, groups_t groups,
 			   int dummy1, int dummy2, int dummy3);
 static int openssl_SSL_ERROR_SSL(int level, const char *funcname);
 static int openssl_handle_peer_certificate(struct single *xfd,
@@ -199,7 +199,7 @@ static int
 				   writing (1), or both (2) ? */
 		   xiofile_t *xxfd,	/* a xio file descriptor structure,
 				   already allocated */
-		   unsigned groups,	/* the matching address groups... */
+		   groups_t groups,	/* the matching address groups... */
 		   int protogrp,	/* first transparent integer value from
 				   addr_openssl */
 		   int dummy2,	/* second transparent integer value from
@@ -487,7 +487,7 @@ static int
 				   writing (1), or both (2) ? */
 		   xiofile_t *xxfd,	/* a xio file descriptor structure,
 				   already allocated */
-		   unsigned groups,	/* the matching address groups... */
+		   groups_t groups,	/* the matching address groups... */
 		   int protogrp,	/* first transparent integer value from
 				   addr_openssl */
 		   int dummy2,	/* second transparent integer value from

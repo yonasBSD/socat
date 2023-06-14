@@ -21,25 +21,25 @@
 
 static
 int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, unsigned groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int ipproto);
 static
 int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, unsigned groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int ipproto);
 static
 int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
-		       int xioflags, xiofile_t *xfd, unsigned groups,
+		       int xioflags, xiofile_t *xfd, groups_t groups,
 		       int pf, int socktype, int ipproto);
 static
 int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, unsigned groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int ipproto);
 
 static
 int _xioopen_udp_sendto(const char *hostname, const char *servname,
 			struct opt *opts,
-			int xioflags, xiofile_t *xxfd, unsigned groups,
+			int xioflags, xiofile_t *xxfd, groups_t groups,
 			int pf, int socktype, int ipproto);
 
 const struct addrdesc addr_udp_connect  = { "udp-connect",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_UNSPEC HELP(":<host>:<port>") };
@@ -275,7 +275,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 /* we expect the form: port */
 int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
 			   int xioflags, xiofile_t *fd,
-			  unsigned groups, int pf, int ipproto,
+			  groups_t groups, int pf, int ipproto,
 			  int protname) {
    const char *portname = argv[1];
    union sockaddr_union us;
@@ -328,7 +328,7 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
 
 static
 int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xxfd, unsigned groups,
+		     int xioflags, xiofile_t *xxfd, groups_t groups,
 		     int pf, int socktype, int ipproto) {
    int result;
 
@@ -357,7 +357,7 @@ int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
 static
 int _xioopen_udp_sendto(const char *hostname, const char *servname,
 			struct opt *opts,
-		     int xioflags, xiofile_t *xxfd, unsigned groups,
+		     int xioflags, xiofile_t *xxfd, groups_t groups,
 		     int pf, int socktype, int ipproto) {
    xiosingle_t *xfd = &xxfd->stream;
    union sockaddr_union us;
@@ -421,7 +421,7 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
 
 static
 int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xxfd, unsigned groups,
+		     int xioflags, xiofile_t *xxfd, groups_t groups,
 		     int pf, int socktype, int ipproto) {
    xiosingle_t *xfd = &xxfd->stream;
    char *rangename;
@@ -482,7 +482,7 @@ int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
 
 static
 int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, unsigned groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int ipproto) {
    union sockaddr_union us;
    socklen_t uslen = sizeof(us);
@@ -555,7 +555,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
 
 static
 int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, unsigned groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int ipproto) {
    union sockaddr_union us;
    socklen_t uslen = sizeof(us);

@@ -26,7 +26,7 @@ uses stdin!!
 #define READLINE_MAXPROMPT 512
 
 static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
-			    int rw, xiofile_t *xfd, unsigned groups,
+			    int rw, xiofile_t *xfd, groups_t groups,
 			    int dummy1, int dummy2, int dummy3);
 
 
@@ -38,7 +38,7 @@ const struct optdesc opt_noprompt     = { "noprompt",     NULL,      OPT_NOPROMP
 const struct optdesc opt_noecho       = { "noecho",       NULL,      OPT_NOECHO,       GROUP_READLINE, PH_LATE, TYPE_STRING, OFUNC_SPEC,   0 };
 
 static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
-			    int xioflags, xiofile_t *xfd, unsigned groups,
+			    int xioflags, xiofile_t *xfd, groups_t groups,
 			    int dummy1, int dummy2, int dummy3) {
    int rw = (xioflags & XIO_ACCMODE);
    char msgbuf[256], *cp = msgbuf;

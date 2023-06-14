@@ -47,7 +47,7 @@ const struct optdesc opt_sigquit = { "sigquit",   NULL, OPT_SIGQUIT,     GROUP_P
  */
 int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 		struct single *fd,
-		unsigned groups,
+		   groups_t groups,
 		   struct opt **copts,	/* in: opts; out: opts for child */
 		   int *duptostderr	/* out: redirect stderr to output fd */
 		) {

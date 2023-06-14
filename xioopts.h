@@ -139,7 +139,7 @@ enum e_func {
 
 #define GROUP_FD	0x00000001	/* everything applyable to a fd */
 #define GROUP_FIFO	0x00000002
-#define GROUP_CHR	0x00000004
+#define GROUP_CHR	0x00000004 	/* not yet used? */
 #define GROUP_BLK	0x00000008
 #define GROUP_REG	0x00000010
 #define GROUP_FILE GROUP_REG
@@ -161,13 +161,13 @@ enum e_func {
 #define GROUP_PARENT	0x00080000	/* for parent of communicating child */
 
 #define GROUP_SOCK_UNIX	0x00100000
-#define GROUP_SOCK_IP4	0x00200000
+#define GROUP_SOCK_IP4	0x00200000 	/* not yet used? */
 #define GROUP_SOCK_IP6	0x00400000
 #define GROUP_SOCK_IP	(GROUP_SOCK_IP4|GROUP_SOCK_IP6)
 #define GROUP_INTERFACE	0x00800000
 #define GROUP_TUN       GROUP_INTERFACE
 
-#define GROUP_IP_UDP	0x01000000
+#define GROUP_IP_UDP	0x01000000 	/* not yet used? */
 #define GROUP_IP_TCP	0x02000000
 #define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP)	/* true: indicates one of UDP, TCP, SCTP */
 #define GROUP_IP_SOCKS4	0x04000000
@@ -176,10 +176,10 @@ enum e_func {
 #define GROUP_PROCESS	0x10000000	/* a process related option */
 #define GROUP_APPL	0x20000000	/* option handled by data loop */
 #define GROUP_HTTP	0x40000000	/* any HTTP client */
-#define GROUP_IP_SCTP	0x80000000
+#define GROUP_IP_SCTP	0x80000000U
 
 #define GROUP_ANY	(GROUP_PROCESS|GROUP_APPL)
-#define GROUP_ALL	0xffffffff
+#define GROUP_ALL	0xffffffffU
 
 
 /* no IP multicasts, no error queue yet */
@@ -898,7 +898,7 @@ struct optdesc {
    const char *defname;		/* default name */
    const char *nickname;	/* usual name */
    enum e_optcode optcode;	/* short form of option name */
-   unsigned int group;
+   groups_t group;
    enum e_phase phase;		/* when this option is to be used */
    enum e_types type;	/* the data type as expected on input, and stored */
    enum e_func  func;	/* which function can apply this option, e.g. ioctl(),
@@ -935,7 +935,7 @@ extern int retropt_bind(struct opt *opts,
 extern int applyopts(int fd, struct opt *opts, enum e_phase phase);
 extern int applyopts2(int fd, struct opt *opts, unsigned int from,
 		      unsigned int to);
-extern int applyopts_flags(struct opt *opts, int group, flags_t *result);
+extern int applyopts_flags(struct opt *opts, groups_t group, flags_t *result);
 extern int applyopts_cloexec(int fd, struct opt *opts);
 extern int applyopts_early(const char *path, struct opt *opts);
 extern int applyopts_fchown(int fd, struct opt *opts);
@@ -943,18 +943,18 @@ extern int applyopts_single(struct single *fd, struct opt *opts, enum e_phase ph
 extern int applyopts_offset(struct single *xfd, struct opt *opts);
 extern int applyopts_signal(struct single *xfd, struct opt *opts);
 extern int _xio_openlate(struct single *fd, struct opt *opts);
-extern int parseopts(const char **a, unsigned int groups, struct opt **opts);
-extern int parseopts_table(const char **a, unsigned int groups,
+extern int parseopts(const char **a, groups_t groups, struct opt **opts);
+extern int parseopts_table(const char **a, groups_t groups,
 			   struct opt **opts,
 			 const struct optname optionnames[], size_t optionnum);
-extern const struct opt *searchopt(const struct opt *opts, unsigned int groups, enum e_phase from, enum e_phase to,
+extern const struct opt *searchopt(const struct opt *opts, groups_t groups, enum e_phase from, enum e_phase to,
 				   enum e_func func);
-extern struct opt *copyopts(const struct opt *opts, unsigned int groups);
-extern struct opt *moveopts(struct opt *opts, unsigned int groups);
+extern struct opt *copyopts(const struct opt *opts, groups_t groups);
+extern struct opt *moveopts(struct opt *opts, groups_t groups);
 extern int leftopts(const struct opt *opts);
 extern int showleft(const struct opt *opts);
-extern int groupbits(int fd);
-extern int _groupbits(mode_t mode);
+extern groups_t groupbits(int fd);
+extern groups_t _groupbits(mode_t mode);
 extern int dropopts(struct opt *opts, unsigned int phase);
 extern int dropopts2(struct opt *opts, unsigned int from, unsigned int to);
 

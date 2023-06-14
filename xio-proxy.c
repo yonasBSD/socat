@@ -22,7 +22,7 @@
 
 static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 				 int xioflags, xiofile_t *fd,
-				 unsigned groups, int dummy1, int dummy2,
+				 groups_t groups, int dummy1, int dummy2,
 				 int dummy3);
 
 const struct optdesc opt_proxyport = { "proxyport", NULL, OPT_PROXYPORT, GROUP_HTTP, PH_LATE, TYPE_STRING, OFUNC_SPEC };
@@ -79,7 +79,7 @@ static ssize_t
 
 static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 				 int xioflags, xiofile_t *xxfd,
-				 unsigned groups, int dummy1, int dummy2,
+				 groups_t groups, int dummy1, int dummy2,
 				 int dummy3) {
       /* we expect the form: host:host:port */
    struct single *xfd = &xxfd->stream;

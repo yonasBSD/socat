@@ -15,7 +15,7 @@
 #include "xio-tun.h"
 
 
-static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, unsigned groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
 /****** TUN addresses ******/
 const struct optdesc opt_tun_device    = { "tun-device",     NULL,      OPT_TUN_DEVICE,      GROUP_TUN,       PH_OPEN, TYPE_FILENAME, OFUNC_SPEC };
@@ -64,7 +64,7 @@ static const struct optname xio_route_options[] = {
 } ;
 #endif
 
-static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, unsigned groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
    char *tundevice = NULL;
    char *tunname = NULL, *tuntype = NULL;
    int pf = /*! PF_UNSPEC*/ PF_INET;

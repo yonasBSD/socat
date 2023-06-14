@@ -15,7 +15,7 @@ extern const struct optdesc opt_sourceport;
 extern const struct optdesc opt_lowport;
 
 extern int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd,
-			 unsigned groups, int socktype,
+			 groups_t groups, int socktype,
 			 int ipproto, int protname);
 extern int
    _xioopen_ipapp_prepare(struct opt *opts, struct opt **opts0,
@@ -32,7 +32,7 @@ extern int _xioopen_ip4app_connect(const char *hostname, const char *portname,
 				   struct opt *opts);
 extern int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 			  int xioflags, xiofile_t *fd,
-			 unsigned groups, int socktype,
+			 groups_t groups, int socktype,
 				 int ipproto, int protname);
 extern int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0,
 				   const char *portname, int *pf, int ipproto,

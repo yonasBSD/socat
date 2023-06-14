@@ -31,34 +31,34 @@
 
 static
 int xioopen_socket_connect(int argc, const char *argv[], struct opt *opts,
-			   int xioflags, xiofile_t *xfd, unsigned groups,
+			   int xioflags, xiofile_t *xfd, groups_t groups,
 			   int dummy1, int dummy2, int dummy3);
 static
 int xioopen_socket_listen(int argc, const char *argv[], struct opt *opts,
-			  int xioflags, xiofile_t *xfd, unsigned groups,
+			  int xioflags, xiofile_t *xfd, groups_t groups,
 			  int dummy1, int dummy2, int dummy3);
 static
 int xioopen_socket_sendto(int argc, const char *argv[], struct opt *opts,
-			  int xioflags, xiofile_t *xfd, unsigned groups,
+			  int xioflags, xiofile_t *xfd, groups_t groups,
 			  int dummy1, int dummy2, int dummy3);
 static
 int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
-			    int xioflags, xiofile_t *xfd, unsigned groups,
+			    int xioflags, xiofile_t *xfd, groups_t groups,
 			    int dummy1, int dummy2, int dummy3);
 static
 int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
-			    int xioflags, xiofile_t *xfd, unsigned groups,
+			    int xioflags, xiofile_t *xfd, groups_t groups,
 			    int dummy1, int socktype, int dummy3);
 static
 int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
-			int xioflags, xiofile_t *xfd, unsigned groups,
-			int dumy1, int dummy2, int dummy3);
+			int xioflags, xiofile_t *xfd, groups_t groups, 
+			int dummy1, int dummy2, int dummy3);
 
 static
 int _xioopen_socket_sendto(const char *pfname, const char *type,
 			   const char *proto, const char *address,
 			   struct opt *opts, int xioflags, xiofile_t *xxfd,
-			   unsigned groups);
+			   groups_t groups);
 
 static int
 xiolog_ancillary_socket(struct cmsghdr *cmsg, int *num,
@@ -210,7 +210,7 @@ const struct optdesc opt_null_eof = { "null-eof", NULL, OPT_NULL_EOF, GROUP_SOCK
 
 static
 int xioopen_socket_connect(int argc, const char *argv[], struct opt *opts,
-			   int xioflags, xiofile_t *xxfd, unsigned groups,
+			   int xioflags, xiofile_t *xxfd, groups_t groups,
 			   int dummy1, int dummy2, int dummy3) {
    struct single *xfd = &xxfd->stream;
    const char *pfname = argv[1];
@@ -291,7 +291,7 @@ int xioopen_socket_connect(int argc, const char *argv[], struct opt *opts,
 #if WITH_LISTEN
 static
 int xioopen_socket_listen(int argc, const char *argv[], struct opt *opts,
-			  int xioflags, xiofile_t *xxfd, unsigned groups,
+			  int xioflags, xiofile_t *xxfd, groups_t groups,
 			  int dummy1, int dummy2, int dummy3) {
    struct single *xfd = &xxfd->stream;
    const char *pfname = argv[1];
@@ -361,7 +361,7 @@ int xioopen_socket_listen(int argc, const char *argv[], struct opt *opts,
 /* we expect the form: ...:domain:type:protocol:remote-address */
 static
 int xioopen_socket_sendto(int argc, const char *argv[], struct opt *opts,
-			  int xioflags, xiofile_t *xxfd, unsigned groups,
+			  int xioflags, xiofile_t *xxfd, groups_t groups,
 			  int dummy1, int dummy2, int dummy3) {
    int result;
 
@@ -384,7 +384,7 @@ static
 int _xioopen_socket_sendto(const char *pfname, const char *type,
 			   const char *protname, const char *address,
 			   struct opt *opts, int xioflags, xiofile_t *xxfd,
-			   unsigned groups) {
+			   groups_t groups) {
    xiosingle_t *xfd = &xxfd->stream;
    char *garbage;
    union sockaddr_union us = {{0}};
@@ -475,7 +475,7 @@ int _xioopen_socket_sendto(const char *pfname, const char *type,
 /* we expect the form: ...:domain:socktype:protocol:local-address */
 static
 int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xxfd, unsigned groups,
+		     int xioflags, xiofile_t *xxfd, groups_t groups,
 		     int dummy, int summy2, int dummy3) {
    struct single *xfd = &xxfd->stream;
    const char *pfname = argv[1];
@@ -552,7 +552,7 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
 /* we expect the form: ...:domain:type:protocol:local-address */
 static
 int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
-		       int xioflags, xiofile_t *xxfd, unsigned groups,
+		       int xioflags, xiofile_t *xxfd, groups_t groups,
 		       int dummy1, int dummy2, int dummy3) {
    struct single *xfd = &xxfd->stream;
    const char *pfname = argv[1];
@@ -631,7 +631,7 @@ int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
 /* we expect the form: ...:domain:type:protocol:remote-address */
 static
 int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
-			    int xioflags, xiofile_t *xxfd, unsigned groups,
+			    int xioflags, xiofile_t *xxfd, groups_t groups,
 			    int dummy1, int dummy2, int dummy3) {
    xiosingle_t *xfd = &xxfd->stream;
    const char *pfname = argv[1];
@@ -1029,7 +1029,7 @@ int xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 			union sockaddr_union *us, socklen_t uslen,
 			struct opt *opts,
-			int xioflags, xiosingle_t *xfd, unsigned groups,
+			int xioflags, xiosingle_t *xfd, groups_t groups,
 			int pf, int socktype, int ipproto, bool alt) {
    int level = E_ERROR;
    union sockaddr_union la; socklen_t lalen = sizeof(la);

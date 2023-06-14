@@ -96,8 +96,8 @@ int applyopts_named(const char *filename, struct opt *opts, unsigned int phase) 
    After this sub you may proceed with open() or whatever...
    */
 int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
-			 int groups,
-		      bool *exists, struct opt *opts) {
+			 groups_t groups, bool *exists, struct opt *opts)
+{
    const char *path = argv[1];
 #if HAVE_STAT64
    struct stat64 statbuf;

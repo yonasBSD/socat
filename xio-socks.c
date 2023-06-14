@@ -29,7 +29,7 @@ enum {
 
 static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts,
 				  int xioflags, xiofile_t *fd,
-				  unsigned groups, int dummy1, int dummy2,
+				  groups_t groups, int dummy1, int dummy2,
 				  int dummy3);
 
 const struct optdesc opt_socksport = { "socksport", NULL, OPT_SOCKSPORT, GROUP_IP_SOCKS4, PH_LATE, TYPE_STRING, OFUNC_SPEC };
@@ -41,7 +41,7 @@ const struct addrdesc addr_socks4a_connect = { "socks4a", 3, xioopen_socks4_conn
 
 static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts,
 				  int xioflags, xiofile_t *xxfd,
-				  unsigned groups, int socks4a, int dummy2,
+				  groups_t groups, int socks4a, int dummy2,
 				  int dummy3) {
    /* we expect the form: host:host:port */
    struct single *xfd = &xxfd->stream;
