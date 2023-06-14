@@ -23,4 +23,6 @@ extern int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
 				bool *exists, struct opt *opts);
 extern int _xioopen_open(const char *path, int rw, struct opt *opts);
 
+extern int xio_unlink(const char *pathname, int level);
+
 #endif /* !defined(__xio_named_h_included) */

@@ -3,6 +3,12 @@ Features:
 	Added the --experimental option that enables use of features that might
 	change in the future.
 
+	Now warning messages are printed by default. If you want to see only
+	errors and fatals as in previous versions, use option -d0;
+	option -d4 is equivalent to -dddd and to -d -d -d -d
+	The number of warnings has been reduced, e.g.removing a non existing
+	file does in most cases no longer log a warning.
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

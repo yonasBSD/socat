@@ -157,13 +157,7 @@ static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, i
 
    if (!(ABSTRACT && abstract)) {
       if (opt_unlink_early) {
-	 if (Unlink(name) < 0) {
-	    if (errno == ENOENT) {
-	       Warn2("unlink(\"%s\"): %s", name, strerror(errno));
-	    } else {
-	       Error2("unlink(\"%s\"): %s", name, strerror(errno));
-	    }
-	 }
+	 xio_unlink(name, E_ERROR);
       } else {
 	 struct stat buf;
 	 if (Lstat(name, &buf) == 0) {
@@ -463,13 +457,7 @@ int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
 
    if (!(ABSTRACT && abstract)) {
       if (opt_unlink_early) {
-	 if (Unlink(name) < 0) {
-	    if (errno == ENOENT) {
-	       Warn2("unlink(\"%s\"): %s", name, strerror(errno));
-	    } else {
-	       Error2("unlink(\"%s\"): %s", name, strerror(errno));
-	    }
-	 }
+	 xio_unlink(name, E_ERROR);
       } else {
 	 struct stat buf;
 	 if (Lstat(name, &buf) == 0) {
@@ -550,13 +538,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
 
    if (!(ABSTRACT && abstract)) {
       if (opt_unlink_early) {
-	 if (Unlink(name) < 0) {
-	    if (errno == ENOENT) {
-	       Warn2("unlink(\"%s\"): %s", name, strerror(errno));
-	    } else {
-	       Error2("unlink(\"%s\"): %s", name, strerror(errno));
-	    }
-	 }
+	 xio_unlink(name, E_ERROR);
       } else {
 	 struct stat buf;
 	 if (Lstat(name, &buf) == 0) {
@@ -668,7 +650,7 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
       if (errno != EPROTOTYPE || socktype != 0)
 	 break;
       if (needbind)
-	 Unlink(us.un.sun_path);
+	 xio_unlink(us.un.sun_path, E_ERROR);
       dropopts2(opts, PH_INIT, PH_SPEC); opts = opts0;
 
       socktype = SOCK_SEQPACKET;
@@ -682,7 +664,7 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
       if (errno != EPROTOTYPE && errno != EPROTONOSUPPORT/*AIX*/)
 	 break;
       if (needbind)
-	 Unlink(us.un.sun_path);
+	 xio_unlink(us.un.sun_path, E_ERROR);
       dropopts2(opts, PH_INIT, PH_SPEC); opts = opts0;
 
       xfd->peersa = them;
@@ -699,9 +681,8 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, unsigned groups,
 
    if (result != 0) {
       Error2("UNIX-CLIENT:%s: %s", name, strerror(errno));
-      if (needbind) {
-	 Unlink(us.un.sun_path);
-      }
+      if (needbind)
+	 xio_unlink(us.un.sun_path, E_ERROR);
       return result;
    }
 

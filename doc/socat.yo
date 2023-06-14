@@ -109,12 +109,15 @@ dit(bf(tt(-hh | -??)))
 dit(bf(tt(-hhh | -???)))
    Like -hh, plus a list of all available address option names.
 label(option_d)dit(bf(tt(-d)))
-   Without this option, only fatal and error messages are generated; applying
-   this option also prints warning messages. See link(DIAGNOSTICS)(DIAGNOSTICS)
-   for more information. 
-label(option_d_d)dit(bf(tt(-d -d))) Prints fatal, error, warning, and notice messages.
-dit(bf(tt(-d -d -d))) Prints fatal, error, warning, notice, and info messages.
-dit(bf(tt(-d -d -d -d))) Prints fatal, error, warning, notice, info, and debug
+   Without this option, only fatal, error, and warning messages are printed;
+   applying this option also prints notice messages.
+   See link(DIAGNOSTICS)(DIAGNOSTICS) for more information.
+label(option_d0)dit(bf(tt(-d0)))
+   With this option, only fatal and error messages are printed; this restores
+   the behaviour of socat() up to version 1.7.4.
+label(option_d_d)dit(bf(tt(-d -d | -dd | -d2))) Prints fatal, error, warning, and notice messages.
+dit(bf(tt(-d -d -d | -ddd | -d3))) Prints fatal, error, warning, notice, and info messages.
+dit(bf(tt(-d -d -d -d | -dddd | -d4))) Prints fatal, error, warning, notice, info, and debug
    messages. 
 dit(bf(tt(-D)))
    Logs information about file descriptors before starting the transfer phase.

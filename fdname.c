@@ -99,8 +99,8 @@ static int procgetfdname(int fd, char *filepath, size_t pathsize) {
 #endif
 	    "/%d", pid, fd);
    if ((len = Readlink(procpath, filepath, pathsize-1)) < 0) {
-      Warn4("readlink(\"%s\", %p, "F_Zu"): %s",
-	     procpath, filepath, pathsize, strerror(errno));
+      Notice4("readlink(\"%s\", %p, "F_Zu"): %s",
+	      procpath, filepath, pathsize, strerror(errno));
       len = 0;
    }
    filepath[len] = '\0';
@@ -260,7 +260,7 @@ int sockname(int fd, FILE *outfile, char style) {
    rc = Getsockopt(fd, SOL_SOCKET, SO_PROTOTYPE,  &proto,         &optlen);
 #endif
    if (rc < 0) {
-      Warn5("getsocktop(%d, SOL_SOCKET, "
+      Notice5("getsocktop(%d, SOL_SOCKET, "
 #ifdef SO_PROTOCOL
 	    "SO_PROTOCOL"
 #else

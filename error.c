@@ -45,7 +45,7 @@ static void _diag_exit(int status);
 
 
 struct diag_opts diagopts =
-  { NULL, E_ERROR, E_ERROR, 0, NULL, LOG_DAEMON, false, 0, false, NULL, true } ;
+  { NULL, E_WARN, E_ERROR, 0, NULL, LOG_DAEMON, false, 0, false, NULL, true } ;
 
 static void msg2(
 #if HAVE_CLOCK_GETTIME
@@ -194,7 +194,6 @@ void diag_set(char what, const char *arg) {
    case 'p': diagopts.progname = arg;
       openlog(diagopts.progname, LOG_PID, diagopts.logfacility);
       break;
-   case 'd': --diagopts.msglevel; break;
    case 'u': diagopts.micros = true; break;
    default: msg(E_ERROR, "unknown diagnostic option %c", what);
    }
@@ -206,6 +205,9 @@ void diag_set_int(char what, int arg) {
    case 'D': diagopts.msglevel = arg; break;
    case 'e': diagopts.exitlevel = arg; break;
    case 'x': diagopts.exitstatus = arg; break;
+   case 'd':
+      diagopts.msglevel = arg;
+      break;
    case 'h': diagopts.withhostname = arg;
       if ((diagopts.hostname = getenv("HOSTNAME")) == NULL) {
 	 struct utsname ubuf;

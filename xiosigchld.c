@@ -92,8 +92,10 @@ void childdied(int signum) {
 	 diag_in_handler = 0;
 	 errno = _errno;
 	 return;
+      } else if (pid < 0 && errno == EINTR) {
+	 Info1("childdied(): %s", strerror(errno));
       } else if (pid < 0 && errno == ECHILD) {
-	 Msg(wassig?E_INFO:E_WARN,
+	 Msg(wassig?E_INFO:E_NOTICE,
 	      "waitpid(-1, {}, WNOHANG): "F_strerror);
 	 Info("childdied() finished");
 	 diag_in_handler = 0;

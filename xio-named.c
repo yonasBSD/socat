@@ -59,9 +59,12 @@ int applyopts_named(const char *filename, struct opt *opts, unsigned int phase) 
 	 break;
       case OPT_UNLINK_EARLY:
       case OPT_UNLINK:
+	 xio_unlink(filename, E_ERROR);
+	 break;
       case OPT_UNLINK_LATE:
 	 if (Unlink(filename) < 0) {
 	    if (errno == ENOENT) {
+	       /* We have just created/opened it, that's - surprising! */
 	       Warn2("unlink(\"%s\"): %s", filename, strerror(errno));
 	    } else {
 	       Error2("unlink(\"%s\"): %s", filename, strerror(errno));
@@ -207,6 +210,27 @@ int _xioopen_open(const char *path, int rw, struct opt *opts) {
    applyopts_cloexec(fd, opts);
 #endif
    return fd;
+}
+
+/* Wrapper around Unlink() that handles the case of non existing file (ENOENT)
+   just as E_INFO. All other errors are handled with level. */
+int xio_unlink(
+	const char *filename,	/* the file to be removed */
+	int level)	/* the severity level for other errors, e.g.E_ERROR */
+{
+	int _errno;
+
+	if (Unlink(filename) < 0) {
+		_errno = errno;
+		if (errno == ENOENT) {
+			Info2("unlink(\"%s\"): %s", filename, strerror(errno));
+		} else {
+			Msg2(level, "unlink(\"%s\"): %s", filename, strerror(errno));
+			errno = _errno;
+			return -1;
+		}
+	}
+	return 0;
 }
 
 #endif /* _WITH_NAMED */

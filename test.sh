@@ -6545,7 +6545,7 @@ NAME=UNIEXECEOF
 case "$TESTS" in
 *%$N%*|*%functions%*|*%$NAME%*)
 TEST="$NAME: give exec'd write-only process a chance to flush (-u)"
-testod "$N" "$TEST" "" exec:"$OD_C" "$opts -u"
+testod "$N" "$TEST" "" EXEC:"$OD_C" "$opts -u"
 esac
 N=$((N+1))
 
@@ -6554,7 +6554,7 @@ NAME=REVEXECEOF
 case "$TESTS" in
 *%$N%*|*%functions%*|*%$NAME%*)
 TEST="$NAME: give exec'd write-only process a chance to flush (-U)"
-testod "$N" "$TEST" exec:"$OD_C" "-" "$opts -U"
+testod "$N" "$TEST" EXEC:"$OD_C" "-" "$opts -U"
 esac
 N=$((N+1))
 
@@ -12336,7 +12336,7 @@ if [ $RLIMIT_NOFILE -gt 1024 ]; then
     RLIMIT_NOFILE="$(ulimit -n)"
 fi
 newport tcp4
-CMD0="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,$REUSEADDR,range=$LOCALHOST:255.255.255.255 PIPE"
+CMD0="$TRACE $SOCAT -d0 $opts TCP-LISTEN:$PORT,$REUSEADDR,range=$LOCALHOST:255.255.255.255 PIPE"
 CMD1="$TRACE $SOCAT $opts -t 0 /dev/null TCP:$SECONDADDR:$PORT,bind=$SECONDADDR"
 CMD2="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT,bind=$LOCALHOST"
 printf "test $F_n $TEST... " $N
@@ -12359,6 +12359,12 @@ if [ $rc2 -ne 0 ]; then
     listFAIL="$listFAIL $N"
 elif [ -f "$tdiff" -a ! -s "$tdiff" ]; then
     $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
 else
     $PRINTF "$FAILED\n"
@@ -15653,7 +15659,7 @@ N=$((N+1))
 NAME=INTEGER_GARBAGE
 case "$TESTS" in
 *%$N%*|*%functions%*|*%syntax%*|*%bugs%*|*%$NAME%*)
-TEST="$NAME: Error on trailing garbabe"
+TEST="$NAME: Error on trailing garbage"
 # Invoke Socat with pty and option ispeed=b19200.
 # When socat terminates with error the test succeeded
 if ! eval $NUMCOND; then :; else
@@ -15993,7 +15999,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD="$TRACE $SOCAT $opts - EXEC:\"$FILAN -s\",stderr"
+CMD="$TRACE $SOCAT $opts - EXEC:\"$FILAN -s\""
 printf "test $F_n $TEST... " $N
 eval "$CMD" >"${tf}" 2>"${te}"
 # "door" is a special FD type on Solaris/SunOS
@@ -16039,7 +16045,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD="$TRACE $SOCAT $opts -r $td/test$N.-r -R $td/test$N.-R  - EXEC:\"$FILAN -s\",stderr"
+CMD="$TRACE $SOCAT $opts -r $td/test$N.-r -R $td/test$N.-R  - EXEC:\"$FILAN -s\""
 printf "test $F_n $TEST... " $N
 eval "$CMD" >"${tf}" 2>"${te}"
 # "door" is a special FD type on Solaris/SunOS

@@ -541,7 +541,7 @@ if test -n "$WITH_OPENSSL"; then
     [AC_TRY_COMPILE([#include <openssl/ssl.h>],[;],
       [sc_cv_have_openssl_ssl_h=yes; OPENSSL_BASE=""; ],
       [sc_cv_have_openssl_ssl_h=no
-       if [ "$OPENSSL_BASE" ]; then
+       if test "$OPENSSL_BASE"; then
 	  Ds="$OPENSSL_BASE"
        else
           Ds="/sw /usr/local /opt/freeware /usr/sfw /usr/local/ssl"

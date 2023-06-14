@@ -306,7 +306,7 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       } while (true);
       applyopts_cloexec(ps, opts);
       if (Getpeername(ps, &pa->soa, &pas) < 0) {
-	 Warn4("getpeername(%d, %p, {"F_socklen"}): %s",
+	 Notice4("getpeername(%d, %p, {"F_socklen"}): %s",
 	       ps, pa, pas, strerror(errno));
 	 pa = NULL;
       }

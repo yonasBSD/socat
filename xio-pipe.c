@@ -105,12 +105,7 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
 
    if (opt_unlink_early) {
       if (Unlink(pipename) < 0) {
-	 if (errno == ENOENT) {
-	    Warn2("unlink(%s): %s", pipename, strerror(errno));
-	 } else {
-	    Error2("unlink(%s): %s", pipename, strerror(errno));
-	    return STAT_RETRYLATER;
-	 }
+	 return STAT_RETRYLATER;
       }
    }
 

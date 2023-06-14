@@ -88,7 +88,7 @@ int xioclose1(struct single *pipe) {
    }
    if (pipe->opt_unlink_close && pipe->unlink_close) {
       if (Unlink(pipe->unlink_close) < 0) {
-	 Info2("unlink(\"%s\"): %s", pipe->unlink_close, strerror(errno));
+	 Warn2("unlink(\"%s\"): %s", pipe->unlink_close, strerror(errno));
       }
       free(pipe->unlink_close);
    }

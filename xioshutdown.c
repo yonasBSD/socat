@@ -112,6 +112,9 @@ int xioshutdown(xiofile_t *sock, int how) {
 	       sock->stream.fd, how, strerror(errno));
       }
       if ((sock->stream.flags&XIO_ACCMODE) == XIO_WRONLY) {
+	 pid_t pid;
+	 int level;
+
 	 /* the child process might want to flush some data before terminating
 	    */
 	 int status = 0;
@@ -133,9 +136,14 @@ int xioshutdown(xiofile_t *sock, int how) {
 #else
 	 Alarm(1 /*! sock->stream.para.exec.waitdie */);
 #endif /* !HAVE_SETITIMER */
-	 if (Waitpid(sock->stream.para.exec.pid, &status, 0) < 0) {
-	    Warn3("waitpid("F_pid", %p, 0): %s",
-		  sock->stream.para.exec.pid, &status, strerror(errno));
+	 pid = Waitpid(sock->stream.para.exec.pid, &status, 0);
+	 if (pid < 0) {
+	    if (errno == EINTR)
+	       level = E_INFO;
+	    else
+	       level = E_WARN;
+	    Msg3(level, "waitpid("F_pid", %p, 0): %s",
+		 sock->stream.para.exec.pid, &status, strerror(errno));
 	 }
 	 Alarm(0);
       }

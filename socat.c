@@ -93,6 +93,7 @@ int main(int argc, const char *argv[]) {
    double rto;
    int i, argc0, result;
    bool isdash = false;
+   int msglevel = 0;
    struct utsname ubuf;
    int lockrc;
 
@@ -124,10 +125,32 @@ int main(int argc, const char *argv[]) {
 	 Exit(0);
 #endif /* WITH_HELP */
       case 'd':
-	 a = *arg1+1;
+	 a = *arg1+2;
+	 switch (*a) {
+	 case 'd':
+	    break;
+	 case '-': case '0': case '1': case '2': case '3': case '4':
+	    {
+	       char *endptr;
+	       msglevel = strtol(a, &endptr, 0);
+	       if (endptr == a || *endptr) {
+		  Error2("Invalid (trailing) character(s) \"%c\" in \"%s\"option", *a, *arg1);
+	       }
+	       diag_set_int('d', 4-msglevel);
+	    }
+	    break;
+	 case '\0':
+	    ++msglevel;
+	    diag_set_int('d', 4-msglevel);
+	    break;
+	 default: socat_usage(stderr);
+	 }
+	 if (*a != 'd')  break;
+	 ++msglevel;
 	 while (*a)  {
 	    if (*a == 'd') {
-	       diag_set('d', NULL);
+	       ++msglevel;
+	       diag_set_int('d', 4-msglevel);
 	    } else {
 	       socat_usage(stderr);
 	       Exit(1);
@@ -394,6 +417,7 @@ void socat_usage(FILE *fd) {
    fputs("      -hhh   like -hh, plus a list of all available address option names\n", fd);
 #endif /* WITH_HELP */
    fputs("      -d[ddd]         increase verbosity (use up to 4 times; 2 are recommended)\n", fd);
+   fputs("      -d0|1|2|3|4     set verbosity level (0: Errors; 4 all including Debug)\n", fd);
 #if WITH_FILAN
    fputs("      -D     analyze file descriptors before loop\n", fd);
 #endif

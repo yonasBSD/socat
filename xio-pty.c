@@ -149,9 +149,7 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
 #endif /* HAVE_OPENPTY */
 
    if (!retropt_string(opts, OPT_SYMBOLIC_LINK, &linkname)) {
-      if (Unlink(linkname) < 0 && errno != ENOENT) {
-	 Error2("unlink(\"%s\"): %s", linkname, strerror(errno));
-      }
+      xio_unlink(linkname, E_ERROR);
       if (Symlink(ptyname, linkname) < 0) {
 	 Error3("symlink(\"%s\", \"%s\"): %s",
 		ptyname, linkname, strerror(errno));
