@@ -13,6 +13,14 @@ Features:
 	The number of warnings has been reduced, e.g.removing a non existing
 	file does in most cases no longer log a warning.
 
+Corrections:
+	When a sub process (EXEC, SYSTEM) terminated with exit code other than
+	0, its last sent data might have been lost depending on timing of read/
+	write and SIGCHLD in Socat.
+	Now the SIGCHLD handler does not simply terminate Socat in this case,
+	but remembers the failure and allows further processing.
+	Thanks to Luke Jones for reporting this issue.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility
 

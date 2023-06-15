@@ -13,6 +13,7 @@
 pid_t diedunknown[NUMUNKNOWN];	/* children that died before they were registered */
 int   statunknown[NUMUNKNOWN]; 	/* exit state of unknown dead child */
 size_t nextunknown;
+int engine_result = EXIT_SUCCESS;
 
 
 /* register for a xio filedescriptor a callback (handler).
@@ -138,8 +139,9 @@ void childdied(int signum) {
 	    Info2("waitpid(): child %d exited with status %d",
 		   pid, WEXITSTATUS(status));
 	 } else {
-	    Error2("waitpid(): child %d exited with status %d",
+	    Warn2("waitpid(): child %d exited with status %d",
 		   pid, WEXITSTATUS(status));
+	    engine_result = 1;
 	 }
       }
    } else if (WIFSIGNALED(status)) {
@@ -147,8 +149,9 @@ void childdied(int signum) {
 	 Info2("waitpid(): child %d exited on signal %d",
 	       pid, WTERMSIG(status));
       } else {
-	 Error2("waitpid(): child %d exited on signal %d",
+	 Warn2("waitpid(): child %d exited on signal %d",
 	       pid, WTERMSIG(status));
+	 engine_result = 1;
       }
    } else if (WIFSTOPPED(status)) {
       Info2("waitpid(): child %d stopped on signal %d",

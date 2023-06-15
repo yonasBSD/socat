@@ -399,6 +399,9 @@ int main(int argc, const char *argv[]) {
    Atexit(socat_unlock);
 
    result = socat(arg1[0], arg1[1]);
+   if (result == EXIT_SUCCESS && engine_result != EXIT_SUCCESS) {
+      result = engine_result; 	/* a signal handler reports failure */
+   }
    Notice1("exiting with status %d", result);
    Exit(result);
    return 0;	/* not reached, just for gcc -Wall */

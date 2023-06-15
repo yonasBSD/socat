@@ -461,6 +461,7 @@ extern pid_t diedunknown[NUMUNKNOWN];	/* child died before it is registered */
 #define diedunknown3 (diedunknown[2])
 #define diedunknown4 (diedunknown[3])
 extern int   statunknown[NUMUNKNOWN]; 	/* exit state of unknown dead child */
+extern int engine_result; 		/* here signal handler overrides OK */
 
 extern int xiosetsigchild(xiofile_t *xfd, int (*callback)(struct single *));
 extern int xiosetchilddied(void);
