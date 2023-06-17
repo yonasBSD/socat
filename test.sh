@@ -4267,7 +4267,7 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%$NAME%*)
 if ! eval $NUMCOND; then :
 elif ! F=$(testfeats STDIO EXEC); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! A=$(testaddrs STDIO EXEC); then
@@ -9271,7 +9271,7 @@ case "$TESTS" in
 TEST="$NAME: UDP/IPv6 multicast"
 if ! eval $NUMCOND; then :;
 elif ! f=$(testfeats ip6 udp); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $f not available in $SOCAT${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $f not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! a=$(testaddrs - STDIO UDP6-RECV UDP6-SENDTO); then
@@ -16127,7 +16127,7 @@ TEST="$NAME: ${KEYW}-RECVFROM with fork option"
 # When the second record is stored before the first one the test succeeded.
 if ! eval $NUMCOND; then :;
 elif ! F=$(testfeats $FEAT STDIO SYSTEM); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! A=$(testaddrs - STDIO SYSTEM $PROTO-RECVFROM $PROTO-SENDTO); then
@@ -16204,6 +16204,87 @@ UDP4  UDP  udp4  127.0.0.1 PORT
 UDP6  UDP  udp4  [::1]     PORT
 UNIX  unix unix   $td/test\$N.server -
 "
+
+
+# Test if option -S turns off logging of SIGTERM
+NAME=SIGTERM_NOLOG
+case "$TESTS" in
+*%$N%*|*%functions%*|*%signal%*|*%$NAME%*)
+TEST="$NAME: Option -S can turn off logging of SIGTERM"
+# Start Socat with option -S 0x0000, kill it with SIGTERM
+# When no logging entry regarding this signal is there, the test succeeded
+if ! eval $NUMCOND; then :;
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport tcp4 	# or whatever proto, or drop this line
+CMD0="$TRACE $SOCAT $opts -S 0x0000 PIPE PIPE"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+relsleep 1 	# give process time to start
+kill -TERM $pid0 2>/dev/null; wait
+if ! grep -q "exiting on signal" ${te}0; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$DEBUG" ];   then echo "kill -TERM <pid>" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "kill -TERM <pid>" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test if option -S turns on logging of signal 31
+NAME=SIG31_LOG
+case "$TESTS" in
+*%$N%*|*%functions%*|*%signal%*|*%$NAME%*)
+TEST="$NAME: Option -S can turn on logging of signal 31"
+# Start Socat with option -S 0x80000000, kill it with -31
+# When a logging entry regarding this signal is there, the test succeeded
+if ! eval $NUMCOND; then :;
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport tcp4 	# or whatever proto, or drop this line
+CMD0="$TRACE $SOCAT $opts -S 0x80000000 PIPE PIPE"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+relsleep 1 	# give process time to start
+kill -31 $pid0 2>/dev/null; wait
+if grep -q "exiting on signal" ${te}0; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$DEBUG" ];   then echo "kill -31 <pid>" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "kill -31 <pid>" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
 
 # end of common tests
 
@@ -16355,7 +16436,7 @@ elif ! $(type systemd-socket-activate >/dev/null 2>&1); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! F=$(testfeats STDIO IP4 TCP PIPE); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! A=$(testaddrs - TCP4 TCP4-LISTEN PIPE); then

@@ -13,6 +13,10 @@ Features:
 	The number of warnings has been reduced, e.g.removing a non existing
 	file does in most cases no longer log a warning.
 
+	New option -S <mask> controls catching and logging of signals that are
+	not internally used by Socat.
+	Tests: SIGTERM_NOLOG SIG31_LOG
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

@@ -176,6 +176,15 @@ label(option_s)dit(bf(tt(-s)))
    option, socat() is sloppy with errors and tries to continue. Even with this
    option, socat will exit on fatals, and will abort connection attempts when
    security checks failed.
+label(option_S)dit(bf(tt(-S))tt(<signals-bitmap>))
+   Changes the set of signals that are caught by socat() just for printing an
+   log message. This catching is useful to get the information about the signal
+   into socat()s log, but prevents core dump or other standard actions. The
+   default set of these signals is SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT,
+   SIGBUS, SIGFPE, SIGSEGV, and SIGTERM; replace this set (0x89de on Linux)
+   with a bitmap (e.g., SIGFPE has value 8 and its bit is 0x0080).nl()
+   Note: Signals SIGHUP, SIGINT, SIGQUIT, SIGUSR1, SIGPIPE, SIGALRM, SIGTERM, and
+   SIGCHLD may be handled specially anyway.
 label(option_t)dit(bf(tt(-t))tt(<timeout>))
    When one channel has reached EOF, the write part of the other channel is shut
    down. Then, socat() waits <timeout> [link(timeval)(TYPE_TIMEVAL)] seconds

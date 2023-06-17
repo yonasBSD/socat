@@ -39,6 +39,7 @@ struct {
    int sniffleft;	/* -1 or an FD for teeing data arriving on xfd1 */
    int sniffright;	/* -1 or an FD for teeing data arriving on xfd2 */
    xiolock_t lock;	/* a lock file */
+   unsigned long log_sigs;	/* signals to be caught just for logging */
 } socat_opts = {
    8192,	/* bufsiz */
    false,	/* verbose */
@@ -54,6 +55,7 @@ struct {
    -1,		/* sniffleft */
    -1,		/* sniffright */
    { NULL, 0 },	/* lock */
+   1<<SIGHUP | 1<<SIGINT | 1<<SIGQUIT | 1<<SIGILL | 1<<SIGABRT | 1<<SIGBUS | 1<<SIGFPE | 1<<SIGSEGV | 1<<SIGTERM, 	/* log_sigs */
 };
 
 void socat_usage(FILE *fd);
@@ -241,6 +243,18 @@ int main(int argc, const char *argv[]) {
 	 break;
       case 's':  if (arg1[0][2])  { socat_opt_hint(stderr, arg1[0][1], arg1[0][2]); Exit(1); }
 	 diag_set_int('e', E_FATAL); break;
+      case 'S': 	/* do not catch signals */
+	 if (arg1[0][2]) {
+	    a = *arg1+2;
+	 } else {
+	    ++arg1, --argc;
+	    if ((a = *arg1) == NULL) {
+	       Error("option -S requires an argument; use option \"-h\" for help");
+	       Exit(1);
+	    }
+	 }
+	 socat_opts.log_sigs = Strtoul(a, (char **)&a, 0, "-S");
+	 break;
       case 't': if (arg1[0][2]) {
 	    a = *arg1+2;
 	 } else {
@@ -370,19 +384,17 @@ int main(int argc, const char *argv[]) {
 
    {
       struct sigaction act;
-      sigfillset(&act.sa_mask);
+      int i, m;
+
+      sigfillset(&act.sa_mask); 	/* while in sighandler block all signals */
       act.sa_flags = 0;
       act.sa_handler = socat_signal;
       /* not sure which signals should be caught and print a message */
-      Sigaction(SIGHUP,  &act, NULL);
-      Sigaction(SIGINT,  &act, NULL);
-      Sigaction(SIGQUIT, &act, NULL);
-      Sigaction(SIGILL,  &act, NULL);
-      Sigaction(SIGABRT, &act, NULL);
-      Sigaction(SIGBUS,  &act, NULL);
-      Sigaction(SIGFPE,  &act, NULL);
-      Sigaction(SIGSEGV, &act, NULL);
-      Sigaction(SIGTERM, &act, NULL);
+      for (i = 0, m = 1; i < 8*sizeof(unsigned long); ++i, m <<= 1) {
+	 if (socat_opts.log_sigs & m) {
+	    Sigaction(i,  &act, NULL);
+	 }
+      }
    }
    Signal(SIGPIPE, SIG_IGN);
 
@@ -429,7 +441,7 @@ void socat_usage(FILE *fd) {
    fputs("      -lf<logfile>   log to file\n", fd);
    fputs("      -ls            log to stderr (default if no other log)\n", fd);
    fputs("      -lm[facility]  mixed log mode (stderr during initialization, then syslog)\n", fd);
-   fputs("      -lp<progname>  set the program name used for logging\n", fd);
+   fputs("      -lp<progname>  set the program name used for logging and vars\n", fd);
    fputs("      -lu            use microseconds for logging timestamps\n", fd);
    fputs("      -lh            add hostname to log messages\n", fd);
    fputs("      -v     verbose text dump of data traffic\n", fd);
@@ -438,6 +450,7 @@ void socat_usage(FILE *fd) {
    fputs("      -R <file>      raw dump of data flowing from right to left\n", fd);
    fputs("      -b<size_t>     set data buffer size (8192)\n", fd);
    fputs("      -s     sloppy (continue on error)\n", fd);
+   fputs("      -S<sigmask>    log these signals, override default\n", fd);
    fputs("      -t<timeout>    wait seconds before closing second channel\n", fd);
    fputs("      -T<timeout>    total inactivity timeout in seconds\n", fd);
    fputs("      -u     unidirectional mode (left to right)\n", fd);
@@ -1593,11 +1606,7 @@ void socat_signal(int signum) {
    diag_in_handler = 1;
    Notice1("socat_signal(): handling signal %d", signum);
    switch (signum) {
-   case SIGILL:
-   case SIGABRT:
-   case SIGBUS:
-   case SIGFPE:
-   case SIGSEGV:
+   default:
       diag_immediate_exit = 1;
    case SIGQUIT:
    case SIGPIPE:
