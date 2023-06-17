@@ -4128,27 +4128,31 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 newport tcp4 	# provide free port number in $PORT
-#CMD2="$TRACE $SOCAT $opts tcp-l:$PORT,crlf SYSTEM:\"read; read; $ECHO \\\"HTTP/1.0 200 OK\n\\\"; cat\""
-CMD2="$TRACE $SOCAT $opts tcp4-l:$PORT,reuseaddr,crlf exec:\"/usr/bin/env bash proxyecho.sh -w 2\""
-CMD="$TRACE $SOCAT $opts - proxy:$LOCALHOST:127.0.0.1:1000,pf=ip4,proxyport=$PORT"
+#CMD2="$TRACE $SOCAT $opts TCP-L:$PORT,crlf SYSTEM:\"read; read; $ECHO \\\"HTTP/1.0 200 OK\n\\\"; cat\""
+CMD0="$TRACE $SOCAT $opts TCP4-L:$PORT,reuseaddr,crlf EXEC:\"/usr/bin/env bash proxyecho.sh -w 2\""
+CMD1="$TRACE $SOCAT $opts - PROXY:$LOCALHOST:127.0.0.1:1000,pf=ip4,proxyport=$PORT"
 printf "test $F_n $TEST... " $N
-eval "$CMD2 2>\"${te}1\" &"
+eval "$CMD0 2>\"${te}1\" &"
 pid=$!	# background process id
 waittcp4port $PORT 1
-echo "$da" |$CMD >"$tf" 2>"${te}2"
+echo "$da" |$CMD1 >"$tf" 2>"${te}0"
 if ! echo "$da" |diff - "$tf" >"$tdiff"; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD2 &"
-    echo "$CMD"
-    cat "${te}1"
-    cat "${te}2"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "diff:"
     cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$debug" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$debug" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null
 wait
@@ -15152,6 +15156,71 @@ fi # NUMCOND
  ;;
 esac
 N=$((N+1))
+
+
+# Test the http-version of the PROXY-CONNECT address
+NAME=PROXY_HTTPVERSION
+case "$TESTS" in
+*%$N%*|*%functions%*|*%proxy%*|*%$NAME%*)
+TEST="$NAME: PROXY-CONNECT with option http-version"
+if ! eval $NUMCOND; then :;
+elif ! $(type proxyecho.sh >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}proxyecho.sh not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats IP4 TCP LISTEN EXEC STDIO PROXY); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs TCP4-LISTEN EXEC STDIO PROXY-CONNECT); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions so-reuseaddr crlf pf proxyport http-version) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+ts="$td/test$N.sh"
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
+CMD0="$TRACE $SOCAT $opts TCP4-L:$PORT,reuseaddr,crlf EXEC:\"/usr/bin/env bash proxyecho.sh -V 1.1\""
+CMD1="$TRACE $SOCAT $opts - PROXY:$LOCALHOST:127.0.0.1:1000,pf=ip4,proxyport=$PORT,http-version=1.1"
+printf "test $F_n $TEST... " $N
+eval "$CMD0 2>\"${te}1\" &"
+pid=$!	# background process id
+waittcp4port $PORT 1
+echo "$da" |$CMD1 >"$tf" 2>"${te}0"
+if ! echo "$da" |diff - "$tf" >"$tdiff"; then
+    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    echo "$CMD0 &" >&2
+    cat "${te}0"
+    echo "$CMD1" >&2
+    cat "${te}1"
+    echo "diff:"
+    cat "$tdiff"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$debug" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$debug" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+fi
+kill $pid 2>/dev/null
+wait
+fi ;; # NUMCOND, feats
+esac
+PORT=$((PORT+1))
+
 
 # end of common tests
 

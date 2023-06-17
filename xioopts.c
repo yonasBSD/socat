@@ -613,6 +613,7 @@ const struct optname optionnames[] = {
 #if WITH_LIBWRAP && defined(HAVE_HOSTS_DENY_TABLE)
 	IF_IPAPP  ("hosts-deny",	&opt_tcpwrap_hosts_deny_table)
 #endif
+	IF_PROXY  ("http-version",	&opt_http_version)
 	IF_TERMIOS("hup",	&opt_hupcl)
 	IF_TERMIOS("hupcl",	&opt_hupcl)
 #ifdef I_POP

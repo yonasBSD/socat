@@ -337,6 +337,7 @@ enum e_optcode {
    OPT_GROUP_EARLY,
    OPT_GROUP_LATE,
    OPT_HISTORY_FILE,	/* readline history file */
+   OPT_HTTP_VERSION,
    OPT_HUPCL,		/* termios.c_cflag */
    OPT_ICANON,		/* termios.c_lflag */
    OPT_ICRNL,		/* termios.c_iflag */

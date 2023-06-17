@@ -20,6 +20,11 @@ Features:
 	Added option ipv6-join-source-group.
 	Thanks to Martin Buck and David Schweizer for sending patches.
 
+	Added option http-version to PROXY-CONNECT address to support servers
+	that are not able to handle HTTP version 1.0
+	Test: PROXY_HTTPVERSION
+	Feature inspired by Robin Palotai.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

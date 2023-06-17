@@ -2421,6 +2421,10 @@ Options that can be provided with HTTP type addresses. The only HTTP address
 currently implemented is link(proxy-connect)(ADDRESS_PROXY_CONNECT).
 
 startdit()
+label(OPTION_HTTP_VERSION)dit(bf(tt(http-version=<string>)))
+   Changes the default "1.0" that is sent to the server in the initial HTTP
+   request. Currently it has not other effect, in particular it does not
+   provide any means to send a Host header.
 label(OPTION_PROXYPORT)dit(bf(tt(proxyport=<TCP service>)))
    Overrides the default HTTP proxy port 8080 with
    link(<TCP service>)(TYPE_TCP_SERVICE).

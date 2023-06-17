@@ -27,6 +27,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 
 const struct optdesc opt_proxyport = { "proxyport", NULL, OPT_PROXYPORT, GROUP_HTTP, PH_LATE, TYPE_STRING, OFUNC_SPEC };
 const struct optdesc opt_ignorecr  = { "ignorecr",  NULL, OPT_IGNORECR,  GROUP_HTTP, PH_LATE, TYPE_BOOL,  OFUNC_SPEC };
+const struct optdesc opt_http_version              = { "http-version",              NULL,            OPT_HTTP_VERSION,              GROUP_HTTP, PH_LATE, TYPE_STRING,  OFUNC_SPEC };
 const struct optdesc opt_proxy_resolve   = { "proxy-resolve",   "resolve", OPT_PROXY_RESOLVE,   GROUP_HTTP, PH_LATE, TYPE_BOOL,  OFUNC_SPEC };
 const struct optdesc opt_proxy_authorization  = { "proxy-authorization",  "proxyauth", OPT_PROXY_AUTHORIZATION,  GROUP_HTTP, PH_LATE, TYPE_STRING,  OFUNC_SPEC };
 const struct optdesc opt_proxy_authorization_file  = { "proxy-authorization-file",  "proxyauthfile", OPT_PROXY_AUTHORIZATION_FILE,  GROUP_HTTP, PH_LATE, TYPE_STRING,  OFUNC_SPEC };
@@ -239,6 +240,7 @@ int _xioopen_proxy_prepare(struct proxyvars *proxyvars, struct opt *opts,
 
    retropt_bool(opts, OPT_IGNORECR, &proxyvars->ignorecr);
    retropt_bool(opts, OPT_PROXY_RESOLVE, &proxyvars->doresolve);
+   retropt_string(opts, OPT_HTTP_VERSION,             &proxyvars->version);
    retropt_string(opts, OPT_PROXY_AUTHORIZATION, &proxyvars->authstring);
    retropt_string(opts, OPT_PROXY_AUTHORIZATION_FILE, &proxyvars->authfile);
 
@@ -331,8 +333,11 @@ int _xioopen_proxy_connect(struct single *xfd,
    ssize_t sresult;
 
    /* generate proxy request header - points to final target */
-   rv = snprintf(request, CONNLEN, "CONNECT %s:%u HTTP/1.0\r\n",
-		 proxyvars->targetaddr, proxyvars->targetport);
+   if (proxyvars->version == NULL) {
+      proxyvars->version = "1.0";
+   }
+   rv = snprintf(request, CONNLEN, "CONNECT %s:%u HTTP/%s\r\n",
+		 proxyvars->targetaddr, proxyvars->targetport, proxyvars->version);
    if (rv >= CONNLEN || rv < 0) {
       Error("_xioopen_proxy_connect(): PROXY CONNECT buffer too small");
       return -1;

@@ -8,6 +8,7 @@
 
 struct proxyvars {
    bool ignorecr;
+   char *version;
    bool doresolve;
    char *authstring;
    char *authfile;
@@ -17,6 +18,7 @@ struct proxyvars {
 
 extern const struct optdesc opt_proxyport;
 extern const struct optdesc opt_ignorecr;
+extern const struct optdesc opt_http_version;
 extern const struct optdesc opt_proxy_resolve;
 extern const struct optdesc opt_proxy_authorization;
 extern const struct optdesc opt_proxy_authorization_file;
