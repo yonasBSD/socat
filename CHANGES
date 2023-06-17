@@ -1,4 +1,8 @@
 ﻿
+Security:
+	Socats OpenSSL addresses do not (and never did) check certificate
+	revocation lists (CRLs). Socat now prints a warning about this.
+
 Features:
 	Added the --experimental option that enables use of features that might
 	change in the future.
