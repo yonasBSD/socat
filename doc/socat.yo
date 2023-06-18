@@ -789,8 +789,7 @@ label(ADDRESS_SCTP_LISTEN)dit(bf(tt(SCTP-LISTEN:<port>)))
    link(sctp-nodelay)(OPTION_SCTP_NODELAY),
    link(su)(OPTION_SUBSTUSER),
    link(reuseaddr)(OPTION_REUSEADDR),
-   link(retry)(OPTION_RETRY),
-   link(cool-write)(OPTION_COOL_WRITE)nl()
+   link(retry)(OPTION_RETRY)nl()
    See also:
    link(SCTP4-LISTEN)(ADDRESS_SCTP4_LISTEN),
    link(SCTP6-LISTEN)(ADDRESS_SCTP6_LISTEN),
@@ -1415,8 +1414,7 @@ label(ADDRESS_VSOCK_LISTEN)dit(bf(tt(VSOCK-LISTEN:<port>)))
    link(backlog)(OPTION_BACKLOG),
    link(su)(OPTION_SUBSTUSER),
    link(reuseaddr)(OPTION_REUSEADDR),
-   link(retry)(OPTION_RETRY),
-   link(cool-write)(OPTION_COOL_WRITE)nl()
+   link(retry)(OPTION_RETRY)nl()
    See also:
    link(VSOCK-CONNECT)(ADDRESS_VSOCK_CONNECT)
 
@@ -1626,9 +1624,10 @@ label(OPTION_COOL_WRITE)dit(bf(tt(cool-write[=<bool>])))
    Takes it easy when write fails with EPIPE or ECONNRESET and logs the message
    with em(notice) level instead of em(error).
    This prevents the log file from being filled with useless error messages
-   when socat is used as a high volume server or proxy where clients often
-   abort the connection.nl()
-   This option is experimental.
+   when socat() is used as a high volume server or proxy where clients often
+   abort the connection. Use this option only with option
+   link(fork)(OPTION_FORK) because otherwise it might cause socat() to exit
+   with code 0 even on failure.nl()
 label(OPTION_END_CLOSE)dit(bf(tt(end-close[=<bool>])))
    Changes the (address dependent) method of ending a connection to just close
    the file descriptors. This is useful when the connection is to be reused by

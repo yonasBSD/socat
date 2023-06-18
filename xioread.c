@@ -59,12 +59,9 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
       if (bytes < 0) {
 	 _errno = errno;
 	 switch (_errno) {
-#if 1
-	 case EPIPE: case ECONNRESET:
-	    Warn4("read(%d, %p, "F_Zu"): %s",
-		  pipe->fd, buff, bufsiz, strerror(_errno));
-	    break;
-#endif
+	 case EPIPE:
+	 case ECONNRESET:
+	    /*PASSTHROUGH*/
 	 default:
 	    Error4("read(%d, %p, "F_Zu"): %s",
 		   pipe->fd, buff, bufsiz, strerror(_errno));

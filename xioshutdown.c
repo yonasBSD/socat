@@ -52,9 +52,22 @@ int xioshutdown(xiofile_t *sock, int how) {
       }
       return 0;
    case XIOSHUT_DOWN:
-      if ((result = Shutdown(sock->stream.fd, how)) < 0) {
-	 Info3("shutdown(%d, %d): %s",
-	       sock->stream.fd, how, strerror(errno));
+      result = Shutdown(sock->stream.fd, how);
+      if (result < 0) {
+	 int level, _errno = errno;
+	 switch (_errno) {
+	 case EPIPE:
+	 case ECONNRESET:
+	    level = E_ERROR;
+	    break;
+	 default:
+	    level = E_INFO; /* old behaviour */
+	    break;
+	 }
+	 Msg3(level, "shutdown(%d, %d): %s",
+	      sock->stream.fd, how, strerror(_errno));
+	 errno = _errno;
+	 return -1;
       }
       return 0;
 #if _WITH_SOCKET

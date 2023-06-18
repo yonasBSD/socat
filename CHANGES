@@ -67,6 +67,18 @@ Corrections:
 	Better formatted help output; address keywords in help output are now
 	printed in uppercase.
 
+	In previous Socat versions errors EPIPE and ECONNRESET on read() were
+	handled at warning level, thus not automatically leading to termination
+	with exit code 1. Beginning with this release these conditions are
+	handled as errors with termination and exit code 1 to not pretend
+	success on possible data loss.
+	Problem reported by Scott Burkett.
+
+	In previous Socat versions errors on shutdown() were ignored (info
+	level).
+	Now Socat handles EPIPE and ECONNRESET as error to indicate possible
+	failure of data transfer.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 
