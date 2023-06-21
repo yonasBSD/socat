@@ -38,23 +38,23 @@ int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, int xiof
 /* the first free parameter is 0 for "normal" unix domain sockets, or 1 for
    abstract unix sockets (Linux); the second and third free parameter are
    unsused */
-const struct addrdesc xioaddr_unix_connect = { "UNIX-CONNECT",  3, xioopen_unix_connect,  GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_unix_connect = { "UNIX-CONNECT",  1+XIO_RDWR,   xioopen_unix_connect,  GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
 #if WITH_LISTEN
-const struct addrdesc xioaddr_unix_listen  = { "UNIX-LISTEN",   3, xioopen_unix_listen,   GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_LISTEN|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_unix_listen  = { "UNIX-LISTEN",   1+XIO_RDWR,   xioopen_unix_listen,   GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_LISTEN|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<filename>") };
 #endif /* WITH_LISTEN */
-const struct addrdesc xioaddr_unix_sendto  = { "UNIX-SENDTO",   3, xioopen_unix_sendto,   GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
-const struct addrdesc xioaddr_unix_recvfrom= { "UNIX-RECVFROM", 3, xioopen_unix_recvfrom, GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY|GROUP_CHILD,              0, 0, 0 HELP(":<filename>") };
-const struct addrdesc xioaddr_unix_recv    = { "UNIX-RECV",     1, xioopen_unix_recv,     GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
-const struct addrdesc xioaddr_unix_client  = { "UNIX-CLIENT",   3, xioopen_unix_client,   GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_unix_sendto  = { "UNIX-SENDTO",   1+XIO_RDWR,   xioopen_unix_sendto,   GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_unix_recvfrom= { "UNIX-RECVFROM", 1+XIO_RDWR,   xioopen_unix_recvfrom, GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY|GROUP_CHILD,              0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_unix_recv    = { "UNIX-RECV",     1+XIO_RDONLY, xioopen_unix_recv,     GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_unix_client  = { "UNIX-CLIENT",   1+XIO_RDWR,   xioopen_unix_client,   GROUP_FD|GROUP_NAMED|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          0, 0, 0 HELP(":<filename>") };
 #if WITH_ABSTRACT_UNIXSOCKET
-const struct addrdesc xioaddr_abstract_connect = { "ABSTRACT-CONNECT",  3, xioopen_unix_connect,  GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_abstract_connect = { "ABSTRACT-CONNECT",  1+XIO_RDWR,   xioopen_unix_connect,  GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
 #if WITH_LISTEN
-const struct addrdesc xioaddr_abstract_listen  = { "ABSTRACT-LISTEN",   3, xioopen_unix_listen,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_LISTEN|GROUP_CHILD|GROUP_RETRY, 1, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_abstract_listen  = { "ABSTRACT-LISTEN",   1+XIO_RDWR,   xioopen_unix_listen,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_LISTEN|GROUP_CHILD|GROUP_RETRY, 1, 0, 0 HELP(":<filename>") };
 #endif /* WITH_LISTEN */
-const struct addrdesc xioaddr_abstract_sendto  = { "ABSTRACT-SENDTO",   3, xioopen_unix_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
-const struct addrdesc xioaddr_abstract_recvfrom= { "ABSTRACT-RECVFROM", 3, xioopen_unix_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY|GROUP_CHILD,              1, 0, 0 HELP(":<filename>") };
-const struct addrdesc xioaddr_abstract_recv    = { "ABSTRACT-RECV",     1, xioopen_unix_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
-const struct addrdesc xioaddr_abstract_client  = { "ABSTRACT-CLIENT",   3, xioopen_unix_client,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_abstract_sendto  = { "ABSTRACT-SENDTO",   1+XIO_RDWR,   xioopen_unix_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_abstract_recvfrom= { "ABSTRACT-RECVFROM", 1+XIO_RDWR,   xioopen_unix_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY|GROUP_CHILD,              1, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_abstract_recv    = { "ABSTRACT-RECV",     1+XIO_RDONLY, xioopen_unix_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_abstract_client  = { "ABSTRACT-CLIENT",   1+XIO_RDWR,   xioopen_unix_client,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
 #endif /* WITH_ABSTRACT_UNIXSOCKET */
 
 const struct optdesc xioopt_unix_tightsocklen = { "unix-tightsocklen",    "tightsocklen",  OPT_UNIX_TIGHTSOCKLEN,  GROUP_SOCK_UNIX, PH_PREBIND, TYPE_BOOL, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.un.tight), XIO_SIZEOF(para.socket.un.tight) };

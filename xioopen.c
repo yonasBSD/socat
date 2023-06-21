@@ -603,6 +603,7 @@ static xiosingle_t *xioparse_single(const char **addr) {
 int xioopen_single(xiofile_t *xfd, int xioflags) {
    struct single *sfd = &xfd->stream;
    const struct addrdesc *addrdesc;
+   const char *modetext[4] = { "none", "read-only", "write-only", "read-write" } ;
    int result;
    /* Values to be saved until xioopen() is finished */
 #if HAVE_RESOLV_H
@@ -642,6 +643,11 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
       return STAT_NORETRY;
 #endif /* HAVE_RESOLV_H */
 
+   addrdesc = xfd->stream.addr;
+   /* Check if address supports required data directions */
+   if (((xioflags+1)&XIO_ACCMODE) & ~(addrdesc->directions)) {
+      Warn2("address is opened in %s mode but only supports %s", modetext[(xioflags+1)&XIO_ACCMODE], modetext[addrdesc->directions]);
+   }
    if ((xioflags&XIO_ACCMODE) == XIO_RDONLY) {
       xfd->tag = XIO_TAG_RDONLY;
    } else if ((xioflags&XIO_ACCMODE) == XIO_WRONLY) {
@@ -653,7 +659,6 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    }
    xfd->stream.flags     &= (~XIO_ACCMODE);
    xfd->stream.flags     |= (xioflags & XIO_ACCMODE);
-   addrdesc = xfd->stream.addr;
    result = (*addrdesc->func)(xfd->stream.argc, xfd->stream.argv,
 			      xfd->stream.opts, xioflags, xfd,
 			      addrdesc->groups, addrdesc->arg1,

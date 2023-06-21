@@ -296,8 +296,9 @@ startdit()
 label(ADDRESS_CREAT)dit(bf(tt(CREATE:<filename>)))
    Opens link(<filename>)(TYPE_FILENAME) with code(creat()) and uses the file
    descriptor for writing. 
-   This address type requires write-only context, because a file opened with
-   code(creat) cannot be read from. nl()
+   This is a write-only address because a file opened with code(creat) cannot
+   be read from. See options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).nl()
    Flags like O_LARGEFILE cannot be applied. If you need them use
    link(OPEN)(ADDRESS_OPEN) with options
    link(create)(OPTION_O_CREAT),link(create)(OPTION_O_TRUNC). nl()
@@ -480,7 +481,8 @@ label(ADDRESS_IP6_RECVFROM)dit(bf(tt(IP6-RECVFROM:<protocol>)))
 label(ADDRESS_IP_RECV)dit(bf(tt(IP-RECV:<protocol>)))
    Opens a raw IP socket of link(<protocol>)(TYPE_PROTOCOL). Depending on option link(pf)(OPTION_PROTOCOL_FAMILY), IP protocol version
    4 or 6 is used. It receives packets from multiple unspecified peers and merges the data.
-   No replies are possible.
+   No replies are possible, this is a read-only address, see options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).
    It can be, e.g., addressed by socat IP-SENDTO address peers.
    Protocol 255 uses the raw socket with the IP header being part of the
    data.nl()
@@ -1014,10 +1016,14 @@ label(ADDRESS_SOCKS5_LISTEN)dit(bf(tt(SOCKS5-LISTEN:<socks-server>:<socks-port>:
 
 label(ADDRESS_STDERR)dit(bf(tt(STDERR)))
    Uses file descriptor 2.nl()
+   This is a write-only address, see options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).nl()
    Option groups: link(FD)(GROUP_FD) (link(TERMIOS)(GROUP_TERMIOS),link(REG)(GROUP_REG),link(SOCKET)(GROUP_SOCKET)) nl()
    See also: link(FD)(ADDRESS_FD)
 label(ADDRESS_STDIN)dit(bf(tt(STDIN)))
    Uses file descriptor 0.nl()
+   This is a read-only address, see options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).nl()
    Option groups: link(FD)(GROUP_FD) (link(TERMIOS)(GROUP_TERMIOS),link(REG)(GROUP_REG),link(SOCKET)(GROUP_SOCKET)) nl()
    Useful options:
    link(readbytes)(OPTION_READBYTES)nl()
@@ -1030,6 +1036,8 @@ label(ADDRESS_STDIO)dit(bf(tt(STDIO)))
    See also: link(FD)(ADDRESS_FD)
 label(ADDRESS_STDOUT)dit(bf(tt(STDOUT)))
    Uses file descriptor 1.nl()
+   This is a write-only address, see options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).nl()
    Option groups: link(FD)(GROUP_FD) (link(TERMIOS)(GROUP_TERMIOS),link(REG)(GROUP_REG),link(SOCKET)(GROUP_SOCKET)) nl()
    See also: link(FD)(ADDRESS_FD)
 label(ADDRESS_SYSTEM)dit(bf(tt(SYSTEM:<shell-command>)))
@@ -1326,7 +1334,11 @@ label(ADDRESS_UDP_RECV)dit(bf(tt(UDP-RECV:<port>)))
    Creates a UDP socket on <port> [link(UDP service)(TYPE_UDP_SERVICE)] using UDP/IP version 4 or 6
    depending on option link(pf)(OPTION_PROTOCOL_FAMILY).
    It receives packets from multiple unspecified peers and merges the data.
-   No replies are possible. It works well with, e.g., socat link(UDP-SENDTO)(ADDRESS_UDP_SENDTO) address peers; it behaves similar to a syslog server.nl()
+   No replies are possible. It works well with, e.g., socat
+   link(UDP-SENDTO)(ADDRESS_UDP_SENDTO) address peers; it behaves similar to a
+   syslog server.nl()
+   This is a read-only address, see options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).nl()
    Note: if you need the link(fork)(OPTION_FORK) option, use link(UDP-RECVFROM)(ADDRESS_UDP_RECVFROM) in unidirectional mode (with link(option -u)(option_u)) instead.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(RANGE)(GROUP_RANGE) nl()
    Useful options:
@@ -1426,7 +1438,9 @@ label(ADDRESS_UNIX_RECVFROM)dit(bf(tt(UNIX-RECVFROM:<filename>)))
 label(ADDRESS_UNIX_RECV)dit(bf(tt(UNIX-RECV:<filename>)))
    Creates a unixdomain() datagram socket [link(<filename>)(TYPE_FILENAME)].
    Receives packets from multiple unspecified peers and merges the data.
-   No replies are possible. It can be, e.g., addressed by socat UNIX-SENDTO address peers.
+   No replies are possible, this is a read-only address, see options link(-u)(option_u) and
+   link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).
+   It can be, e.g., addressed by socat UNIX-SENDTO address peers.
    It behaves similar to a syslog server.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(NAMED)(GROUP_NAMED),link(UNIX)(GROUP_SOCK_UNIX) nl()
    See also:

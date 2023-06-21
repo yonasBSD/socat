@@ -3526,6 +3526,7 @@ while read NAMEKEYW FEAT RUNS TESTTMPL PEERTMPL WAITTMPL; do
 if [ -z "$NAMEKEYW" ] || [[ "$NAMEKEYW" == \#* ]]; then continue; fi
 
 export ts="$td/test$N.socket"
+case $RUNS in tcp4|tcp6) newport $RUNS;; esac
 WAITTMPL="$(echo "$WAITTMPL" |sed -e 's/\040/ /g')"
 TESTADDR=$(eval echo $TESTTMPL)
 PEERADDR=$(eval echo $PEERTMPL)
@@ -3542,11 +3543,11 @@ TEST="$NAME: $TESTKEYW half close"
 # connecting socat  brings the result of od
 if ! eval $NUMCOND; then :;
 elif [ "$FEAT" != ',' ] && ! testfeats "$FEAT" >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}$FEAT not available${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $FEAT not configured${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! runs$RUNS >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}$RUNS not available${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}$RUNS not available$ on host${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16882,11 +16883,7 @@ elif ! o=$(testoptions so-reuseaddr fork) >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! runsip4 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif ! runsip4 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available on host${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif [ -z "$FOREIGN" ]; then

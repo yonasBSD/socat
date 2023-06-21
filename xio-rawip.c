@@ -39,23 +39,23 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 			  struct opt *opts, int xioflags,
 			  xiofile_t *xxfd, groups_t groups, int *pf);
 
-const struct addrdesc xioaddr_rawip_sendto  = { "IP-SENDTO",      3, xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6, PF_UNSPEC, 0, 0 HELP(":<host>:<protocol>") };
-const struct addrdesc xioaddr_rawip_datagram= { "IP-DATAGRAM",    3, xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_RANGE, PF_UNSPEC, 0, 0 HELP(":<host>:<protocol>") };
-const struct addrdesc xioaddr_rawip_recvfrom= { "IP-RECVFROM",    3, xioopen_rawip_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, SOCK_RAW, 0 HELP(":<protocol>") };
-const struct addrdesc xioaddr_rawip_recv    = { "IP-RECV",        1, xioopen_rawip_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_RANGE,             PF_UNSPEC, SOCK_RAW, 0 HELP(":<protocol>") };
+const struct addrdesc xioaddr_rawip_sendto  = { "IP-SENDTO",      1+XIO_RDWR,   xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6, PF_UNSPEC, 0, 0 HELP(":<host>:<protocol>") };
+const struct addrdesc xioaddr_rawip_datagram= { "IP-DATAGRAM",    1+XIO_RDWR,   xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_RANGE, PF_UNSPEC, 0, 0 HELP(":<host>:<protocol>") };
+const struct addrdesc xioaddr_rawip_recvfrom= { "IP-RECVFROM",    1+XIO_RDWR,   xioopen_rawip_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, SOCK_RAW, 0 HELP(":<protocol>") };
+const struct addrdesc xioaddr_rawip_recv    = { "IP-RECV",        1+XIO_RDONLY, xioopen_rawip_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_RANGE,             PF_UNSPEC, SOCK_RAW, 0 HELP(":<protocol>") };
 
 #if WITH_IP4
-const struct addrdesc xioaddr_rawip4_sendto  = { "IP4-SENDTO",     3, xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4, PF_INET, 0, 0 HELP(":<host>:<protocol>") };
-const struct addrdesc xioaddr_rawip4_datagram= { "IP4-DATAGRAM",   3, xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_RANGE, PF_INET, 0, 0 HELP(":<host>:<protocol>") };
-const struct addrdesc xioaddr_rawip4_recvfrom= { "IP4-RECVFROM",   3, xioopen_rawip_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_CHILD|GROUP_RANGE, PF_INET,  SOCK_RAW, 0 HELP(":<protocol>") };
-const struct addrdesc xioaddr_rawip4_recv    = { "IP4-RECV",       1, xioopen_rawip_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_RANGE,             PF_INET,  SOCK_RAW, 0 HELP(":<protocol>") };
+const struct addrdesc xioaddr_rawip4_sendto  = { "IP4-SENDTO",     1+XIO_RDWR,   xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4, PF_INET, 0, 0 HELP(":<host>:<protocol>") };
+const struct addrdesc xioaddr_rawip4_datagram= { "IP4-DATAGRAM",   1+XIO_RDWR,   xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_RANGE, PF_INET, 0, 0 HELP(":<host>:<protocol>") };
+const struct addrdesc xioaddr_rawip4_recvfrom= { "IP4-RECVFROM",   1+XIO_RDWR,   xioopen_rawip_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_CHILD|GROUP_RANGE, PF_INET,  SOCK_RAW, 0 HELP(":<protocol>") };
+const struct addrdesc xioaddr_rawip4_recv    = { "IP4-RECV",       1+XIO_RDONLY, xioopen_rawip_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_RANGE,             PF_INET,  SOCK_RAW, 0 HELP(":<protocol>") };
 #endif
 
 #if WITH_IP6
-const struct addrdesc xioaddr_rawip6_sendto  = { "IP6-SENDTO",     3, xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6, PF_INET6, 0, 0 HELP(":<host>:<protocol>") };
-const struct addrdesc xioaddr_rawip6_datagram= { "IP6-DATAGRAM",   3, xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_RANGE, PF_INET6, 0, 0 HELP(":<host>:<protocol>") };
-const struct addrdesc xioaddr_rawip6_recvfrom= { "IP6-RECVFROM",   3, xioopen_rawip_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_CHILD|GROUP_RANGE, PF_INET6, SOCK_RAW, 0 HELP(":<protocol>") };
-const struct addrdesc xioaddr_rawip6_recv    = { "IP6-RECV",       1, xioopen_rawip_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_RANGE,             PF_INET6, SOCK_RAW, 0 HELP(":<protocol>") };
+const struct addrdesc xioaddr_rawip6_sendto  = { "IP6-SENDTO",     1+XIO_RDWR,   xioopen_rawip_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6, PF_INET6, 0, 0 HELP(":<host>:<protocol>") };
+const struct addrdesc xioaddr_rawip6_datagram= { "IP6-DATAGRAM",   1+XIO_RDWR,   xioopen_rawip_datagram, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_RANGE, PF_INET6, 0, 0 HELP(":<host>:<protocol>") };
+const struct addrdesc xioaddr_rawip6_recvfrom= { "IP6-RECVFROM",   1+XIO_RDWR,   xioopen_rawip_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_CHILD|GROUP_RANGE, PF_INET6, SOCK_RAW, 0 HELP(":<protocol>") };
+const struct addrdesc xioaddr_rawip6_recv    = { "IP6-RECV",       1+XIO_RDONLY, xioopen_rawip_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_RANGE,             PF_INET6, SOCK_RAW, 0 HELP(":<protocol>") };
 #endif
 
 

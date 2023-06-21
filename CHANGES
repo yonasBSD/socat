@@ -156,6 +156,10 @@ Corrections:
 	INTERFACE addresses did not accept options of INTERFACE group (for
 	historical reasons they were only available with TUN addresses).
 
+	Opening addresses did not check if they support all directions expected
+	by Socat. Now an error is printed when, e.g,, a read-only type address
+	is opened for writing.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 
