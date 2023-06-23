@@ -76,7 +76,7 @@ int xioinitialize(void) {
 	 switch (default_ip[0]) {
 	 case '4':
 	 case '6':
-	    xioopts.default_ip = default_ip[0]; break;
+	    xioparms.default_ip = default_ip[0]; break;
 	 }
       }
    }
@@ -87,9 +87,9 @@ int xioinitialize(void) {
 	 switch (preferred_ip[0]) {
 	 case '4':
 	 case '6':
-	    xioopts.preferred_ip = preferred_ip[0]; break;
+	    xioparms.preferred_ip = preferred_ip[0]; break;
 	 default:
-	    xioopts.preferred_ip = '0'; break;
+	    xioparms.preferred_ip = '0'; break;
 	 }
       }
    }

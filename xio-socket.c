@@ -1171,9 +1171,9 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
    xio_retropt_tcpwrap(xfd, opts);
 #endif /* && (WITH_TCP || WITH_UDP) && WITH_LIBWRAP */
 
-   if (xioopts.logopt == 'm') {
+   if (xioparms.logopt == 'm') {
       Info("starting recvfrom loop, switching to syslog");
-      diag_set('y', xioopts.syslogfac);  xioopts.logopt = 'y';
+      diag_set('y', xioparms.syslogfac);  xioparms.logopt = 'y';
    } else {
       Info("starting recvfrom loop");
    }
@@ -1375,9 +1375,9 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
    xio_retropt_tcpwrap(xfd, opts);
 #endif /* && (WITH_TCP || WITH_UDP) && WITH_LIBWRAP */
 
-   if (xioopts.logopt == 'm') {
+   if (xioparms.logopt == 'm') {
       Info("starting recvfrom loop, switching to syslog");
-      diag_set('y', xioopts.syslogfac);  xioopts.logopt = 'y';
+      diag_set('y', xioparms.syslogfac);  xioparms.logopt = 'y';
    } else {
       Info("starting recvfrom loop");
    }

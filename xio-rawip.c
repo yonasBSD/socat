@@ -226,7 +226,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-      pf = xioopts.default_ip=='6'?PF_INET6:PF_INET;
+      pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
 #elif WITH_IP6
       pf = PF_INET6;
 #else
@@ -283,7 +283,7 @@ int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-      pf = xioopts.default_ip=='6'?PF_INET6:PF_INET;
+      pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
 #elif WITH_IP6
       pf = PF_INET6;
 #else

@@ -1890,16 +1890,16 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
    } ;
 
    i = 0;
-   /*endkey[i++] = xioopts.chainsep;*/	/* default: "|" */
-   endkey[i++] = xioopts.pipesep;		/* default: "!!" */
-   endkey[i++] = ","/*xioopts.comma*/;		/* default: "," */
+   /*endkey[i++] = xioparms.chainsep;*/	/* default: "|" */
+   endkey[i++] = xioparms.pipesep;		/* default: "!!" */
+   endkey[i++] = ","/*xioparms.comma*/;		/* default: "," */
    endkey[i++] = "=";
    endkey[i++] = NULL;
 
    i = 0;
-   /*endval[i++] = xioopts.chainsep;*/	/* default: "|" */
-   endval[i++] = xioopts.pipesep;		/* default: "!!" */
-   endval[i++] = ","/*xioopts.comma*/;		/* default: "," */
+   /*endval[i++] = xioparms.chainsep;*/	/* default: "|" */
+   endval[i++] = xioparms.pipesep;		/* default: "!!" */
+   endval[i++] = ","/*xioparms.comma*/;		/* default: "," */
    endval[i++] = NULL;
 
    i = 0;

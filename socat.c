@@ -325,13 +325,13 @@ int main(int argc, const char *argv[]) {
       case '6':
 #endif
 	 if (arg1[0][2])  { socat_opt_hint(stderr, arg1[0][1], arg1[0][2]); Exit(1); }
-	 xioopts.default_ip = arg1[0][1];
-	 xioopts.preferred_ip = arg1[0][1];
+	 xioparms.default_ip = arg1[0][1];
+	 xioparms.preferred_ip = arg1[0][1];
 	 break;
 #endif /* WITH_IP4 || WITH_IP6 */
       case '-':
 	 if (!strcmp("experimental", &arg1[0][2])) {
-	    xioopts.experimental = true;
+	    xioparms.experimental = true;
 	 } else {
 	    Error1("unknown option \"%s\"; use option \"-h\" for help", arg1[0]);
 	 }
@@ -431,8 +431,8 @@ void socat_usage(FILE *fd) {
    fputs("      -hh    like -h, plus a list of all common address option names\n", fd);
    fputs("      -hhh   like -hh, plus a list of all available address option names\n", fd);
 #endif /* WITH_HELP */
-   fputs("      -d[ddd]         increase verbosity (use up to 4 times; 2 are recommended)\n", fd);
-   fputs("      -d0|1|2|3|4     set verbosity level (0: Errors; 4 all including Debug)\n", fd);
+   fputs("      -d[ddd]        increase verbosity (use up to 4 times; 2 are recommended)\n", fd);
+   fputs("      -d0|1|2|3|4    set verbosity level (0: Errors; 4 all including Debug)\n", fd);
 #if WITH_FILAN
    fputs("      -D     analyze file descriptors before loop\n", fd);
 #endif
@@ -913,7 +913,7 @@ int _socat(void) {
 
    if (socat_opts.logopt == 'm' && xioinqopt('l', NULL, 0) == 'm') {
       Info("switching to syslog");
-      diag_set('y', xioopts.syslogfac);
+      diag_set('y', xioparms.syslogfac);
       xiosetopt('l', "\0");
    }
    total_timeout = socat_opts.total_timeout;

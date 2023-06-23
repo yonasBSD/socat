@@ -10,7 +10,7 @@
 /*#include "xioparam.h" are all in xio.h */
 
 /* options that can be applied to this module */
-xioopts_t xioopts = {
+xioparms_t xioparms = {
    false,	/* strictopts */
    "!!",	/* pipesep */
    ":",		/* paramsep */
@@ -28,21 +28,21 @@ xioopts_t xioopts = {
 /* allow application to set xioopen options */
 int xiosetopt(char what, const char *arg) {
    switch (what) {
-   case 's': xioopts.strictopts = true; break;
-   case 'p': if ((xioopts.pipesep = strdup(arg)) == NULL) {
+   case 's': xioparms.strictopts = true; break;
+   case 'p': if ((xioparms.pipesep = strdup(arg)) == NULL) {
 	 Error1("strdup("F_Zu"): out of memory", strlen(arg)+1);
          return -1;
       }
       break;
-   case 'o': xioopts.ip4portsep = arg[0];
+   case 'o': xioparms.ip4portsep = arg[0];
       if (arg[1] != '\0') {
 	 Error2("xiosetopt('%c', \"%s\"): port separator must be single character",
 		what, arg);
 	 return -1;
       }
       break;
-   case 'l': xioopts.logopt = *arg; break;
-   case 'y': xioopts.syslogfac = arg; break;
+   case 'l': xioparms.logopt = *arg; break;
+   case 'y': xioparms.syslogfac = arg; break;
    default:
       Error2("xiosetopt('%c', \"%s\"): unknown option",
 	     what, arg?arg:"NULL");
@@ -54,12 +54,12 @@ int xiosetopt(char what, const char *arg) {
 
 int xioinqopt(char what, char *arg, size_t n) {
    switch (what) {
-   case 's': return xioopts.strictopts;
+   case 's': return xioparms.strictopts;
    case 'p':
-      arg[0] = '\0'; strncat(arg, xioopts.pipesep, n-1);
+      arg[0] = '\0'; strncat(arg, xioparms.pipesep, n-1);
       return 0;
-   case 'o': return xioopts.ip4portsep;
-   case 'l': return xioopts.logopt;
+   case 'o': return xioparms.ip4portsep;
+   case 'l': return xioparms.logopt;
    default:
       Error3("xioinqopt('%c', \"%s\", "F_Zu"): unknown option",
 	     what, arg, n);

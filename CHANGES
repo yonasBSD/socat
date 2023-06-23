@@ -39,6 +39,8 @@ Coding:
 	socketpair. SIGUSR1 is no longer used for internal synchronization.
 	Tests: UDP4_FORK UDP6_FORK UNIX_FORK
 
+	Renamed xioopts_t to xioparms_t to avoid confusion with xioopts module.
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

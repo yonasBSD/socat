@@ -61,9 +61,9 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       xiosetchilddied();	/* set SIGCHLD handler */
    }
 
-   if (xioopts.logopt == 'm') {
+   if (xioparms.logopt == 'm') {
       Info("starting connect loop, switching to syslog");
-      diag_set('y', xioopts.syslogfac);  xioopts.logopt = 'y';
+      diag_set('y', xioparms.syslogfac);  xioparms.logopt = 'y';
    } else {
       Info("starting connect loop");
    }
@@ -271,7 +271,7 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-      pf = xioopts.default_ip=='6'?PF_INET6:PF_INET;
+      pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
 #elif WITH_IP6
       pf = PF_INET6;
 #else

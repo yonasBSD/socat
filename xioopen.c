@@ -421,9 +421,9 @@ static xiofile_t *xioparse_dual(const char **addr) {
    }
 
    /* and now we see if we reached a dual-address separator */
-   if (!strncmp(*addr, xioopts.pipesep, strlen(xioopts.pipesep))) {
+   if (!strncmp(*addr, xioparms.pipesep, strlen(xioparms.pipesep))) {
       /* yes we reached it, so we parse the second single address */
-      *addr += strlen(xioopts.pipesep);
+      *addr += strlen(xioparms.pipesep);
 
       if ((xfd = xioallocfd()) == NULL) {
 	 free(sfd1); /*! and maybe have free some if its contents */
@@ -500,10 +500,10 @@ static xiosingle_t *xioparse_single(const char **addr) {
 
    /* init */
    i = 0;
-   /*ends[i++] = xioopts.chainsep;*/	/* default: "|" */
-   ends[i++] = xioopts.pipesep;		/* default: "!!" */
-   ends[i++] = ","/*xioopts.comma*/;		/* default: "," */
-   ends[i++] = ":"/*xioopts.colon*/;		/* default: ":" */
+   /*ends[i++] = xioparms.chainsep;*/	/* default: "|" */
+   ends[i++] = xioparms.pipesep;		/* default: "!!" */
+   ends[i++] = ","/*xioparms.comma*/;		/* default: "," */
+   ends[i++] = ":"/*xioparms.colon*/;		/* default: ":" */
    ends[i++] = NULL;
 
    if ((xfd = xioallocfd()) == NULL) {
@@ -567,8 +567,8 @@ static xiosingle_t *xioparse_single(const char **addr) {
    sfd->tag  = XIO_TAG_RDWR;
    sfd->addr = addrdesc;
 
-   while (!strncmp(*addr, xioopts.paramsep, strlen(xioopts.paramsep))) {
-      *addr += strlen(xioopts.paramsep);
+   while (!strncmp(*addr, xioparms.paramsep, strlen(xioparms.paramsep))) {
+      *addr += strlen(xioparms.paramsep);
       len = sizeof(token);  tokp = token;
       result = nestlex(addr, &tokp, &len, ends, hquotes, squotes, nests,
 		       true, true, false);

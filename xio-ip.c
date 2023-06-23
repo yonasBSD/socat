@@ -273,13 +273,13 @@ int xiogetaddrinfo(const char *node, const char *service,
       service = NULL;	/* do not resolve later again */
 
       record = res;
-      if (family == PF_UNSPEC && xioopts.preferred_ip == '0') {
+      if (family == PF_UNSPEC && xioparms.preferred_ip == '0') {
 	 /* we just take the first result */
 	 family = res[0].ai_addr->sa_family;
       }
       if (family == PF_UNSPEC) {
 	 int trypf;
-	 trypf = (xioopts.preferred_ip=='6'?PF_INET6:PF_INET);
+	 trypf = (xioparms.preferred_ip=='6'?PF_INET6:PF_INET);
 	 /* we must look for a matching entry */
 	 while (record != NULL) {
 	    if (record->ai_family == trypf) {
@@ -339,7 +339,7 @@ int xiogetaddrinfo(const char *node, const char *service,
       /* first fallback is getipnodebyname() */
       if (family == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-	 family = xioopts.default_ip=='6'?PF_INET6:PF_INET;
+	 family = xioparms.default_ip=='6'?PF_INET6:PF_INET;
 #elif WITH_IP6
 	 family = PF_INET6;
 #else
@@ -390,7 +390,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 	 be useful somewhere sometimes in a future even for IP6 */
       if (family == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-	 family = xioopts.default_ip=='6'?PF_INET6:PF_INET;
+	 family = xioparms.default_ip=='6'?PF_INET6:PF_INET;
 #elif WITH_IP6
 	 family = PF_INET6;
 #else

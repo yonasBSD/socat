@@ -224,9 +224,9 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       return STAT_RETRYLATER;
    }
 
-   if (xioopts.logopt == 'm') {
+   if (xioparms.logopt == 'm') {
       Info("starting accept loop, switching to syslog");
-      diag_set('y', xioopts.syslogfac);  xioopts.logopt = 'y';
+      diag_set('y', xioparms.syslogfac);  xioparms.logopt = 'y';
    } else {
       Info("starting accept loop");
    }

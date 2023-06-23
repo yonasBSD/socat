@@ -112,7 +112,7 @@ typedef struct {
    char preferred_ip;	/* preferred prot.fam. for name resolution ('0' for
 			   unspecified, '4', or '6') */
    bool experimental;	/* enable some features */
-} xioopts_t;
+} xioparms_t;
 
 /* pack the description of a lock file */
 typedef struct {
@@ -121,7 +121,7 @@ typedef struct {
    struct timespec intervall;	/* polling intervall */
 } xiolock_t;
 
-extern xioopts_t xioopts;
+extern xioparms_t xioparms;
 
 #define MAXARGV 8
 
