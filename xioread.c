@@ -271,8 +271,10 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 #else
 	 Shutdown(pipe->fd, SHUT_RD);
 #endif
-	 if (pipe->ppid > 0) {
-	    Kill(pipe->ppid, SIGUSR1);
+	 if (pipe->triggerfd >= 0) {
+	    Info("notifying parent that socket is ready again");
+	    Close(pipe->triggerfd);
+	    pipe->triggerfd = -1;
 	 }
       }
 

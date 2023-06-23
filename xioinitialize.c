@@ -217,6 +217,15 @@ pid_t xio_fork(bool subchild, int level) {
       if (!subchild) {
 	 /* set SOCAT_PID to new value */
 	 xiosetenvulong("PID", pid, 1);
+      } else {
+	 /* Make sure the sub process does not hold the trigger pipe open */
+	 if (sock1 != NULL) {
+	    struct single *sfd;
+	    sfd = XIO_RDSTREAM(sock1);
+	    if (sfd->triggerfd >= 0)  Close(sfd->triggerfd);
+	    sfd = XIO_WRSTREAM(sock1);
+	    if (sfd->triggerfd >= 0)  Close(sfd->triggerfd);
+	 }
       }
       /* gdb recommends to have env controlled sleep after fork */
       if (forkwaitstring = getenv("SOCAT_FORK_WAIT")) {

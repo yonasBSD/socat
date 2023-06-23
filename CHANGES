@@ -28,6 +28,13 @@ Coding:
 
 	Make gcc happy, replace strncat with "manual" copying
 
+	On addresses like UDP-RECVFROM with fork option every packet causes a
+	new child process which then reads the packet. The parent process must
+	wait until the packet has been read before checking again. The former
+	synchronization mechanism using SIGUSR1 is now replaced by a
+	socketpair. SIGUSR1 is no longer used for internal synchronization.
+	Tests: UDP4_FORK UDP6_FORK UNIX_FORK
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

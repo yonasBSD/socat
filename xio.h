@@ -164,6 +164,7 @@ typedef struct single {
    size_t actbytes;	/* so many bytes still to be read (when readbytes!=0)*/
    xiolock_t lock;	/* parameters of lockfile */
    bool      havelock;	/* we are happy owner of the above lock */
+   int 		triggerfd; 	/* close this FD in child process to signal parent */
    bool	     cool_write;	/* downlevel EPIPE, ECONNRESET to notice */
    /* until here, keep consistent with bipipe.dual ! */
    int argc;		/* number of fields in argv */
@@ -199,7 +200,6 @@ typedef struct single {
    struct termios savetty;	/* save orig tty settings for later restore */
 #endif /* WITH_TERMIOS */
    int (*sigchild)(struct single *);	/* callback after sigchild */
-   pid_t ppid;			/* parent pid, only if we send it signals */
    int escape;			/* escape character; -1 for no escape */
    bool actescape;		/* escape character found in input data */
    union {
@@ -312,7 +312,9 @@ typedef union bipipe {
       size_t actbytes;	/* so many bytes still to be read */
       xiolock_t lock;	/* parameters of lockfile */
       bool      havelock;	/* we are happy owner of the above lock */
-      xiosingle_t *stream[2];	/* input stream, output stream */
+      int 	triggerfd; 	/* close this FD in child process to notify parent */
+      bool      cool_write;	/* downlevel EPIPE, ECONNRESET to notice */
+      struct single *stream[2];	/* input stream, output stream */
    } dual;
 } xiofile_t;
 

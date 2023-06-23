@@ -363,7 +363,7 @@ static xiofile_t *xioallocfd(void) {
 #endif /* WITH_RETRY */
 /* fd->common.ignoreeof = false; */
 /* fd->common.eof       = 0; */
-
+   fd->stream.triggerfd = -1;
    fd->stream.fd        = -1;
    fd->stream.dtype     = XIODATA_STREAM;
 #if _WITH_SOCKET

@@ -112,7 +112,6 @@ void childdied(int signum) {
 	 return;
       }
    /*! indent */
-   if (num_child) num_child--;
    /* check if it was a registered child process */
    i = 0;
    while (i < XIO_MAXSOCK) {
@@ -121,6 +120,7 @@ void childdied(int signum) {
    }
    if (i == XIO_MAXSOCK) {
 	 Info2("childdied(%d): cannot identify child %d", signum, pid);
+	 if (num_child) num_child--;
 	 if (nextunknown == NUMUNKNOWN) {
 	    nextunknown = 0;
 	 }

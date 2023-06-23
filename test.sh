@@ -1935,7 +1935,7 @@ testaddrs () {
     local a A;
     for a in $@; do
 	A=$(echo "$a" |tr 'a-z' 'A-Z')
-	if ! $SOCAT $A /dev/null 2>&1 |grep -q "E unknown device/address"; then
+	if ! $SOCAT $A /dev/null 2>&1 </dev/null |grep -q "E unknown device/address"; then
 	    shift
 	    continue
 	fi
@@ -1991,7 +1991,8 @@ childpids () {
     AIX)     l="$(ps -fade |grep "^........ ...... $(printf %6u $1)" |awk '{print($2);}')" ;;
     FreeBSD) l="$(ps -fl   |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$(printf %5u $1)" |awk '{print($2);}')" ;;
     HP-UX)   l="$(ps -fade |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
-    Linux)   l="$(ps -fade |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
+#    Linux)   l="$(ps -fade |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
+    Linux)   l="$(ps -fade |grep "^[^[:space:]][^[:space:]]*[[:space:]][[:space:]]*[^[:space:]][^[:space:]]*[[:space:]][[:space:]]*$1 " |awk '{print($2);}')" ;;
 #    NetBSD)  l="$(ps -aj   |grep "^........ ..... $(printf %4u $1)" |awk '{print($2);}')" ;;
     NetBSD)  l="$(ps -aj   |grep "^[^ ][^ ]*[ ][ ]*..... $(printf %5u $1)" |awk '{print($2);}')" ;;
     OpenBSD) l="$(ps -aj   |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
@@ -5593,7 +5594,7 @@ N=$((N+1))
 
 NAME=OUTBOUNDIN
 case "$TESTS" in
-*%$N%*|*%functions%*|*%openssl%*|*%proxy%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%openssl%*|*%proxy%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: gender changer via SSL through HTTP proxy, oneshot"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats openssl proxy); then
@@ -5684,7 +5685,7 @@ N=$((N+1))
 #!
 NAME=INTRANETRIPPER
 case "$TESTS" in
-*%$N%*|*%functions%*|*%openssl%*|*%proxy%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%openssl%*|*%proxy%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: gender changer via SSL through HTTP proxy, daemons"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats openssl proxy); then
@@ -5966,7 +5967,7 @@ testserversec () {
 
 NAME=TCP4RANGEBITS
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with RANGE option"
 if ! eval $NUMCOND; then :;
 elif [ -z "$SECONDADDR" ]; then
@@ -5983,7 +5984,7 @@ N=$((N+1))
 
 NAME=TCP4RANGEMASK
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with RANGE option"
 if ! eval $NUMCOND; then :;
 elif [ -z "$SECONDADDR" ]; then
@@ -6001,7 +6002,7 @@ N=$((N+1))
 # like TCP4RANGEMASK, but the "bad" address is within the same class A network
 NAME=TCP4RANGEMASKHAIRY
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with RANGE option"
 if ! eval $NUMCOND; then :; else
 newport tcp4 	# provide free port number in $PORT
@@ -6013,7 +6014,7 @@ N=$((N+1))
 
 NAME=TCP4SOURCEPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%sourceport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%sourceport%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with SOURCEPORT option"
 if ! eval $NUMCOND; then :; else
 newport tcp4 	# provide free port number in $PORT
@@ -6024,7 +6025,7 @@ N=$((N+1))
 
 NAME=TCP4LOWPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%lowport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%lowport%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with LOWPORT option"
 if ! eval $NUMCOND; then :; else
 newport tcp4 	# provide free port number in $PORT
@@ -6035,7 +6036,7 @@ N=$((N+1))
 
 NAME=TCP4WRAPPERS_ADDR
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%tcpwrap%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%tcpwrap%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip4 libwrap) || ! runsip4 >/dev/null; then
@@ -6055,7 +6056,7 @@ N=$((N+1))
 
 NAME=TCP4WRAPPERS_NAME
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%tcpwrap%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%tcpwrap%*|*%$NAME%*)
 TEST="$NAME: security of TCP4-L with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip4 libwrap) || ! runsip4 >/dev/null; then
@@ -6076,7 +6077,7 @@ N=$((N+1))
 
 NAME=TCP6RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of TCP6-L with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
@@ -6092,7 +6093,7 @@ N=$((N+1))
 
 NAME=TCP6SOURCEPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%sourceport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%sourceport%*|*%$NAME%*)
 TEST="$NAME: security of TCP6-L with SOURCEPORT option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
@@ -6108,7 +6109,7 @@ N=$((N+1))
 
 NAME=TCP6LOWPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%lowport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%lowport%*|*%$NAME%*)
 TEST="$NAME: security of TCP6-L with LOWPORT option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
@@ -6124,7 +6125,7 @@ N=$((N+1))
 
 NAME=TCP6TCPWRAP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%tcpwrap%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%tcpwrap%*|*%$NAME%*)
 TEST="$NAME: security of TCP6-L with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip6 libwrap && runstcp6); then
@@ -6145,7 +6146,7 @@ N=$((N+1))
 
 NAME=UDP4RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%udp%*|*%udp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-L with RANGE option"
 if ! eval $NUMCOND; then :; else
 newport udp4 	# provide free port number in $PORT
@@ -6200,7 +6201,7 @@ N=$((N+1))
 
 NAME=UDP6RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp6%*|*%ip6%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%udp%*|*%udp6%*|*%ip6%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of UDP6-L with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
@@ -6269,7 +6270,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP4_RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L over TCP/IPv4 with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6286,7 +6287,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP4_SOURCEPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%sourceport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%sourceport%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L with SOURCEPORT option"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6303,7 +6304,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP4_LOWPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%lowport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%lowport%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L with LOWPORT option"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6320,7 +6321,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP4_TCPWRAP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%tcpwrap%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%tcpwrap%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip4 tcp libwrap openssl); then
@@ -6341,7 +6342,7 @@ N=$((N+1))
 
 NAME=OPENSSLCERTSERVER
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L with client certificate"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6359,7 +6360,7 @@ N=$((N+1))
 
 NAME=OPENSSLCERTCLIENT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%openssl%*|*%$NAME%*)
 TEST="$NAME: security of SSL with server certificate"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6378,7 +6379,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP6_RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L over TCP/IPv6 with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6399,7 +6400,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP6_SOURCEPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%sourceport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%sourceport%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L over TCP/IPv6 with SOURCEPORT option"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6420,7 +6421,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP6_LOWPORT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%lowport%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%lowport%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L over TCP/IPv6 with LOWPORT option"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -6441,7 +6442,7 @@ N=$((N+1))
 
 NAME=OPENSSLTCP6_TCPWRAP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%tcpwrap%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%tcp%*|*%tcp6%*|*%ip6%*|*%openssl%*|*%tcpwrap%*|*%$NAME%*)
 TEST="$NAME: security of SSL-L over TCP/IPv6 with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip6 tcp libwrap openssl && runsip6); then
@@ -6464,7 +6465,7 @@ N=$((N+1))
 # test security with the openssl-commonname option on client side
 NAME=OPENSSL_CN_CLIENT_SECURITY
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%openssl%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%openssl%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%$NAME%*)
 TEST="$NAME: security of client openssl-commonname option"
 # connect using non matching server name/address with commonname
 # options, this should succeed. Then without this option, should fail
@@ -6515,7 +6516,7 @@ N=$((N+1))
 
 NAME=OPENSSL_FIPS_SECURITY
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%openssl%*|*%fips%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%openssl%*|*%fips%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%$NAME%*)
 TEST="$NAME: OpenSSL restrictions by FIPS"
 if ! eval $NUMCOND; then :;
 elif ! testfeats openssl >/dev/null; then
@@ -7108,7 +7109,12 @@ kill $pid0 2>/dev/null
 wait
 if ! diff "$tref" "$tf" >"$tdiff"; then
     $PRINTF "$FAILED\n"
-    cat "${te}0" "${te}1" "${te}2"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
     cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -7908,7 +7914,7 @@ N=$((N+1))
 
 NAME=UDP4RECVFROM_RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%udp%*|*%udp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-RECVFROM with RANGE option"
 newport udp4 	# provide free port number in $PORT
 #testserversec "$N" "$TEST" "$opts" "UDP4-RECVFROM:$PORT,reuseaddr,fork" "" "range=$SECONDADDR/32" "UDP4-SENDTO:127.0.0.1:$PORT" 4 udp $PORT 0
@@ -7920,7 +7926,7 @@ N=$((N+1))
 
 NAME=UDP4RECVFROM_TCPWRAP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp4%*|*%ip4%*|*%tcpwrap%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%udp%*|*%udp4%*|*%ip4%*|*%tcpwrap%*|*%$NAME%*)
 TEST="$NAME: security of UDP4-RECVFROM with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip4 udp libwrap) || ! runsip4 >/dev/null; then
@@ -8056,7 +8062,7 @@ N=$((N+1))
 
 NAME=UDP6RECVFROM_RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%udp%*|*%udp6%*|*%ip6%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%udp%*|*%udp6%*|*%ip6%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of UDP6-RECVFROM with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats tcp ip6) || ! runsip6 >/dev/null; then
@@ -8176,7 +8182,7 @@ N=$((N+1))
 
 NAME=IP4RECVFROM_RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%ip%*|*%ip4%*|*%range%*|*%root%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%ip%*|*%ip4%*|*%range%*|*%root%*|*%$NAME%*)
 TEST="$NAME: security of IP4-RECVFROM with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip4 rawip) || ! runsip4 >/dev/null; then
@@ -8198,7 +8204,7 @@ N=$((N+1))
 
 NAME=IP4RECVFROM_TCPWRAP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%ip%*|*%ip4%*|*%tcpwrap%*|*%root%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%ip%*|*%ip4%*|*%tcpwrap%*|*%root%*|*%$NAME%*)
 TEST="$NAME: security of IP4-RECVFROM with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip4 rawip libwrap) || ! runsip4 >/dev/null; then
@@ -8281,7 +8287,7 @@ N=$((N+1))
 
 NAME=IP6RECVFROM_RANGE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%ip%*|*%ip6%*|*%range%*|*%root%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%ip%*|*%ip6%*|*%range%*|*%root%*|*%$NAME%*)
 TEST="$NAME: security of IP6-RECVFROM with RANGE option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip6 rawip && runsip6); then
@@ -8303,7 +8309,7 @@ N=$((N+1))
 
 NAME=IP6RECVFROM_TCPWRAP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%ip%*|*%ip6%*|*%tcpwrap%*|*%root%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%ip%*|*%ip6%*|*%tcpwrap%*|*%root%*|*%$NAME%*)
 TEST="$NAME: security of IP6-RECVFROM with TCPWRAP option"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats ip6 rawip libwrap && runsip6); then
@@ -8650,49 +8656,70 @@ N=$((N+1))
 
 NAME=TCP4ENDCLOSE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%tcp%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%ip4%*|*%ipapp%*|*%tcp%*|*%$NAME%*)
 TEST="$NAME: end-close keeps TCP V4 socket open"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
+newport tcp4; p0=$PORT
 newport tcp4; p1=$PORT
-newport tcp4; p2=$PORT
-da1a="$(date) $RANDOM"
-da1b="$(date) $RANDOM"
-CMD1="$TRACE $SOCAT $opts -u - TCP4-CONNECT:$LOCALHOST:$p1"
-CMD="$TRACE $SOCAT $opts -U TCP4:$LOCALHOST:$p2,end-close TCP4-LISTEN:$p1,bind=$LOCALHOST,$REUSEADDR,fork"
-CMD3="$TRACE $SOCAT $opts -u TCP4-LISTEN:$p2,$REUSEADDR,bind=$LOCALHOST -"
+da2a="$(date) $RANDOM"
+da2b="$(date) $RANDOM"
+CMD0="$TRACE $SOCAT -lp collector $opts -u TCP4-LISTEN:$p0,$REUSEADDR,bind=$LOCALHOST -"
+CMD1="$TRACE $SOCAT -lp forker $opts -U TCP4:$LOCALHOST:$p0,end-close TCP4-LISTEN:$p1,bind=$LOCALHOST,$REUSEADDR,fork"
+CMD2="$TRACE $SOCAT -lp client $opts -u - TCP4-CONNECT:$LOCALHOST:$p1"
 printf "test $F_n $TEST... " $N
-$CMD3 >"$tf" 2>"${te}3" &
-pid3=$!
-waittcp4port $p2 1
-$CMD 2>"${te}2" &
-pid2=$!
+$CMD0 >"${tf}0" 2>"${te}0" &
+pid0=$!
+waittcp4port $p0 1
+$CMD1 2>"${te}1" &
+pid1=$!
 usleep $MICROS
 waittcp4port $p1 1
-echo "$da1a" |$CMD1 2>>"${te}1a"
-echo "$da1b" |$CMD1 2>>"${te}1b"
+echo "$da2a" |$CMD2 2>>"${te}2a"
+rc2a=$?
+echo "$da2b" |$CMD2 2>>"${te}2b"
+rc2b=$?
 sleep 1
-kill "$pid3" "$pid2" 2>/dev/null
+kill "$pid0" "$pid1" 2>/dev/null
 wait
-if [ $? -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   echo "$CMD2"
-   cat "${te}1a" "${te}1b" "${te}2" "${te}3"
+if [ $rc2a -ne 0 -o $rc2b -ne 0 ]; then
+    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2a" >&2
+    echo "$CMD2"
+    cat "${te}2b" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
-elif ! $ECHO "$da1a\n$da1b" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED\n"
-   cat "$tdiff"
-   cat "${te}1a" "${te}1b" "${te}2" "${te}3"
+elif ! $ECHO "$da2a\n$da2b" |diff - "${tf}0" >"$tdiff"; then
+    $PRINTF "$FAILED (diff)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2a" >&2
+    echo "$CMD2"
+    cat "${te}2b" >&2
+    cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1a" "${te}1b" "${te}2" "${te}3"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
+    numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND
 esac
@@ -8701,7 +8728,7 @@ N=$((N+1))
 
 NAME=EXECENDCLOSE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%exec%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%exec%*|*%$NAME%*)
 TEST="$NAME: end-close keeps EXEC child running"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
@@ -9875,7 +9902,7 @@ N=$((N+1))
 # process under some circumstances.
 NAME=EXECPTYKILL
 case "$TESTS" in
-*%$N%*|*%functions%*|*%bugs%*|*%exec%*|*%pty%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%bugs%*|*%fork%*|*%exec%*|*%pty%*|*%$NAME%*)
 TEST="$NAME: exec:...,pty explicitely kills sub process"
 # we want to check if the exec'd sub process is killed in time
 # for this we have a shell script that generates a file after two seconds;
@@ -10037,7 +10064,7 @@ N=$((N+1))
 # zombies because the master process did not catch SIGCHLD
 NAME=UDP4LISTEN_SIGCHLD
 case "$TESTS" in
-*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udp%*|*%zombie%*|*%signal%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%ip4%*|*%ipapp%*|*%udp%*|*%zombie%*|*%signal%*|*%$NAME%*)
 TEST="$NAME: test if UDP4-LISTEN child becomes zombie"
 # idea: run a udp-listen process with fork and -T. Connect once, so a sub
 # process is forked off. Make some transfer and wait until the -T timeout is
@@ -10091,7 +10118,7 @@ N=$((N+1))
 # zombies because the master process caught SIGCHLD but did not wait()
 NAME=UDP4RECVFROM_SIGCHLD
 case "$TESTS" in
-*%$N%*|*%functions%*|*%ip4%*|*%udp%*|*%dgram%*|*%zombie%*|*%signal%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%bugs%*|*%fork%*|*%ip4%*|*%udp%*|*%dgram%*|*%zombie%*|*%signal%*|*%$NAME%*)
 TEST="$NAME: test if UDP4-RECVFROM child becomes zombie"
 # idea: run a udp-recvfrom process with fork and -T. Send it one packet, so a
 # sub process is forked off. Make some transfer and wait until the -T timeout
@@ -10115,25 +10142,39 @@ rc2=$?
 sleep 1
 #read -p ">"
 l="$(childprocess $pid1)"
+#echo "l=\"$l\""
 kill $pid1 2>/dev/null; wait
 if [ $rc2 -ne 0 ]; then
     $PRINTF "$NO_RESULT\n"	# already handled in test UDP4DGRAM
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
     $PRINTF "$NO_RESULT\n"	# already handled in test UDP4DGRAM
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif $(isdefunct "$l"); then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
     echo "$CMD1 &"
+    cat "${te}1" >&2
     echo "$CMD2"
+    cat "${te}2" >&2
     cat "${te}1" "${te}2"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND
@@ -10204,7 +10245,7 @@ N=$((N+1))
 # child process.
 NAME=UDP4RECVFROM_FORK
 case "$TESTS" in
-*%$N%*|*%functions%*|*%ip4%*|*%udp%*|*%dgram%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%ip4%*|*%udp%*|*%dgram%*|*%$NAME%*)
 TEST="$NAME: test if UDP4-RECVFROM handles more than one packet"
 # idea: run a UDP4-RECVFROM process with fork and -T. Send it one packet;
 # send it a second packet and check if this is processed properly. If yes, the
@@ -11293,7 +11334,7 @@ N=$((N+1))
 
 NAME=SOCKETRANGEMASK
 case "$TESTS" in
-*%$N%*|*%functions%*|*%security%*|*%generic%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%socket%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%security%*|*%fork%*|*%generic%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%socket%*|*%range%*|*%$NAME%*)
 TEST="$NAME: security of generic socket-listen with RANGE option"
 if ! eval $NUMCOND; then :;
 elif [ -z "$SECONDADDR" ]; then
@@ -11374,7 +11415,7 @@ N=$((N+1))
 # Test the generic setsockopt option
 NAME=SETSOCKOPT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%ip4%*|*%tcp%*|*%generic%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%ip4%*|*%tcp%*|*%generic%*|*%$NAME%*)
 TEST="$NAME: test the setsockopt option"
 # Set the TCP_MAXSEG (MSS) option with a reasonable value, this should succeed.
 # The try again with TCP_MAXSEG=1, this fails at least on Linux.
@@ -12096,7 +12137,7 @@ N=$((N+1))
 
 
 while read KEYW FEAT ADDR IPPORT; do
-if [ -z "$KEYW" ]|| [[ "$KEYW" == \#* ]]; then continue; fi
+if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 RUNS=$(tolower $KEYW)
 PROTO=$KEYW
 proto="$(echo "$PROTO" |tr A-Z a-z)"
@@ -12104,7 +12145,7 @@ feat="$(tolower "$FEAT")"
 # test the max-children option on really connection oriented sockets
 NAME=${KEYW}MAXCHILDREN
 case "$TESTS" in
-*%$N%*|*%functions%*|*%maxchildren%*|*%$feat%*|*%$proto%*|*%socket%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%$feat%*|*%$proto%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: max-children option"
 # start a listen process with max-children=1; connect with a client, let it
 # sleep some time before sending data; connect with second client that sends
@@ -12182,14 +12223,14 @@ UNIX  unix  $td/test\$N.server -
 
 
 while read KEYW FEAT ADDR IPPORT SHUT; do
-if [ -z "$KEYW" ]|| [[ "$KEYW" == \#* ]]; then continue; fi
+if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 RUNS=$(tolower $KEYW)
 PROTO=$KEYW
 proto="$(echo "$PROTO" |tr A-Z a-z)"
 # test the max-children option on pseudo connected sockets
 NAME=${KEYW}MAXCHILDREN
 case "$TESTS" in
-*%$N%*|*%functions%*|*%maxchildren%*|*%socket%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: max-children option"
 # start a listen process with max-children=1; connect with a client, let it
 # send data and then sleep; connect with second client that wants to send
@@ -12550,7 +12591,7 @@ N=$((N+1))
 # had a bug that converted a bit mask of 0 internally to 0xffffffff
 NAME=TCP4RANGE_0BITS
 case "$TESTS" in
-*%$N%*|*%functions%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%tcp%*|*%tcp4%*|*%ip4%*|*%range%*|*%$NAME%*)
 TEST="$NAME: correct evaluation of range mask 0"
 if ! eval $NUMCOND; then :;
 elif [ -z "$SECONDADDR" ]; then
@@ -12999,7 +13040,7 @@ if [ "$addropts" = "." ]; then addropts=; fi
 # $ADDR with fork removes the file system entry when the process is terminated
 NAME=${ADDR_}_REMOVE_FORK
 case "$TESTS" in
-*%$N%*|*%functions%*|*%bugs%*|*%unix%*|*%socket%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%bugs%*|*%fork%*|*%unix%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: $ADDR with fork removes socket entry when terminated during accept"
 # start a socat process with listening unix domain socket etc and option fork.
 # Terminate the process and check if the file system socket entry still exists.
@@ -16068,6 +16109,101 @@ esac
 PORT=$((PORT+1))
 N=$((N+1))
 
+
+while read KEYW FEAT RUNS ADDR IPPORT; do
+if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
+RUNS=$(tolower $KEYW)
+PROTO=$KEYW
+proto="$(echo "$PROTO" |tr A-Z a-z)"
+feat="$(tolower "$FEAT")"
+# test the fork option on really RECVFROM oriented sockets
+NAME=${KEYW}_FORK
+case "$TESTS" in
+*%$N%*|*%functions%*|*%fork%*|*%$feat%*|*%$proto%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: ${KEYW}-RECVFROM with fork option"
+# Start a RECVFROM process with fork option and SYSTEM address where clients
+# data determines the sleep time; send a record with sleep before storing the
+# data, then send a record with 0 sleep before storing data.
+# When the second record is stored before the first one the test succeeded.
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats $FEAT STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - STDIO SYSTEM $PROTO-RECVFROM $PROTO-SENDTO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions fork ) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runs$RUNS >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$(toupper $RUNS) not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+case "X$IPPORT" in
+    "XPORT")
+    newport $proto
+    tsl=$PORT 		# test socket listen address
+    tsc="$ADDR:$PORT"	# test socket connect address
+    ;;
+    *)
+    tsl="$(eval echo "$ADDR")"	# resolve $N
+    tsc=$tsl
+esac
+#ts="$td/test$N.sock"
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts -t 3 $PROTO-RECVFROM:$tsl,fork SYSTEM:'read t x; sleep \$t; echo \$x >>'\"$tf\""
+CMD1="$TRACE $SOCAT $opts -t 3 - $PROTO-SENDTO:$tsc"
+printf "test $F_n $TEST... " $N
+eval $CMD0 </dev/null 2>"${te}0" &
+pid0=$!
+wait${proto}port $tsl 1
+echo "2 $da 1" |$CMD1 >"${tf}1" 2>"${te}1" &
+pid1=$!
+sleep 1
+echo "0 $da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
+pid2=$!
+sleep 2
+cpids="$(childpids $pid0 </dev/null)"
+kill $pid1 $pid2 $cpids $pid0 2>/dev/null; wait
+if echo -e "$da 2\n$da 1" |diff - $tf >$tdiff; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo "diff:" >&2
+    cat "$tdiff" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+done <<<"
+UDP4  UDP  udp4  127.0.0.1 PORT
+UDP6  UDP  udp4  [::1]     PORT
+UNIX  unix unix   $td/test\$N.server -
+"
 
 # end of common tests
 

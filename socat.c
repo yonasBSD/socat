@@ -720,6 +720,7 @@ int socat(const char *address1, const char *address2) {
 	       the communication channel, so continue */
 	    Info2("child "F_pid" has already died with status %d",
 		  XIO_RDSTREAM(sock1)->para.exec.pid, statunknown[i]);
+	    ++num_child; 	/* it was counted as anonymous child, undo */
 	    if (statunknown[i] != 0) {
 	       return 1;
 	    }

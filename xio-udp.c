@@ -226,7 +226,9 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 	 }
 
 	 /* server: continue loop with socket()+recvfrom() */
-	 /* when we dont close this we get awkward behaviour on Linux 2.4:
+	 /* This avoids the requirement of a sync (trigger) mechanism as with
+	    RECVFROM addresses */
+	 /* And when we dont close this we got awkward behaviour on Linux 2.4:
 	    recvfrom gives 0 bytes with invalid socket address */
 	 if (Close(sfd->fd) < 0) {
 	    Info2("close(%d): %s", sfd->fd, strerror(errno));

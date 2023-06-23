@@ -545,7 +545,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	       applyopts(fdi, *copts, PH_LATE2);
 	    }
 	 if (withfork) {
-	    Info("Signalling parent ready");
+	    Info("notifying parent that child process is ready");
 	    Close(trigger[1]); 	/* in child, notify parent that ready */
 	 }
       } /* withfork */
@@ -603,7 +603,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       fds[0].fd = trigger[0];
       fds[0].events = POLLIN|POLLHUP;
       Poll(fds, 1, -1);
-      Info("Child process signalled ready");
+      Info("child process notified parent that it is ready");
    }
 
    return pid;	/* indicate parent (main) process */

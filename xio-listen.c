@@ -338,11 +338,7 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
 	 pid_t pid;	/* mostly int; only used with fork */
          sigset_t mask_sigchld;
 
-         /* we must prevent that the current packet triggers another fork;
-            therefore we wait for a signal from the recent child: USR1
-            indicates that is has consumed the last packet; CHLD means it has
-            terminated */
-         /* block SIGCHLD and SIGUSR1 until parent is ready to react */
+         /* Block SIGCHLD until parent is ready to react */
          sigemptyset(&mask_sigchld);
          sigaddset(&mask_sigchld, SIGCHLD);
          Sigprocmask(SIG_BLOCK, &mask_sigchld, NULL);
@@ -382,6 +378,7 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
 
          /* now we are ready to handle signals */
          Sigprocmask(SIG_UNBLOCK, &mask_sigchld, NULL);
+
 
 	 while (maxchildren) {
 	    if (num_child < maxchildren) break;
