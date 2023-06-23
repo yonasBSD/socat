@@ -41,6 +41,10 @@ Coding:
 
 	Renamed xioopts_t to xioparms_t to avoid confusion with xioopts module.
 
+Porting:
+	Removed Config/ because its contents have not been maintained for many
+	years.
+
 Testing:
 	Removed obselete parts from test.sh
 

@@ -78,15 +78,6 @@ SHFILES = daemon.sh mail.sh ftp.sh readline.sh \
 	socat_buildscript_for_android.sh
 TESTFILES = test.sh socks4echo.sh proxyecho.sh gatherinfo.sh readline-test.sh \
 	proxy.sh socks4a-echo.sh
-OSFILES = Config/Makefile.Linux-2-6-24 Config/config.Linux-2-6-24.h \
-	Config/Makefile.SunOS-5-10 Config/config.SunOS-5-10.h \
-	Config/Makefile.FreeBSD-6-1 Config/config.FreeBSD-6-1.h \
-	Config/Makefile.NetBSD-5-1  Config/config.NetBSD-5-1.h \
-	Config/Makefile.OpenBSD-4-3 Config/config.OpenBSD-4-3.h \
-	Config/Makefile.AIX-5-3 Config/config.AIX-5-3.h \
-	Config/Makefile.Cygwin-1-5-25 Config/config.Cygwin-1-5-25.h \
-	Config/Makefile.MacOSX-10-5 Config/config.MacOSX-10-5.h \
-	Config/Makefile.DragonFly-2-8-2 Config/config.DragonFly-2-8-2.h
 
 all: progs doc
 
@@ -156,7 +147,7 @@ socat.tar.bz2: socat.tar
 
 VERSION = `sed 's/"//g' VERSION`
 TARDIR = socat-$(VERSION)
-socat.tar: configure.in configure Makefile.in config.h.in install-sh VERSION $(CFILES) $(HFILES) $(DOCFILES) $(SHFILES) $(OSFILES) $(TESTFILES) socat.spec \
+socat.tar: configure.in configure Makefile.in config.h.in install-sh VERSION $(CFILES) $(HFILES) $(DOCFILES) $(SHFILES) $(TESTFILES) socat.spec \
 	configure.ac
 	if [ ! -d $(TARDIR) ]; then mkdir $(TARDIR); fi
 	tar cf - $+ |(cd $(TARDIR); tar xf -)
