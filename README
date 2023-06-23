@@ -239,9 +239,6 @@ These files reside in the doc subdirectory:
 socat.1 is the man page, socat.html is the HTML based man page. It is actual,
 but describes only the more useful options.
 
-xio.help is an older, but more exact description in text form; with socat
-version 1.6.0 it is outdated.
-
 doc/socat-openssltunnel.html is a simple tutorial for a private SSL connection.
 doc/socat-multicast.html is a short tutorial for multicast and broadcast
 communications.

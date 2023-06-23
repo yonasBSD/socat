@@ -41,6 +41,12 @@ Coding:
 
 	Renamed xioopts_t to xioparms_t to avoid confusion with xioopts module.
 
+Testing:
+	Removed obselete parts from test.sh
+
+Documentation:
+	Removed obselete file doc/xio.help
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

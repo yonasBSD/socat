@@ -44,7 +44,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc README CHANGES EXAMPLES SECURITY doc/xio.help doc/socat.html FAQ BUGREPORTS
+%doc README CHANGES EXAMPLES SECURITY doc/socat.html FAQ BUGREPORTS
 %doc COPYING COPYING.OpenSSL FILES PORTING DEVELOPMENT
 %{_bindir}/socat
 %{_bindir}/procan
