@@ -192,9 +192,14 @@ char *sockaddr_info(const struct sockaddr *sa, socklen_t salen, char *buff, size
    switch (sau->soa.sa_family) {
 #if WITH_UNIX
    case 0:
-   case AF_UNIX: sockaddr_unix_info(&sau->un, salen, cp+1, blen-1);
-      cp[0] = '"';
-      strncat(cp+1, "\"", 1);
+   case AF_UNIX:
+      *cp++ = '"';  --blen;
+      sockaddr_unix_info(&sau->un, salen, cp, blen-1);
+      blen -= strlen(cp);
+      cp = strchr(cp, '\0');
+      *cp++ = '"';  --blen;
+      if (blen > 0)
+	 *cp = '\0';
       break;
 #endif
 #if WITH_IP4
@@ -513,12 +518,16 @@ int check_ipaddr(
 	const char *address)
 {
 	int res4, res6;
+#if WITH_IP4
 	if ((res4 = check_ip4addr(address)) == 0) {
 		return 0;
 	}
+#endif
+#if WITH_IP6
 	if ((res6 = check_ip6addr(address)) == 0) {
 		return 0;
 	}
+#endif
 	return 1;
 }
 
