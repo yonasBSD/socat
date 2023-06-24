@@ -49,6 +49,8 @@ int xiolog_ancillary_ip(struct cmsghdr *cmsg, int *num,
 			char *nambuff, int namlen,
 			char *envbuff, int envlen,
 			char *valbuff, int vallen);
+extern int xiotype_ip_add_membership(char *token, const struct optname *ent, struct opt *opt);
+extern int xioapply_ip_add_membership(xiosingle_t *xfd, struct opt *opt);
 extern int xiotype_ip_add_source_membership(char* token, const struct optname *ent, struct opt *opt);
 extern int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt);
 

@@ -47,6 +47,8 @@ Coding:
 
 	Renamed xioopts_t to xioparms_t to avoid confusion with xioopts module.
 
+	Moved multicast related code from xioopts.c to xio-ip.c and xio-ip6.c
+
 Porting:
 	Removed Config/ because its contents have not been maintained for many
 	years.

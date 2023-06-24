@@ -48,6 +48,7 @@ extern int
 xiosetsockaddrenv_ip6(int idx, char *namebuff, size_t namelen,
 		      char *valuebuff, size_t valuelen,
 		      struct sockaddr_in6 *sa, int ipproto);
+extern int xioapply_ipv6_join_group(xiosingle_t *xfd, struct opt *opt);
 
 #endif /* WITH_IP6 */
 

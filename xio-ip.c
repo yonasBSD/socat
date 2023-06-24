@@ -131,7 +131,7 @@ unsigned long res_opts() {
  socktype: SOCK_STREAM, SOCK_DGRAM, ...
  protocol: IPPROTO_UDP, IPPROTO_TCP
  sau: an uninitialized storage for the resulting socket address
- returns: STAT_OK, STAT_RETRYLATER
+ returns: STAT_OK, STAT_RETRYLATER, STAT_NORETRY, prints message
 */
 int xiogetaddrinfo(const char *node, const char *service,
 		   int family, int socktype, int protocol,
@@ -662,6 +662,201 @@ int xiolog_ancillary_ip(struct cmsghdr *cmsg, int *num,
 #endif /* defined(HAVE_STRUCT_CMSGHDR) && defined(CMSG_DATA) */
 
 
+#if defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)
+int xiotype_ip_add_membership(
+	char *tokp,
+	const struct optname *ent,
+	struct opt *opt)
+{
+	/* we do not resolve the addresses here because we do not yet know
+	   if we are coping with a IPv4 or IPv6 socat address */
+	const char *ends[] = { ":", NULL };
+	const char *nests[] = { "[","]", NULL };
+	char buff[512], *buffp=buff; size_t bufspc = sizeof(buff)-1;
+	int parsres;
+
+	/* parse first IP address, expect ':' */
+	/*! result= */
+	parsres =
+		nestlex((const char **)&tokp, &buffp, &bufspc,
+			ends, NULL, NULL, nests,
+			true, false, false);
+	if (parsres < 0) {
+		Error1("option too long:  \"%s\"", tokp);
+		return -1;
+	} else if (parsres > 0) {
+		Error1("syntax error in \"%s\"", tokp);
+		return -1;
+	}
+	if (*tokp != ':') {
+		Error1("syntax in option %s: missing ':'", tokp);
+	}
+	*buffp++ = '\0';
+	if ((opt->value.u_string/*multiaddr*/ = strdup(buff)) == NULL) {
+	   Error1("strdup(\"%s\"): out of memory", buff);
+	   return -1;
+	}
+
+	++tokp;
+	/* parse second IP address, expect ':' or '\0'' */
+	buffp = buff;
+	/*! result= */
+	parsres =
+		nestlex((const char **)&tokp, &buffp, &bufspc,
+			ends, NULL, NULL, nests,
+			true, false, false);
+	if (parsres < 0) {
+		Error1("option too long:  \"%s\"", tokp);
+		return -1;
+	} else if (parsres > 0) {
+		Error1("syntax error in \"%s\"", tokp);
+		return -1;
+	}
+	*buffp++ = '\0';
+	if ((opt->value2.u_string/*param2*/ = strdup(buff)) == NULL) {
+	   Error1("strdup(\"%s\"): out of memory", buff);
+	   free(opt->value.u_string);
+	   return -1;
+	}
+
+
+#if HAVE_STRUCT_IP_MREQN
+	if (*tokp++ == ':') {
+		strncpy(opt->value3.u_string/*ifindex*/, tokp, IF_NAMESIZE);	/* ok */
+		Info4("setting option \"%s\" to {\"%s\",\"%s\",\"%s\"}",
+		      ent->desc->defname,
+		      opt->value.u_string/*multiaddr*/,
+		      opt->value2.u_string/*param2*/,
+		      opt->value3.u_string/*ifindex*/);
+	} else {
+		/*0 opt->value3.u_string = NULL; / * is NULL from init */
+		Info3("setting option \"%s\" to {\"%s\",\"%s\"}",
+		      ent->desc->defname,
+		      opt->value.u_string/*multiaddr*/,
+		      opt->value2.u_string/*param2*/);
+	}
+#else /* !HAVE_STRUCT_IP_MREQN */
+	Info3("setting option \"%s\" to {\"%s\",\"%s\"}",
+	      ent->desc->defname,
+	      opt->value.u_string/*multiaddr*/,
+	      opt->value2.u_string/*param2*/);
+#endif /* !HAVE_STRUCT_IP_MREQN */
+	return 0;
+}
+#endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
+
+#if defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)
+int xioapply_ip_add_membership(
+	xiosingle_t *xfd,
+	struct opt *opt)
+{
+	union {
+#if HAVE_STRUCT_IP_MREQN
+		struct ip_mreqn mreqn;
+#endif
+		struct ip_mreq  mreq;
+	} ip4_mreqn = {{{0}}};
+	/* IPv6 not supported - seems to have different handling */
+/*
+mc:addr:ifname|ifind
+mc:ifname|ifind
+mc:addr
+*/
+	union sockaddr_union sockaddr1;
+	socklen_t socklen1 = sizeof(sockaddr1.ip4);
+	union sockaddr_union sockaddr2;
+	socklen_t socklen2 = sizeof(sockaddr2.ip4);
+
+	/* first parameter is alway multicast address */
+	/*! result */
+	xiogetaddrinfo(opt->value.u_string/*multiaddr*/, NULL,
+		       xfd->para.socket.la.soa.sa_family,
+		       SOCK_DGRAM, IPPROTO_IP,
+		       &sockaddr1, &socklen1, 0, 0);
+	ip4_mreqn.mreq.imr_multiaddr = sockaddr1.ip4.sin_addr;
+	if (0) {
+		;	/* for canonical reasons */
+#if HAVE_STRUCT_IP_MREQN
+	} else if (opt->value3.u_string/*ifindex*/ != NULL) {
+		/* three parameters */
+		/* second parameter is interface address */
+		xiogetaddrinfo(opt->value2.u_string/*param2*/, NULL,
+			       xfd->para.socket.la.soa.sa_family,
+			       SOCK_DGRAM, IPPROTO_IP,
+			       &sockaddr2, &socklen2, 0, 0);
+		ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
+		/* third parameter is interface */
+		if (ifindex(opt->value3.u_string/*ifindex*/,
+			    (unsigned int *)&ip4_mreqn.mreqn.imr_ifindex, -1)
+		    < 0) {
+			Error1("cannot resolve interface \"%s\"",
+			       opt->value3.u_string/*ifindex*/);
+		}
+#endif /* HAVE_STRUCT_IP_MREQN */
+	} else {
+		/* two parameters */
+		if (0) {
+			;	/* for canonical reasons */
+#if HAVE_STRUCT_IP_MREQN
+			/* there is a form with two parameters that uses mreqn */
+		} else if (ifindex(opt->value2.u_string/*param2*/,
+				   (unsigned int *)&ip4_mreqn.mreqn.imr_ifindex,
+				   -1)
+			   >= 0) {
+			/* yes, second param converts to interface */
+			ip4_mreqn.mreq.imr_interface.s_addr = htonl(0);
+#endif /* HAVE_STRUCT_IP_MREQN */
+		} else {
+			/*! result */
+			xiogetaddrinfo(opt->value2.u_string/*param2*/, NULL,
+				       xfd->para.socket.la.soa.sa_family,
+				       SOCK_DGRAM, IPPROTO_IP,
+				       &sockaddr2, &socklen2, 0, 0);
+			ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
+		}
+	}
+
+#if LATER
+	if (0) {
+		; /* for canonical reasons */
+	} else if (xfd->para.socket.la.soa.sa_family == PF_INET) {
+	} else if (xfd->para.socket.la.soa.sa_family == PF_INET6) {
+		ip6_mreqn.mreq.imr_multiaddr = sockaddr1.ip6.sin6_addr;
+		ip6_mreqn.mreq.imr_interface = sockaddr2.ip6.sin6_addr;
+	}
+#endif
+
+#if HAVE_STRUCT_IP_MREQN
+	if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+		       &ip4_mreqn.mreqn, sizeof(ip4_mreqn.mreqn)) < 0) {
+		Error8("setsockopt(%d, %d, %d, {0x%08x,0x%08x,%d}, "F_Zu"): %s",
+		       xfd->fd, opt->desc->major, opt->desc->minor,
+		       ip4_mreqn.mreqn.imr_multiaddr.s_addr,
+		       ip4_mreqn.mreqn.imr_address.s_addr,
+		       ip4_mreqn.mreqn.imr_ifindex,
+		       sizeof(ip4_mreqn.mreqn),
+		       strerror(errno));
+		opt->desc = ODESC_ERROR;
+		return -1;
+	}
+#else
+	if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+		       &ip4_mreqn.mreq, sizeof(ip4_mreqn.mreq)) < 0) {
+		Error7("setsockopt(%d, %d, %d, {0x%08x,0x%08x}, "F_Zu"): %s",
+		       xfd->fd, opt->desc->major, opt->desc->minor,
+		       ip4_mreqn.mreq.imr_multiaddr,
+		       ip4_mreqn.mreq.imr_interface,
+		       sizeof(ip4_mreqn.mreq),
+		       strerror(errno));
+		opt->desc = ODESC_ERROR;
+		return -1;
+	}
+#endif
+	return 0;
+}
+#endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
+
+
 #if HAVE_STRUCT_IP_MREQ_SOURCE
 int xiotype_ip_add_source_membership(char *token, const struct optname *ent, struct opt *opt) {
    /* we do not resolve the addresses here because we do not yet know
@@ -688,7 +883,10 @@ int xiotype_ip_add_source_membership(char *token, const struct optname *ent, str
       Error1("syntax in option %s: missing ':'", token);
    }
    *buffp++ = '\0';
-   opt->value.u_ip_mreq_source.mcaddr = strdup(buff); /*!!! NULL */
+   if ((opt->value.u_string/*mcaddr*/ = strdup(buff)) == NULL) {
+      Error1("strdup(\"%s\"): out of memory", buff);
+      return -1;
+   }
 
    ++tokp;
    /* parse second IP address, expect ':' or '\0'' */
@@ -709,7 +907,11 @@ int xiotype_ip_add_source_membership(char *token, const struct optname *ent, str
       Error1("syntax in option %s: missing ':'", token);
    }
    *buffp++ = '\0';
-   opt->value.u_ip_mreq_source.ifaddr = strdup(buff); /*!!! NULL */
+   if ((opt->value2.u_string/*ifaddr*/ = strdup(buff)) == NULL) {
+      Error1("strdup(\"%s\"): out of memory", buff);
+      free(opt->value.u_string);
+      return -1;
+   }
 
    ++tokp;
    /* parse third IP address, expect ':' or '\0'' */
@@ -730,13 +932,18 @@ int xiotype_ip_add_source_membership(char *token, const struct optname *ent, str
       Error1("syntax in option %s: trailing cruft", token);
    }
    *buffp++ = '\0';
-   opt->value.u_ip_mreq_source.srcaddr = strdup(buff); /*!!! NULL */
+   if ((opt->value3.u_string/*srcaddr*/ = strdup(buff)) == NULL) {
+      Error1("strdup(\"%s\"): out of memory", buff);
+      free(opt->value.u_string);
+      free(opt->value2.u_string);
+      return -1;
+   }
 
    Info4("setting option \"%s\" to {0x%08x,0x%08x,0x%08x}",
 	 ent->desc->defname,
-	 ntohl(*(unsigned int *)opt->value.u_ip_mreq_source.mcaddr),
-	 ntohl(*(unsigned int *)opt->value.u_ip_mreq_source.ifaddr),
-	 ntohl(*(unsigned int *)opt->value.u_ip_mreq_source.srcaddr));
+	 ntohl(*(unsigned int *)opt->value.u_string/*mcaddr*/),
+	 ntohl(*(unsigned int *)opt->value2.u_string/*ifaddr*/),
+	 ntohl(*(unsigned int *)opt->value3.u_string/*srcaddr*/));
    return 0;
 }
 
@@ -752,19 +959,19 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
 
    /* first parameter is always multicast address */
    /*! result */
-   xiogetaddrinfo(opt->value.u_ip_mreq_source.mcaddr, NULL,
+   xiogetaddrinfo(opt->value.u_string/*mcaddr*/, NULL,
 		  xfd->para.socket.la.soa.sa_family,
 		  SOCK_DGRAM, IPPROTO_IP,
 		  &sockaddr1, &socklen1, 0, 0);
    ip4_mreq_src.imr_multiaddr = sockaddr1.ip4.sin_addr;
    /* second parameter is interface address */
-   xiogetaddrinfo(opt->value.u_ip_mreq_source.ifaddr, NULL,
+   xiogetaddrinfo(opt->value2.u_string/*ifaddr*/, NULL,
 		  xfd->para.socket.la.soa.sa_family,
 		  SOCK_DGRAM, IPPROTO_IP,
 		  &sockaddr2, &socklen2, 0, 0);
    ip4_mreq_src.imr_interface = sockaddr2.ip4.sin_addr;
    /* third parameter is source address */
-   xiogetaddrinfo(opt->value.u_ip_mreq_source.srcaddr, NULL,
+   xiogetaddrinfo(opt->value3.u_string/*srcaddr*/, NULL,
 		  xfd->para.socket.la.soa.sa_family,
 		  SOCK_DGRAM, IPPROTO_IP,
 		  &sockaddr3, &socklen3, 0, 0);

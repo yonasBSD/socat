@@ -7991,6 +7991,14 @@ elif ! feat=$(testfeats ip4 udp) || ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+elif ! a=$(testaddrs UDP4-RECV UDP4-SENDTO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions ip-add-membership bind) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
@@ -8012,19 +8020,26 @@ kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
    echo "$CMD1 &"
+   cat "${te}1" >&2
    echo "$CMD2"
-   cat "${te}1"
-   cat "${te}2"
+   cat "${te}2" >&2
    numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
    $PRINTF "$FAILED\n"
+   echo "$CMD1 &"
+   cat "${te}1" >&2
+   echo "$CMD2"
+   cat "${te}2" >&2
    cat "$tdiff"
    numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
    $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat $te; fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
    numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND, feats
@@ -12580,7 +12595,7 @@ N=$((N+1))
 # fixed in 1.7.3.2
 NAME=USE_IPV6_JOIN_GROUP
 case "$TESTS" in
-*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%ip6%*|*%udp%*|*%udp6%*|*%dgram%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%ip6%*|*%udp%*|*%udp6%*|*%dgram%*|*%multicast%*|*%$NAME%*)
 TEST="$NAME: is option ipv6-join-group used"
 # Invoke socat with option ipv6-join-group on UDP6 address.
 # Terminate immediately, do not transfer data.

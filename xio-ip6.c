@@ -81,6 +81,7 @@ const struct optdesc opt_ipv6_recvpathmtu = { "ipv6-recvpathmtu", "recvpathmtu",
 int xioip6_pton(const char *src, struct in6_addr *dst) {
    union sockaddr_union sockaddr;
    socklen_t sockaddrlen = sizeof(sockaddr);
+   int res;
 
    if (src[0] == '[') {
       char plainaddr[INET6_ADDRSTRLEN];
@@ -92,8 +93,9 @@ int xioip6_pton(const char *src, struct in6_addr *dst) {
 	 *clos = '\0';
       return xioip6_pton(plainaddr, dst);
    }
-   if (xiogetaddrinfo(src, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
-		      0, 0)
+   if ((res =
+	xiogetaddrinfo(src, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
+			     0, 0))
        != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -456,5 +458,48 @@ xiosetsockaddrenv_ip6(int idx, char *namebuff, size_t namelen,
    }
    return -1;
 }
+
+
+#if defined(HAVE_STRUCT_IPV6_MREQ)
+int xioapply_ipv6_join_group(
+	xiosingle_t *xfd,
+	struct opt *opt)
+{
+	struct ipv6_mreq ip6_mreq = {{{{0}}}};
+	union sockaddr_union sockaddr1;
+	socklen_t socklen1 = sizeof(sockaddr1.ip6);
+	int res;
+
+	/* Always two parameters */
+	/* First parameter is multicast address */
+	if ((res =
+	     xiogetaddrinfo(opt->value.u_string/*multiaddr*/, NULL,
+			    xfd->para.socket.la.soa.sa_family,
+			    SOCK_DGRAM, IPPROTO_IP,
+			    &sockaddr1, &socklen1, 0, 0)) != STAT_OK) {
+	   return res;
+	}
+	ip6_mreq.ipv6mr_multiaddr = sockaddr1.ip6.sin6_addr;
+	if (ifindex(opt->value2.u_string/*param2*/,
+		    &ip6_mreq.ipv6mr_interface, -1)
+	    < 0) {
+		Error1("interface \"%s\" not found",
+		       opt->value2.u_string/*param2*/);
+		ip6_mreq.ipv6mr_interface = htonl(0);
+	}
+
+	if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+		       &ip6_mreq, sizeof(ip6_mreq)) < 0) {
+		Error6("setsockopt(%d, %d, %d, {...,0x%08x}, "F_Zu"): %s",
+		       xfd->fd, opt->desc->major, opt->desc->minor,
+		       ip6_mreq.ipv6mr_interface,
+		       sizeof(ip6_mreq),
+		       strerror(errno));
+		opt->desc = ODESC_ERROR;
+		return -1;
+	}
+	return 0;
+}
+#endif /* defined(HAVE_STRUCT_IPV6_MREQ) */
 
 #endif /* WITH_IP6 */

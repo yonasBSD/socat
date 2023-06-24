@@ -375,22 +375,6 @@ union integral {
 #if HAVE_STRUCT_TIMESPEC
    struct timespec u_timespec;
 #endif /* HAVE_STRUCT_TIMESPEC */
-#if HAVE_STRUCT_IP_MREQ || HAVE_STRUCT_IP_MREQN
-   struct {
-      char *multiaddr;
-      char *param2;	/* address, interface */
-#if HAVE_STRUCT_IP_MREQN
-      char ifindex[IF_NAMESIZE+1];
-#endif
-   } u_ip_mreq;
-#endif
-#if HAVE_STRUCT_IP_MREQ_SOURCE
-   struct {
-      char *mcaddr;
-      char *ifaddr;	/* address, interface */
-      char *srcaddr;	/* source address */
-   } u_ip_mreq_source;
-#endif
 #if WITH_IP4
    struct in_addr  u_ip4addr;
 #endif

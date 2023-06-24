@@ -2477,76 +2477,10 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	       (*opts)[i].value.u_int, (*opts)[i].value2.u_int,
 	       (*opts)[i].value3.u_string);
 	 break;
+
 #if defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)
-
       case TYPE_IP_MREQN:
-	 {
-	    /* we do not resolve the addresses here because we do not yet know
-	       if we are coping with a IPv4 or IPv6 socat address */
-	    const char *ends[] = { ":", NULL };
-	    const char *nests[] = { "[","]", NULL };
-	    char buff[512], *buffp=buff; size_t bufspc = sizeof(buff)-1;
-
-	    /* parse first IP address, expect ':' */
-	    tokp = token;
-	    /*! result= */
-	    parsres =
-	       nestlex((const char **)&tokp, &buffp, &bufspc,
-		       ends, NULL, NULL, nests,
-		       true, false, false);
-	    if (parsres < 0) {
-	       Error1("option too long:  \"%s\"", *a);
-	       return -1;
-	    } else if (parsres > 0) {
-	       Error1("syntax error in \"%s\"", *a);
-	       return -1;
-	    }
-	    if (*tokp != ':') {
-	       Error1("syntax in option %s: missing ':'", token);
-	    }
-	    *buffp++ = '\0';
-	    (*opts)[i].value.u_ip_mreq.multiaddr = strdup(buff); /*!!! NULL */
-
-	    ++tokp;
-	    /* parse second IP address, expect ':' or '\0'' */
-	    buffp = buff;
-	    /*! result= */
-	    parsres =
-	       nestlex((const char **)&tokp, &buffp, &bufspc,
-		       ends, NULL, NULL, nests,
-		       true, false, false);
-	    if (parsres < 0) {
-	       Error1("option too long:  \"%s\"", *a);
-	       return -1;
-	    } else if (parsres > 0) {
-	       Error1("syntax error in \"%s\"", *a);
-	       return -1;
-	    }
-	    *buffp++ = '\0';
-	    (*opts)[i].value.u_ip_mreq.param2 = strdup(buff); /*!!! NULL */
-
-#if HAVE_STRUCT_IP_MREQN
-	    if (*tokp++ == ':') {
-	       strncpy((*opts)[i].value.u_ip_mreq.ifindex, tokp, IF_NAMESIZE);	/* ok */
-	       Info4("setting option \"%s\" to {\"%s\",\"%s\",\"%s\"}",
-		     ent->desc->defname,
-		     (*opts)[i].value.u_ip_mreq.multiaddr,
-		     (*opts)[i].value.u_ip_mreq.param2,
-		     (*opts)[i].value.u_ip_mreq.ifindex);
-	    } else {
-	       (*opts)[i].value.u_ip_mreq.ifindex[0] = '\0';
-	       Info3("setting option \"%s\" to {\"%s\",\"%s\"}",
-		     ent->desc->defname,
-		     (*opts)[i].value.u_ip_mreq.multiaddr,
-		     (*opts)[i].value.u_ip_mreq.param2);
-	    }
-#else /* !HAVE_STRUCT_IP_MREQN */
-	    Info3("setting option \"%s\" to {0x%08x,0x%08x}",
-		  ent->desc->defname,
-		  (*opts)[i].value.u_ip_mreq.multiaddr,
-		  (*opts)[i].value.u_ip_mreq.param2);
-#endif /* !HAVE_STRUCT_IP_MREQN */
-	 }
+	 xiotype_ip_add_membership(token, ent, opt);
 	 break;
 #endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
 
@@ -4029,110 +3963,10 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
 	 switch (opt->desc->optcode) {
 #if WITH_IP4 && (defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN))
 	 case OPT_IP_ADD_MEMBERSHIP:
-	    {
-	       union {
-#if HAVE_STRUCT_IP_MREQN
-		  struct ip_mreqn mreqn;
-#endif
-		  struct ip_mreq  mreq;
-	       } ip4_mreqn = {{{0}}};
-	       /* IPv6 not supported - seems to have different handling */
-/*
-mc:addr:ifname|ifind
-mc:ifname|ifind
-mc:addr
-*/
-	       union sockaddr_union sockaddr1;
-	       socklen_t socklen1 = sizeof(sockaddr1.ip4);
-	       union sockaddr_union sockaddr2;
-	       socklen_t socklen2 = sizeof(sockaddr2.ip4);
-
-	       /* first parameter is alway multicast address */
-	       /*! result */
-	       xiogetaddrinfo(opt->value.u_ip_mreq.multiaddr, NULL,
-			      xfd->para.socket.la.soa.sa_family,
-			      SOCK_DGRAM, IPPROTO_IP,
-			      &sockaddr1, &socklen1, 0, 0);
-	       ip4_mreqn.mreq.imr_multiaddr = sockaddr1.ip4.sin_addr;
-	       if (0) {
-		  ;	/* for canonical reasons */
-#if HAVE_STRUCT_IP_MREQN
-	       } else if (opt->value.u_ip_mreq.ifindex[0] != '\0') {
-		  /* three parameters */
-		  /* second parameter is interface address */
-		  xiogetaddrinfo(opt->value.u_ip_mreq.param2, NULL,
-				 xfd->para.socket.la.soa.sa_family,
-				 SOCK_DGRAM, IPPROTO_IP,
-				 &sockaddr2, &socklen2, 0, 0);
-		  ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
-		  /* third parameter is interface */
-		  if (ifindex(opt->value.u_ip_mreq.ifindex,
-			      (unsigned int *)&ip4_mreqn.mreqn.imr_ifindex, -1)
-		      < 0) {
-		     Error1("cannot resolve interface \"%s\"",
-			    opt->value.u_ip_mreq.ifindex);
-		  }
-#endif /* HAVE_STRUCT_IP_MREQN */
-	       } else {
-		  /* two parameters */
-		  if (0) {
-		     ;	/* for canonical reasons */
-#if HAVE_STRUCT_IP_MREQN
-		  /* there is a form with two parameters that uses mreqn */
-		  } else if (ifindex(opt->value.u_ip_mreq.param2,
-				     (unsigned int *)&ip4_mreqn.mreqn.imr_ifindex,
-				     -1)
-			     >= 0) {
-		     /* yes, second param converts to interface */
-		     ip4_mreqn.mreq.imr_interface.s_addr = htonl(0);
-#endif /* HAVE_STRUCT_IP_MREQN */
-		  } else {
-		     /*! result */
-		     xiogetaddrinfo(opt->value.u_ip_mreq.param2, NULL,
-				    xfd->para.socket.la.soa.sa_family,
-				    SOCK_DGRAM, IPPROTO_IP,
-				    &sockaddr2, &socklen2, 0, 0);
-		     ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
-		  }
-	       }
-
-#if LATER
-	       if (0) {
-		  ; /* for canonical reasons */
-	       } else if (xfd->para.socket.la.soa.sa_family == PF_INET) {
-	       } else if (xfd->para.socket.la.soa.sa_family == PF_INET6) {
-		  ip6_mreqn.mreq.imr_multiaddr = sockaddr1.ip6.sin6_addr;
-		  ip6_mreqn.mreq.imr_interface = sockaddr2.ip6.sin6_addr;
-	       }
-#endif
-
-#if HAVE_STRUCT_IP_MREQN
-	       if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
-			      &ip4_mreqn.mreqn, sizeof(ip4_mreqn.mreqn)) < 0) {
-		  Error8("setsockopt(%d, %d, %d, {0x%08x,0x%08x,%d}, "F_Zu"): %s",
-			 xfd->fd, opt->desc->major, opt->desc->minor,
-			 ip4_mreqn.mreqn.imr_multiaddr.s_addr,
-			 ip4_mreqn.mreqn.imr_address.s_addr,
-			 ip4_mreqn.mreqn.imr_ifindex,
-			 sizeof(ip4_mreqn.mreqn),
-			 strerror(errno));
-		  opt->desc = ODESC_ERROR; continue;
-	       }
-#else
-	       if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
-			      &ip4_mreqn.mreq, sizeof(ip4_mreqn.mreq)) < 0) {
-		  Error7("setsockopt(%d, %d, %d, {0x%08x,0x%08x}, "F_Zu"): %s",
-			 xfd->fd, opt->desc->major, opt->desc->minor,
-			 ip4_mreqn.mreq.imr_multiaddr,
-			 ip4_mreqn.mreq.imr_interface,
-			 sizeof(ip4_mreqn.mreq),
-			 strerror(errno));
-		  opt->desc = ODESC_ERROR; continue;
-	       }
-#endif
-	       break;
+	    if (xioapply_ip_add_membership(xfd, opt) < 0) {
+	       continue;
 	    }
-	   break;
+	    break;
 #endif /* WITH_IP4 && (defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)) */
 
 #if WITH_IP4 && defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
@@ -4140,43 +3974,15 @@ mc:addr
 	    if (xioapply_ip_add_source_membership(xfd, opt) < 0) {
 	       continue;
 	    }
-	   break;
+	    break;
 #endif /* WITH_IP4 && defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP) */
 
 #if WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ)
 	 case OPT_IPV6_JOIN_GROUP:
-	    {
-	       struct ipv6_mreq ip6_mreq = {{{{0}}}};
-	       union sockaddr_union sockaddr1;
-	       socklen_t socklen1 = sizeof(sockaddr1.ip6);
-
-	       /* always two parameters */
-	       /* first parameter is multicast address */
-	       /*! result */
-	       xiogetaddrinfo(opt->value.u_ip_mreq.multiaddr, NULL,
-			      xfd->para.socket.la.soa.sa_family,
-			      SOCK_DGRAM, IPPROTO_IP,
-			      &sockaddr1, &socklen1, 0, 0);
-	       ip6_mreq.ipv6mr_multiaddr = sockaddr1.ip6.sin6_addr;
-	       if (ifindex(opt->value.u_ip_mreq.param2,
-			   &ip6_mreq.ipv6mr_interface, -1)
-		   < 0) {
-		  Error1("interface \"%s\" not found",
-			 opt->value.u_ip_mreq.param2);
-		  ip6_mreq.ipv6mr_interface = htonl(0);
-	       }
-
-	       if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
-			      &ip6_mreq, sizeof(ip6_mreq)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {...,0x%08x}, "F_Zu"): %s",
-			 xfd->fd, opt->desc->major, opt->desc->minor,
-			 ip6_mreq.ipv6mr_interface,
-			 sizeof(ip6_mreq),
-			 strerror(errno));
-		  opt->desc = ODESC_ERROR; continue;
-	       }
+	    if (xioapply_ipv6_join_group(xfd, opt) < 0) {
+	       continue;
 	    }
-	   break;
+	    break;
 #endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
 	default:
 	   /* ignore here */
