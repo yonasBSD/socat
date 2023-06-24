@@ -388,6 +388,9 @@
 /* Define if you have struct ip_mreq_source */
 #undef HAVE_STRUCT_IP_MREQ_SOURCE
 
+/* Define if you have struct group_source_req */
+#undef HAVE_STRUCT_GROUP_SOURCE_REQ
+
 /* Define if you have struct ifreq */
 #undef HAVE_STRUCT_IFREQ
 

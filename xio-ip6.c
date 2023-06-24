@@ -14,6 +14,7 @@
 #include "xio-ip.h"	/* xiogetaddrinfo() */
 
 #include "xio-ip6.h"
+#include "nestlex.h"
 
 
 static char *inet6addr_info(const struct in6_addr *sa, char *buff, size_t blen);
@@ -24,6 +25,9 @@ const struct optdesc opt_ipv6_v6only = { "ipv6-v6only", "ipv6only", OPT_IPV6_V6O
 #endif
 #ifdef IPV6_JOIN_GROUP
 const struct optdesc opt_ipv6_join_group = { "ipv6-join-group", "join-group", OPT_IPV6_JOIN_GROUP, GROUP_SOCK_IP6, PH_PASTSOCKET, TYPE_IP_MREQN, OFUNC_SOCKOPT, SOL_IPV6, IPV6_JOIN_GROUP };
+#endif
+#ifdef MCAST_JOIN_SOURCE_GROUP
+const struct optdesc opt_ipv6_join_source_group = { "ipv6-join-source-group", "join-source-group", OPT_IPV6_JOIN_SOURCE_GROUP, GROUP_SOCK_IP6, PH_PASTSOCKET, TYPE_GROUP_SOURCE_REQ, OFUNC_SOCKOPT, SOL_IPV6, MCAST_JOIN_SOURCE_GROUP };
 #endif
 #ifdef IPV6_PKTINFO
 const struct optdesc opt_ipv6_pktinfo = { "ipv6-pktinfo", "pktinfo", OPT_IPV6_PKTINFO, GROUP_SOCK_IP6, PH_PASTSOCKET, TYPE_INT, OFUNC_SOCKOPT, SOL_IPV6, IPV6_PKTINFO };
@@ -501,5 +505,153 @@ int xioapply_ipv6_join_group(
 	return 0;
 }
 #endif /* defined(HAVE_STRUCT_IPV6_MREQ) */
+
+#if HAVE_STRUCT_GROUP_SOURCE_REQ
+int xiotype_ip6_join_source_group(
+	char *token, const struct optname *ent, struct opt *opt)
+{
+   /* We do not resolve the addresses here because we do not yet know
+      if we are coping with an IPv4 or IPv6 socat address */
+   const char *ends[] = { ":", NULL };
+   const char *nests[] = { "[","]", NULL };
+   char buff[512], *buffp=buff; size_t bufspc = sizeof(buff)-1;
+   char *tokp = token;
+   int parsres;
+
+   /* Parse first IP address (mcast group), expect ':' */
+   parsres =
+      nestlex((const char **)&tokp, &buffp, &bufspc,
+	      ends, NULL, NULL, nests,
+	      true, false, false);
+   if (parsres < 0) {
+      Error1("option too long:  \"%s\"", token);
+      return -1;
+   } else if (parsres > 0) {
+      Error1("syntax error in \"%s\"", token);
+      return -1;
+   }
+   if (*tokp != ':') {
+      Error1("syntax in option %s: missing ':'", token);
+   }
+   *buffp++ = '\0';
+   if ((opt->value.u_string/*mcaddr*/ = strdup(buff)) == NULL) {
+      int _errno = errno;
+      Error1("strdup(\"%s\"): out of memory", buff);
+      errno = _errno;
+      return -1;
+   }
+
+   ++tokp;
+   /* Parse interface name/index, expect ':' or '\0'' */
+   buffp = buff;
+   parsres =
+      nestlex((const char **)&tokp, &buffp, &bufspc,
+	      ends, NULL, NULL, nests,
+	      true, false, false);
+   if (parsres < 0) {
+      Error1("option too long:  \"%s\"", token);
+      return -1;
+   } else if (parsres > 0) {
+      Error1("syntax error in \"%s\"", token);
+      return -1;
+   }
+   if (*tokp != ':') {
+      Error1("syntax in option %s: missing ':'", token);
+   }
+   *buffp++ = '\0';
+   if ((opt->value2.u_string/*ifindex*/ = Malloc(IF_NAMESIZE)) == NULL) {
+      int _errno = errno;
+      free(opt->value.u_string);
+      errno = _errno;
+      return -1;
+   }
+   strncpy(opt->value2.u_string/*ifindex*/, buff, IF_NAMESIZE);
+
+   ++tokp;
+   /* Parse second IP address (source address), expect ':' or '\0'' */
+   buffp = buff;
+   parsres =
+      nestlex((const char **)&tokp, &buffp, &bufspc,
+	      ends, NULL, NULL, nests,
+	      true, false, false);
+   if (parsres < 0) {
+      Error1("option too long:  \"%s\"", token);
+      return -1;
+   } else if (parsres > 0) {
+      Error1("syntax error in \"%s\"", token);
+      return -1;
+   }
+   if (*tokp) {
+      Error1("syntax in option %s: trailing cruft", token);
+   }
+   *buffp++ = '\0';
+   if ((opt->value3.u_string/*srcaddr*/ = strdup(buff)) == NULL) {
+      int _errno = errno;
+      Error1("strdup(\"%s\"): out of memory", buff);
+      free(opt->value.u_string);
+      errno = _errno;
+      return -1;
+   }
+
+   Info4("setting option \"%s\" to {\"%s\",\"%s\",\"%s\"}",
+	 ent->desc->defname,
+	 opt->value.u_string/*mcaddr*/,
+	 opt->value2.u_string/*ifindex*/,
+	 opt->value3.u_string/*srcaddr*/);
+
+   if (!xioparms.experimental) {
+      Warn("option ipv6-join-source-group is experimental");
+   }
+
+   return 0;
+}
+
+int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
+   struct group_source_req ip6_gsr = {0};
+   union sockaddr_union sockaddr1;
+   socklen_t socklen1 = sizeof(sockaddr1.ip6);
+   union sockaddr_union sockaddr2;
+   socklen_t socklen2 = sizeof(sockaddr2.ip6);
+   int res;
+
+   /* First parameter is always multicast address */
+   if ((res =
+	xiogetaddrinfo(opt->value.u_string/*mcaddr*/, NULL,
+		       xfd->para.socket.la.soa.sa_family,
+		       SOCK_DGRAM, IPPROTO_IP,
+		       &sockaddr1, &socklen1, 0, 0)) != STAT_OK) {
+      return res;
+   }
+   memcpy(&ip6_gsr.gsr_group, &sockaddr1.ip6, socklen1);
+   /* Second parameter is interface name/index */
+   if (ifindex(opt->value2.u_string/*ifindex*/,
+	       &ip6_gsr.gsr_interface, -1)
+       < 0) {
+      Error1("interface \"%s\" not found",
+	     opt->value.u_string/*ifindex*/);
+      ip6_gsr.gsr_interface = 0;
+   }
+   /* Third parameter is source address */
+   if ((res =
+	xiogetaddrinfo(opt->value3.u_string/*srcaddr*/, NULL,
+		       xfd->para.socket.la.soa.sa_family,
+		       SOCK_DGRAM, IPPROTO_IP,
+		       &sockaddr2, &socklen2, 0, 0)) != STAT_OK) {
+      return res;
+   }
+   memcpy(&ip6_gsr.gsr_source, &sockaddr2.ip6, socklen2);
+   if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+		  &ip6_gsr, sizeof(ip6_gsr)) < 0) {
+      Error6("setsockopt(%d, %d, %d, {%d,...}, "F_Zu"): %s",
+	     xfd->fd, opt->desc->major, opt->desc->minor,
+	     ip6_gsr.gsr_interface,
+	     sizeof(ip6_gsr),
+	     strerror(errno));
+      opt->desc = ODESC_ERROR;
+      return -1;
+   }
+   return 0;
+}
+#endif /* HAVE_STRUCT_GROUP_SOURCE_REQ */
 
 #endif /* WITH_IP6 */

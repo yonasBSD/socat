@@ -786,6 +786,9 @@ const struct optname optionnames[] = {
 #ifdef IPV6_JOIN_GROUP
 	IF_IP6    ("ipv6-add-membership",	&opt_ipv6_join_group)
 #endif
+#ifdef MCAST_JOIN_SOURCE_GROUP
+	IF_IP6    ("ipv6-add-source-membership",	&opt_ipv6_join_source_group)
+#endif
 #ifdef IPV6_AUTHHDR
 	IF_IP6    ("ipv6-authhdr",	&opt_ipv6_authhdr)
 #endif
@@ -803,6 +806,9 @@ const struct optname optionnames[] = {
 #endif
 #ifdef IPV6_JOIN_GROUP
 	IF_IP6    ("ipv6-join-group",	&opt_ipv6_join_group)
+#endif
+#ifdef MCAST_JOIN_SOURCE_GROUP
+	IF_IP6    ("ipv6-join-source-group",	&opt_ipv6_join_source_group)
 #endif
 #ifdef IPV6_PKTINFO
 	IF_IP6    ("ipv6-pktinfo",	&opt_ipv6_pktinfo)
@@ -855,6 +861,9 @@ const struct optname optionnames[] = {
 	IF_TERMIOS("ixon",	&opt_ixon)
 #ifdef IPV6_JOIN_GROUP
 	IF_IP6    ("join-group",	&opt_ipv6_join_group)
+#endif
+#ifdef MCAST_JOIN_SOURCE_GROUP
+	IF_IP6    ("join-source-group",	&opt_ipv6_join_source_group)
 #endif
 #if WITH_FS && defined(FS_JOURNAL_DATA_FL)
 	IF_ANY    ("journal",		&opt_fs_journal_data)
@@ -2490,6 +2499,12 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	 break;
 #endif
 
+#if HAVE_STRUCT_GROUP_SOURCE_REQ
+      case TYPE_GROUP_SOURCE_REQ:
+	 xiotype_ip6_join_source_group(token, ent, opt);
+	 break;
+#endif
+
 #if WITH_IP4
       case TYPE_IP4NAME:
 	 {
@@ -3331,6 +3346,12 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       ++opt; continue;
 #endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
 
+#if defined(HAVE_STRUCT_GROUP_SOURCE_REQ)
+	    case TYPE_GROUP_SOURCE_REQ:
+	       /* handled in applyopts_single */
+	       ++opt; continue;
+#endif /* defined(HAVE_STRUCT_GROUP_SOURCE_REQ) */
+
 	       /*! still many types missing; implement on demand */
 #if WITH_IP4
 	    case TYPE_IP4NAME:
@@ -3983,6 +4004,14 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
 	       continue;
 	    }
 	    break;
+#endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
+
+#if WITH_IP6 && defined(HAVE_STRUCT_GROUP_SOURCE_REQ)
+	 case OPT_IPV6_JOIN_SOURCE_GROUP:
+	    if (xioapply_ip6_join_source_group(xfd, opt) < 0) {
+	       continue;
+	    }
+	   break;
 #endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
 	default:
 	   /* ignore here */

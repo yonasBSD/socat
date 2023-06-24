@@ -17,6 +17,9 @@ Features:
 	not internally used by Socat.
 	Tests: SIGTERM_NOLOG SIG31_LOG
 
+	Added option ipv6-join-source-group.
+	Thanks to Martin Buck and David Schweizer for sending patches.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

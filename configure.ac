@@ -1256,6 +1256,20 @@ if test $sc_cv_struct_ip_mreq_source = yes; then
 fi
 AC_MSG_RESULT($sc_cv_struct_ip_mreqn)
 
+# struct group_source_req (for multicasting options)
+AC_MSG_CHECKING(for struct group_source_req)
+AC_CACHE_VAL(sc_cv_struct_group_source_req,
+[AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>],[struct group_source_req s;],
+[sc_cv_struct_group_source_req=yes],
+[sc_cv_struct_group_source_req=no])])
+if test $sc_cv_struct_group_source_req = yes; then
+   AC_DEFINE(HAVE_STRUCT_GROUP_SOURCE_REQ)
+fi
+AC_MSG_RESULT($sc_cv_struct_group_source_req)
+
 
 # struct ifreq (for network interfaces)
 AC_MSG_CHECKING(for struct ifreq)
