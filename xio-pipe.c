@@ -14,7 +14,7 @@
 
 #if WITH_PIPE
 
-static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
 static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts);
 
 
@@ -77,7 +77,14 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
 
 
 /* open a named or unnamed pipe/fifo */
-static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_fifo(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xfd->stream;
    const char *pipename = argv[1];
    int rw = (xioflags & XIO_ACCMODE);
@@ -96,7 +103,8 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
    }
 
    if (argc != 2) {
-      Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
+      xio_syntax(argv[0], 1, argc-1,addrdesc->syntax);
+      return STAT_NORETRY;
    }
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)

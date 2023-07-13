@@ -14,12 +14,19 @@
 
 #if WITH_GOPEN
 
-static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
 
 
 const struct addrdesc xioaddr_gopen  = { "GOPEN",  3, xioopen_gopen, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_REG|GROUP_NAMED|GROUP_OPEN|GROUP_FILE|GROUP_TERMIOS|GROUP_SOCKET|GROUP_SOCK_UNIX, 0, 0, 0 HELP(":<filename>") };
 
-static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_gopen(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xxfd->stream;
    const char *filename = argv[1];
    flags_t openflags = (xioflags & XIO_ACCMODE);
@@ -29,7 +36,9 @@ static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xio
    int result;
 
    if ((result =
-	  _xioopen_named_early(argc, argv, xxfd, GROUP_NAMED|groups, &exists, opts)) < 0) {
+	_xioopen_named_early(argc, argv, xxfd, GROUP_NAMED|addrdesc->groups, &exists,
+			     opts, addrdesc->syntax))
+       < 0) {
       return result;
    }
    st_mode = result;
@@ -53,7 +62,7 @@ static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xio
       Info1("\"%s\" is a socket, connecting to it", filename);
 
       result =
-	 _xioopen_unix_client(sfd, xioflags, groups, 0, opts, filename);
+	 _xioopen_unix_client(sfd, xioflags, addrdesc->groups, 0, opts, filename);
       if (result < 0) {
 	 return result;
       }

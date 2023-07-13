@@ -151,7 +151,7 @@ bool xioopts_ignoregroups;
 #endif
 
 
-static int applyopt_offset(struct single *xfd, struct opt *opt);
+static int applyopt_offset(struct single *sfd, struct opt *opt);
 static int applyopt(struct single *sfd,	int fd,	struct opt *opt);
 
 
@@ -4080,10 +4080,10 @@ int applyopts_fchown(int fd, struct opt *opts) {
 }
 
 /* caller must make sure that option is not yet consumed */
-static int applyopt_offset(struct single *xfd, struct opt *opt) {
+static int applyopt_offset(struct single *sfd, struct opt *opt) {
    unsigned char *ptr;
 
-   ptr = (unsigned char *)xfd + opt->desc->major;
+   ptr = (unsigned char *)sfd + opt->desc->major;
    switch (opt->desc->type) {
    case TYPE_BOOL:
       *(bool *)ptr = opt->value.u_bool;  break;
@@ -4117,7 +4117,7 @@ static int applyopt_offset(struct single *xfd, struct opt *opt) {
    return 0;
 }
 
-int applyopts_offset(struct single *xfd, struct opt *opts) {
+int applyopts_offset(struct single *sfd, struct opt *opts) {
    struct opt *opt;
 
    opt = opts; while (opt->desc != ODESC_END) {
@@ -4125,16 +4125,16 @@ int applyopts_offset(struct single *xfd, struct opt *opts) {
 	  opt->desc->func != OFUNC_OFFSET)  {
 	 ++opt; continue; }
 
-      applyopt_offset(xfd, opt);
+      applyopt_offset(sfd, opt);
       opt->desc = ODESC_DONE;
       ++opt;
    }
    return 0;
 }
 
-/* applies to xfd all OFUNC_EXT options belonging to phase
+/* applies to sfd all OFUNC_EXT options belonging to phase
    returns -1 if an error occurred */
-int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
+int applyopts_single(struct single *sfd, struct opt *opts, enum e_phase phase) {
    struct opt *opt;
    int rc = 0;
 
@@ -4145,9 +4145,9 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
       if ((opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR) &&
 	  (opt->desc->phase == phase && phase != PH_ALL)) {
 	 if (opt->desc->func < OFUNC_XIO) {
-		 rc = applyopt(NULL, xfd->fd, opt);
+		 rc = applyopt(NULL, sfd->fd, opt);
 	 } else {
-		 rc = applyopt(xfd, -1, opt);
+		 rc = applyopt(sfd, -1, opt);
 	 }
 	 if (rc == 0)
 	    opt->desc = ODESC_DONE;

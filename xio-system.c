@@ -13,22 +13,19 @@
 
 #if WITH_SYSTEM
 
-static int xioopen_system(int arg, const char *argv[], struct opt *opts,
-		int xioflags,	/* XIO_RDONLY etc. */
-		xiofile_t *fd,
-		groups_t groups,
-		int dummy1, int dummy2, int dummy3
-		);
+static int xioopen_system(int arg, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 const struct addrdesc xioaddr_system = { "SYSTEM", 3, xioopen_system, GROUP_FD|GROUP_FORK|GROUP_EXEC|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_TERMIOS|GROUP_FIFO|GROUP_PTY|GROUP_PARENT, 1, 0, 0 HELP(":<shell-command>") };
 
 
-static int xioopen_system(int argc, const char *argv[], struct opt *opts,
-		int xioflags,	/* XIO_RDONLY etc. */
-		xiofile_t *xfd,
-		groups_t groups,
-		int dummy1, int dummy2, int dummy3
-		) {
+static int xioopen_system(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,	/* XIO_RDONLY etc. */
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xfd->stream;
    int status;
    char *path = NULL;
@@ -36,7 +33,13 @@ static int xioopen_system(int argc, const char *argv[], struct opt *opts,
    int result;
    const char *string = argv[1];
 
-   status = _xioopen_foxec(xioflags, sfd, groups, &opts, &duptostderr);
+   if (argc != 2) {
+      xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
+      return STAT_NORETRY;
+   }
+
+   status =
+      _xioopen_foxec(xioflags, sfd, addrdesc->groups, &opts, &duptostderr);
    if (status < 0)
       return status;
    if (status == 0) {	/* child */

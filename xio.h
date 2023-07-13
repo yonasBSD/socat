@@ -355,8 +355,7 @@ typedef union bipipe {
 struct addrdesc {
    const char *defname;	/* main (canonical) name of address */
    int directions;	/* 1..read, 2..write, 3..both */
-   int (*func)(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *fd, groups_t groups,
-	       int arg1, int arg2, int arg3);
+   int (*func)(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *fd, const struct addrdesc *addrdesc);
    groups_t groups;
    int arg1;
    int arg2;

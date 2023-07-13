@@ -15,10 +15,7 @@
 #include "xio-interface.h"
 
 
-static
-int xioopen_interface(int argc, const char *argv[], struct opt *opts,
-		      int xioflags, xiofile_t *xfd, groups_t groups, int pf,
-		      int dummy2, int dummy3);
+static int xioopen_interface(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 /*0 const struct optdesc opt_interface_addr    = { "interface-addr",    "address", OPT_INTERFACE_ADDR,    GROUP_INTERFACE, PH_FD, TYPE_STRING,   OFUNC_SPEC };*/
 /*0 const struct optdesc opt_interface_netmask = { "interface-netmask", "netmask", OPT_INTERFACE_NETMASK, GROUP_INTERFACE, PH_FD, TYPE_STRING,   OFUNC_SPEC };*/
@@ -62,7 +59,7 @@ static
 int _xioopen_interface(const char *ifname,
 		       struct opt *opts, int xioflags, xiofile_t *xxfd,
 		       groups_t groups, int pf) {
-   xiosingle_t *xfd = &xxfd->stream;
+   xiosingle_t *sfd = &xxfd->stream;
    union sockaddr_union us = {{0}};
    socklen_t uslen;
    int socktype = SOCK_RAW;
@@ -77,21 +74,21 @@ int _xioopen_interface(const char *ifname,
       ifidx = 0;	/* desparate attempt to continue */
    }
 
-   xfd->howtoend = END_INTERFACE;
+   sfd->howtoend = END_INTERFACE;
    retropt_int(opts, OPT_SO_TYPE, &socktype);
 
    retropt_socket_pf(opts, &pf);
 
    /* ...res_opts[] */
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(xfd, -1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
-   xfd->salen = sizeof(xfd->peersa);
+   sfd->salen = sizeof(sfd->peersa);
    if (pf == PF_UNSPEC) {
-      pf = xfd->peersa.soa.sa_family;
+      pf = sfd->peersa.soa.sa_family;
    }
 
-   xfd->dtype = XIODATA_RECVFROM_SKIPIP;
+   sfd->dtype = XIODATA_RECVFROM_SKIPIP;
 
    if (retropt_string(opts, OPT_BIND, &bindstring)) {
       needbind = true;
@@ -102,24 +99,24 @@ int _xioopen_interface(const char *ifname,
    us.ll.sll_ifindex = ifidx;
    uslen = sizeof(sall);
    needbind = true;
-   xfd->peersa = (union sockaddr_union)us;
+   sfd->peersa = (union sockaddr_union)us;
 
    rc =
       _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
-			    opts, xioflags, xfd, groups, pf, socktype, 0, 0);
+			    opts, xioflags, sfd, groups, pf, socktype, 0, 0);
    if (rc < 0)
       return rc;
 
-   strncpy(xfd->para.interface.name, ifname, IFNAMSIZ);
-   _xiointerface_get_iff(xfd->fd, ifname, &xfd->para.interface.save_iff);
-   _xiointerface_apply_iff(xfd->fd, ifname, xfd->para.interface.iff_opts);
+   strncpy(sfd->para.interface.name, ifname, IFNAMSIZ);
+   _xiointerface_get_iff(sfd->fd, ifname, &sfd->para.interface.save_iff);
+   _xiointerface_apply_iff(sfd->fd, ifname, sfd->para.interface.iff_opts);
 
 #ifdef PACKET_IGNORE_OUTGOING
    /* Raw socket might also provide packets that are outbound - we are not
       interested in these and disable this "feature" in kernel if possible */
-   if (Setsockopt(xfd->fd, SOL_PACKET, PACKET_IGNORE_OUTGOING, &one, sizeof(one)) < 0) {
+   if (Setsockopt(sfd->fd, SOL_PACKET, PACKET_IGNORE_OUTGOING, &one, sizeof(one)) < 0) {
       Warn2("setsockopt(%d, SOL_PACKET, PACKET_IGNORE_OUTGOING, {1}): %s",
-	    xfd->fd, strerror(errno));
+	    sfd->fd, strerror(errno));
    }
 #endif /*defined(PACKET_IGNORE_OUTGOING) */
 
@@ -144,32 +141,37 @@ int _interface_setsockopt_auxdata(int fd, int auxdata) {
 }
 
 static
-int xioopen_interface(int argc, const char *argv[], struct opt *opts,
-		      int xioflags, xiofile_t *xxfd, groups_t groups,
-		      int pf, int dummy2, int dummy3) {
-   xiosingle_t *xfd = &xxfd->stream;
+int xioopen_interface(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
+   xiosingle_t *sfd = &xxfd->stream;
    int result;
 
    if (argc != 2) {
-      Error2("%s: wrong number of parameters (%d instead of 1)",
-	     argv[0], argc-1);
+      xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
 
    if ((result =
-	_xioopen_interface(argv[1], opts, xioflags, xxfd, groups, pf))
+	_xioopen_interface(argv[1], opts, xioflags, xxfd, addrdesc->groups,
+			   addrdesc->arg1))
        != STAT_OK) {
       return result;
    }
 
-   xfd->dtype = XIOREAD_RECV|XIOWRITE_SENDTO;
-   if (pf == PF_INET) {
-      xfd->dtype |= XIOREAD_RECV_SKIPIP;
+   sfd->dtype = XIOREAD_RECV|XIOWRITE_SENDTO;
+   if (addrdesc->arg1 == PF_INET) {
+      sfd->dtype |= XIOREAD_RECV_SKIPIP;
    }
 
-   xfd->para.socket.la.soa.sa_family = xfd->peersa.soa.sa_family;
+   sfd->para.socket.la.soa.sa_family = sfd->peersa.soa.sa_family;
 
-   _xio_openlate(xfd, opts);
+   _xio_openlate(sfd, opts);
    return STAT_OK;
 }
 

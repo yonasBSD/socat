@@ -13,8 +13,8 @@
 
 #if WITH_STDIO
 
-static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
-static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int fd, int dummy2, int dummy3);
+static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
+static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 
 /* we specify all option groups that we can imagine for a FD, becasue the
@@ -135,7 +135,14 @@ int xioopen_stdio_bi(xiofile_t *sock) {
 
 /* wrap around unidirectional xioopensingle and xioopen_fd to automatically determine stdin or stdout fd depending on rw.
    Do not set FD_CLOEXEC flag. */
-static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_stdio(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *fd,
+	const struct addrdesc *addrdesc)
+{
    int rw = (xioflags&XIO_ACCMODE);
 
    if (argc != 1) {
@@ -149,13 +156,21 @@ static int xioopen_stdio(int argc, const char *argv[], struct opt *opts, int xio
    Notice2("using %s for %s",
 	   &("stdin\0\0\0stdout"[rw<<3]),
 	   ddirection[rw]);
-   return xioopen_fd(opts, rw, &fd->stream, rw, dummy2, dummy3);
+   return xioopen_fd(opts, rw, &fd->stream, rw);
 }
 
 /* wrap around unidirectional xioopensingle and xioopen_fd to automatically determine stdin or stdout fd depending on rw.
    Do not set FD_CLOEXEC flag. */
-static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int fd, int dummy2, int dummy3) {
+static int xioopen_stdfd(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    int rw = (xioflags&XIO_ACCMODE);
+   int fd = addrdesc->arg1;
 
    if (argc != 1) {
       Error2("%s: wrong number of parameters (%d instead of 0)", argv[0], argc-1);
@@ -163,6 +178,6 @@ static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xio
    Notice2("using %s for %s",
 	   &("stdin\0\0\0stdout\0\0stderr"[fd<<3]),
 	   ddirection[rw]);
-   return xioopen_fd(opts, rw, &xfd->stream, fd, dummy2, dummy3);
+   return xioopen_fd(opts, rw, &xfd->stream, fd);
 }
 #endif /* WITH_STDIO */

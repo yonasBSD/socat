@@ -18,7 +18,7 @@
 
 #define MAXPTYNAMELEN 64
 
-static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
 
 const struct addrdesc xioaddr_pty = { "PTY",   3, xioopen_pty, GROUP_NAMED|GROUP_FD|GROUP_TERMIOS|GROUP_PTY, 0, 0, 0 HELP("") };
 
@@ -28,7 +28,14 @@ const struct optdesc opt_pty_wait_slave = { "pty-wait-slave", "wait-slave", OPT_
 const struct optdesc opt_pty_intervall  = { "pty-interval",  NULL,         OPT_PTY_INTERVALL,  GROUP_PTY, PH_EARLY, TYPE_TIMESPEC, OFUNC_SPEC, 0, 0 };
 #endif /* HAVE_POLL */
 
-static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_pty(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    /* we expect the form: filename */
    struct single *sfd = &xfd->stream;
    int ptyfd = -1, ttyfd = -1;
@@ -49,7 +56,8 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
    struct timespec pollintv = { PTY_INTERVALL };
 
    if (argc != 1) {
-      Error2("%s: wrong number of parameters (%d instead of 0)", argv[0], argc-1);
+      xio_syntax(argv[0], 0, argc-1, addrdesc->syntax);
+      return STAT_NORETRY;
    }
 
    sfd->howtoend = END_CLOSE;

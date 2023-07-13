@@ -19,7 +19,7 @@ static int _posixmq_unlink(
 	const char *name,
 	int level); 		/* message level on error */
 
-static int xioopen_posixmq(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dirs, int dummy, int dummy3);
+static int xioopen_posixmq(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 const struct addrdesc xioaddr_posixmq_bidir   = { "POSIXMQ-BIDIRECTIONAL", 1+XIO_RDWR,   xioopen_posixmq, GROUP_FD|GROUP_NAMED|GROUP_POSIXMQ|GROUP_RETRY,                  XIO_RDWR,   0, 0 HELP(":<mqname>") };
 const struct addrdesc xioaddr_posixmq_read    = { "POSIXMQ-READ",          1+XIO_RDONLY, xioopen_posixmq, GROUP_FD|GROUP_NAMED|GROUP_POSIXMQ|GROUP_RETRY,                  XIO_RDONLY, 0, 0 HELP(":<mqname>") };
@@ -37,14 +37,13 @@ static int xioopen_posixmq(
 	struct opt *opts,
 	int xioflags,
 	xiofile_t *xfd,
-	groups_t groups,
-	int dirs,
-	int oneshot,
-	int dummy3)
+	const struct addrdesc *addrdesc)
 {
 	/* We expect the form: /mqname */
 	xiosingle_t *sfd = &xfd->stream;
 	const char *name;
+	int dirs = addrdesc->arg1;
+	int oneshot = addrdesc->arg2;
 	bool opt_unlink_early = false;
 	int oflag;
 	bool opt_o_excl = false;
@@ -61,8 +60,7 @@ static int xioopen_posixmq(
 		return STAT_NORETRY;
 	}
 	if (argc != 2) {
-		Error2("%s: wrong number of parameters (%d instead of 1)",
-		       argv[0], argc-1);
+		xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
 		return STAT_NORETRY;
 	}
 

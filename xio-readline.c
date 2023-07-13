@@ -25,9 +25,7 @@ uses stdin!!
 /* length of buffer for dynamic prompt */
 #define READLINE_MAXPROMPT 512
 
-static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
-			    int rw, xiofile_t *xfd, groups_t groups,
-			    int dummy1, int dummy2, int dummy3);
+static int xioopen_readline(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 
 const struct addrdesc xioaddr_readline = { "READLINE", 3, xioopen_readline, GROUP_FD|GROUP_TERMIOS|GROUP_READLINE, 0, 0, 0 HELP(NULL) };
@@ -37,9 +35,14 @@ const struct optdesc opt_prompt       = { "prompt",       NULL,      OPT_PROMPT,
 const struct optdesc opt_noprompt     = { "noprompt",     NULL,      OPT_NOPROMPT,     GROUP_READLINE, PH_LATE, TYPE_BOOL,   OFUNC_SPEC,   0 };
 const struct optdesc opt_noecho       = { "noecho",       NULL,      OPT_NOECHO,       GROUP_READLINE, PH_LATE, TYPE_STRING, OFUNC_SPEC,   0 };
 
-static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
-			    int xioflags, xiofile_t *xfd, groups_t groups,
-			    int dummy1, int dummy2, int dummy3) {
+static int xioopen_readline(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xfd->stream;
    int rw = (xioflags & XIO_ACCMODE);
    char msgbuf[256], *cp = msgbuf;
@@ -47,7 +50,7 @@ static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
    char *noecho = NULL;
 
    if (argc != 1) {
-      Error1("%s: 0 parameters required", argv[0]);
+      xio_syntax(argv[0], 0, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
 

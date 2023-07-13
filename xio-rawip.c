@@ -17,22 +17,10 @@
 #include "xio-rawip.h"
 
 
-static
-int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *fd, groups_t groups, int pf,
-			 int dummy2, int dummy3);
-static
-int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *fd, groups_t groups, int pf,
-			 int dummy2, int dummy3);
-static
-int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xfd, groups_t groups,
-			 int pf, int socktype, int dummy3);
-static
-int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
-		       int xioflags, xiofile_t *xfd, groups_t groups,
-		       int pf, int socktype, int ipproto);
+static int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
+static int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
+static int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
+static int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 static
 int _xioopen_rawip_sendto(const char *hostname, const char *protname,
@@ -62,21 +50,25 @@ const struct addrdesc xioaddr_rawip6_recv    = { "IP6-RECV",       1+XIO_RDONLY,
 /* we expect the form: host:protocol */
 /* struct sockaddr_in sa;*/
 /* socklen_t salen;*/
-static
-int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xxfd, groups_t groups,
-			 int pf, int dummy2, int dummy3) {
+static int xioopen_rawip_sendto(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
+   int pf = addrdesc->arg1;
    int result;
 
    if (argc != 3) {
-      Error2("%s: wrong number of parameters (%d instead of 2)",
-	     argv[0], argc-1);
+      xio_syntax(argv[0], 2, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
 
    xioinit_ip(&pf, xioparms.preferred_ip);
    if ((result = _xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
-				       groups, &pf)) != STAT_OK) {
+				       addrdesc->groups, &pf)) != STAT_OK) {
       return result;
    }
    _xio_openlate(&xxfd->stream, opts);
@@ -95,7 +87,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 			  struct opt *opts, int xioflags, xiofile_t *xxfd,
 			  groups_t groups, int *pf) {
    char *garbage;
-   xiosingle_t *xfd = &xxfd->stream;
+   xiosingle_t *sfd = &xxfd->stream;
    union sockaddr_union us;
    socklen_t uslen;
    int feats = 1;	/* option bind supports only address, not port */
@@ -114,95 +106,106 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
       /*return STAT_NORETRY;*/
    }
 
-   xfd->howtoend = END_SHUTDOWN;
+   sfd->howtoend = END_SHUTDOWN;
    retropt_int(opts, OPT_PROTOCOL_FAMILY, pf);
 
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(xfd, -1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
-   xfd->salen = sizeof(xfd->peersa);
+   sfd->salen = sizeof(sfd->peersa);
    if ((result =
 	xioresolve(hostname, NULL, *pf, socktype, ipproto,
-		       &xfd->peersa, &xfd->salen,
-		       xfd->para.socket.ip.ai_flags))
+		       &sfd->peersa, &sfd->salen,
+		       sfd->para.socket.ip.ai_flags))
        != STAT_OK) {
       return result;
    }
    if (*pf == PF_UNSPEC) {
-      *pf = xfd->peersa.soa.sa_family;
+      *pf = sfd->peersa.soa.sa_family;
    }
 
    uslen = socket_init(*pf, &us);
 
-   xfd->dtype = XIODATA_RECVFROM_SKIPIP;
+   sfd->dtype = XIODATA_RECVFROM_SKIPIP;
 
    if (retropt_bind(opts, *pf, socktype, ipproto, &us.soa, &uslen, feats,
-		    xfd->para.socket.ip.ai_flags)
+		    sfd->para.socket.ip.ai_flags)
        != STAT_NOACTION) {
       needbind = true;
    }
    return
       _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
-			    opts, xioflags, xfd, groups, *pf, socktype, ipproto, 0);
+			    opts, xioflags, sfd, groups, *pf, socktype, ipproto, 0);
 }
 
 
 /* we expect the form: address:protocol */
-static
-int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
-			 int xioflags, xiofile_t *xxfd, groups_t groups,
-			 int pf, int dummy2, int dummy3) {
-   xiosingle_t *xfd = &xxfd->stream;
+static int xioopen_rawip_datagram(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
+   xiosingle_t *sfd = &xxfd->stream;
+   int pf = addrdesc->arg1;
    char *rangename;
    int result;
 
    if (argc != 3) {
-      Error2("%s: wrong number of parameters (%d instead of 2)",
-	     argv[0], argc-1);
+      xio_syntax(argv[0], 2, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
 
    xioinit_ip(&pf, xioparms.preferred_ip);
    if ((result =
 	_xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
-				groups, &pf)) != STAT_OK) {
+			      addrdesc->groups, &pf)) != STAT_OK) {
       return result;
    }
 
-   xfd->dtype = XIOREAD_RECV|XIOWRITE_SENDTO;
+   sfd->dtype = XIOREAD_RECV|XIOWRITE_SENDTO;
    if (pf == PF_INET) {
-      xfd->dtype |= XIOREAD_RECV_SKIPIP;
+      sfd->dtype |= XIOREAD_RECV_SKIPIP;
    }
 
-   xfd->para.socket.la.soa.sa_family = xfd->peersa.soa.sa_family;
+   sfd->para.socket.la.soa.sa_family = sfd->peersa.soa.sa_family;
 
    /* which reply packets will be accepted - determine by range option */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags)
+      if (xioparserange(rangename, pf, &sfd->para.socket.range,
+			sfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
-      xfd->para.socket.dorange = true;
-      xfd->dtype |= XIOREAD_RECV_CHECKRANGE;
+      sfd->para.socket.dorange = true;
+      sfd->dtype |= XIOREAD_RECV_CHECKRANGE;
       free(rangename);
    }
 
 #if WITH_LIBWRAP
-   xio_retropt_tcpwrap(xfd, opts);
+   xio_retropt_tcpwrap(sfd, opts);
 #endif /* WITH_LIBWRAP */
 
-   _xio_openlate(xfd, opts);
+   _xio_openlate(sfd, opts);
    return STAT_OK;
 }
 
 
-static
-int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xfd, groups_t groups,
-		     int pf, int socktype, int dummy3) {
+static int xioopen_rawip_recvfrom(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
+   struct single *sfd = &xfd->stream;
    const char *protname = argv[1];
+   int pf = addrdesc->arg1;
+   int socktype = addrdesc->arg2;
    char *garbage;
    union sockaddr_union us;
    socklen_t uslen = sizeof(us);
@@ -211,8 +214,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
    int result;
 
    if (argc != 2) {
-      Error2("%s: wrong number of parameters (%d instead of 1)",
-	     argv[0], argc-1);
+      xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
 
@@ -226,7 +228,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
 	     protname);
       /*return STAT_NORETRY;*/
    }
-   xfd->stream.howtoend = END_NONE;
+   sfd->howtoend = END_NONE;
 
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
@@ -244,28 +246,34 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
    }
 
    if (retropt_bind(opts, pf, socktype, ipproto, &us.soa, &uslen, 1,
-		    xfd->stream.para.socket.ip.ai_flags)
+		    sfd->para.socket.ip.ai_flags)
        != STAT_NOACTION) {
       needbind = true;
    }
 
-   xfd->stream.dtype = XIODATA_RECVFROM_SKIPIP_ONE;
+   sfd->dtype = XIODATA_RECVFROM_SKIPIP_ONE;
    if ((result =
-	_xioopen_dgram_recvfrom(&xfd->stream, xioflags, needbind?&us.soa:NULL,
+	_xioopen_dgram_recvfrom(sfd, xioflags, needbind?&us.soa:NULL,
 				uslen, opts, pf, socktype, ipproto, E_ERROR))
        != STAT_OK) {
       return result;
    }
-   _xio_openlate(&xfd->stream, opts);
+   _xio_openlate(sfd, opts);
    return STAT_OK;
 }
 
 
-static
-int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
-		       int xioflags, xiofile_t *xfd, groups_t groups,
-		       int pf, int socktype, int dummy3) {
+static int xioopen_rawip_recv(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    const char *protname = argv[1];
+   int pf = addrdesc->arg1;
+   int socktype = addrdesc->arg2;
    char *garbage;
    bool needbind = false;
    union sockaddr_union us;
@@ -274,8 +282,7 @@ int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
    int result;
 
    if (argc != 2) {
-      Error2("%s: wrong number of parameters (%d instead of 1)",
-	     argv[0], argc-1);
+      xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
 

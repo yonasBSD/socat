@@ -95,8 +95,14 @@ int applyopts_named(const char *filename, struct opt *opts, unsigned int phase) 
    If the path exists, its st_mode field is returned.
    After this sub you may proceed with open() or whatever...
    */
-int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
-			 groups_t groups, bool *exists, struct opt *opts)
+int _xioopen_named_early(
+	int argc,
+	const char *argv[],
+	xiofile_t *xfd,
+	groups_t groups,
+	bool *exists,
+	struct opt *opts,
+	const char *syntax)
 {
    const char *path = argv[1];
    struct single *sfd = &xfd->stream;
@@ -108,7 +114,8 @@ int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
    bool opt_unlink_early = false;
 
    if (argc != 2) {
-      Error2("%s: wrong number of parameters (%d instead of 1)", argv[0]?argv[0]:"<named>", argc);
+      xio_syntax(argv[0], 1, argc-1, syntax);
+      return STAT_NORETRY;
    }
    statbuf.st_mode = 0;
    /* find the appropriate groupbits */

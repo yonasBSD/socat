@@ -13,7 +13,7 @@
 #include "xio-creat.h"
 
 
-static int xioopen_creat(int arg, const char *argv[], struct opt *opts, int rw, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_creat(int arg, const char *argv[], struct opt *opts, int rw, xiofile_t *fd, const struct addrdesc *addrdesc);
 
 
 /*! within stream model, this is a write-only address - use 2 instead of 3 */
@@ -37,7 +37,14 @@ static int _xioopen_creat(const char *path, int rw, struct opt *opts) {
 }
 
 
-static int xioopen_creat(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_creat(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xxfd->stream;
    const char *filename = argv[1];
    int rw = (xioflags&XIO_ACCMODE);
@@ -46,7 +53,10 @@ static int xioopen_creat(int argc, const char *argv[], struct opt *opts, int xio
    int result;
 
    /* remove old file, or set user/permissions on old file; parse options */
-   if ((result = _xioopen_named_early(argc, argv, xxfd, groups, &exists, opts)) < 0) {
+   if ((result =
+	_xioopen_named_early(argc, argv, xxfd, addrdesc->groups, &exists, opts,
+			     addrdesc->syntax))
+       < 0) {
       return result;
    }
 

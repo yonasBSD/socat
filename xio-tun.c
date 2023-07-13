@@ -16,7 +16,7 @@
 #include "xio-tun.h"
 
 
-static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 /****** TUN options ******/
 const struct optdesc opt_tun_device    = { "tun-device",     NULL,      OPT_TUN_DEVICE,      GROUP_TUN,       PH_OPEN, TYPE_FILENAME, OFUNC_SPEC };
@@ -45,7 +45,14 @@ static const struct optname xio_route_options[] = {
 } ;
 #endif
 
-static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_tun(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xfd->stream;
    char *tundevice = NULL;
    char *tunname = NULL, *tuntype = NULL;
@@ -61,8 +68,13 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
    int result;
 
    if (argc > 2 || argc < 0) {
+#if WITH_HELP
+      Error3("%s: wrong number of parameters (%d instead of 0 or 1); usage: %s",
+	     argv[0], argc-1, addrdesc->syntax);
+#else
       Error2("%s: wrong number of parameters (%d instead of 0 or 1)",
 	     argv[0], argc-1);
+#endif
    }
 
    if (retropt_string(opts, OPT_TUN_DEVICE, &tundevice) != 0) {
@@ -74,7 +86,8 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
 
    namedargv[1] = tundevice;
    /* open the tun cloning device */
-   if ((result = _xioopen_named_early(2, namedargv, xfd, groups, &exists, opts)) < 0) {
+   if ((result = _xioopen_named_early(2, namedargv, xfd, addrdesc->groups,
+				      &exists, opts, addrdesc->syntax)) < 0) {
       return result;
    }
 

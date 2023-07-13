@@ -17097,7 +17097,6 @@ CMD0="$TRACE $SOCAT $opts -T 2 PIPE EXEC:\"$CAT\",pty,setsid,sigint"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
-#echo "pid0=$pid0" >&2  #!!!
 sleep 1
 kill -INT $pid0
 wait

@@ -20,10 +20,7 @@
 
 #define PROXYPORT "8080"
 
-static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
-				 int xioflags, xiofile_t *fd,
-				 groups_t groups, int dummy1, int dummy2,
-				 int dummy3);
+static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
 
 const struct optdesc opt_proxyport = { "proxyport", NULL, OPT_PROXYPORT, GROUP_HTTP, PH_LATE, TYPE_STRING, OFUNC_SPEC };
 const struct optdesc opt_ignorecr  = { "ignorecr",  NULL, OPT_IGNORECR,  GROUP_HTTP, PH_LATE, TYPE_BOOL,  OFUNC_SPEC };
@@ -57,15 +54,15 @@ enum {
    returns <0 when error occurs
 */
 static ssize_t
-   xioproxy_recvbytes(struct single *xfd, char *buff, size_t buflen, int level) {
+   xioproxy_recvbytes(struct single *sfd, char *buff, size_t buflen, int level) {
    ssize_t result;
    do {
       /* we need at least buflen bytes... */
-      result = Read(xfd->fd, buff, buflen);
+      result = Read(sfd->fd, buff, buflen);
    } while (result < 0 && errno == EINTR);	/*! EAGAIN? */
    if (result < 0) {
       Msg4(level, "read(%d, %p, "F_Zu"): %s",
-	   xfd->fd, buff, buflen, strerror(errno));
+	   sfd->fd, buff, buflen, strerror(errno));
       return result;
    }
    if (result == 0) {
@@ -78,12 +75,16 @@ static ssize_t
 #define BUFLEN 2048
 
 
-static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
-				 int xioflags, xiofile_t *xxfd,
-				 groups_t groups, int dummy1, int dummy2,
-				 int dummy3) {
+static int xioopen_proxy_connect(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
       /* we expect the form: host:host:port */
-   struct single *xfd = &xxfd->stream;
+   struct single *sfd = &xxfd->stream;
    struct opt *opts0 = NULL;
    struct proxyvars struct_proxyvars = { 0 }, *proxyvars = &struct_proxyvars;
    /* variables to be filled with address option values */
@@ -105,16 +106,17 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    int result;
 
    if (argc != 4) {
-      Error1("%s: 3 parameters required", argv[0]);
+      xio_syntax(argv[0], 3, argc-1, addrdesc->syntax);
       return STAT_NORETRY;
    }
    proxyname = argv[1];
    targetname = argv[2];
    targetport = argv[3];
 
-   xfd->howtoend = END_SHUTDOWN;
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(xfd, 1, opts, PH_INIT);
+   sfd->howtoend = END_SHUTDOWN;
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)
+      return -1;
+   applyopts(sfd, 1, opts, PH_INIT);
 
    retropt_int(opts, OPT_SO_TYPE, &socktype);
 
@@ -127,7 +129,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    }
 
    result = _xioopen_proxy_prepare(proxyvars, opts, targetname, targetport,
-				   xfd->para.socket.ip.ai_flags);
+				   sfd->para.socket.ip.ai_flags);
    if (result != STAT_OK)
       return result;
 
@@ -142,7 +144,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
     result =
       _xioopen_ipapp_prepare(opts, &opts0, proxyname, proxyport,
 			     &pf, ipproto,
-			     xfd->para.socket.ip.ai_flags,
+			     sfd->para.socket.ip.ai_flags,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)
@@ -168,14 +170,14 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 	 Notice4("opening connection to %s:%u via proxy %s:%s",
 		 proxyvars->targetaddr, proxyvars->targetport, proxyname, proxyport);
 #if WITH_RETRY
-	 if (xfd->forever || xfd->retry || ai_sorted[i] != NULL) {
+	 if (sfd->forever || sfd->retry || ai_sorted[i] != NULL) {
 	    level = E_INFO;
 	 } else
 #endif /* WITH_RETRY */
 	    level = E_ERROR;
 
    result =
-      _xioopen_connect(xfd,
+      _xioopen_connect(sfd,
 		       needbind?us:NULL, sizeof(*us),
 		       themp->ai_addr, themp->ai_addrlen,
 		       opts, pf?pf:themp->ai_family, socktype, IPPROTO_TCP, lowport, level);
@@ -190,10 +192,10 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 #if WITH_RETRY
       case STAT_RETRYLATER:
       case STAT_RETRYNOW:
-	 if (xfd->forever || xfd->retry) {
-	    --xfd->retry;
+	 if (sfd->forever || sfd->retry) {
+	    --sfd->retry;
 	    if (result == STAT_RETRYLATER)
-	       Nanosleep(&xfd->intervall, NULL);
+	       Nanosleep(&sfd->intervall, NULL);
 	    continue;
 	 }
 #endif /* WITH_RETRY */
@@ -204,19 +206,19 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
       }
       }
       xiofreeaddrinfo(themlist);
-      applyopts(xfd, -1, opts, PH_ALL);
+      applyopts(sfd, -1, opts, PH_ALL);
 
-      if ((result = _xio_openlate(xfd, opts)) < 0)
+      if ((result = _xio_openlate(sfd, opts)) < 0)
 	 return result;
 
-      result = _xioopen_proxy_connect(xfd, proxyvars, level);
+      result = _xioopen_proxy_connect(sfd, proxyvars, level);
       switch (result) {
       case STAT_OK: break;
 #if WITH_RETRY
       case STAT_RETRYLATER:
       case STAT_RETRYNOW:
-	 if (xfd->forever || xfd->retry--) {
-	    if (result == STAT_RETRYLATER)  Nanosleep(&xfd->intervall, NULL);
+	 if (sfd->forever || sfd->retry--) {
+	    if (result == STAT_RETRYLATER)  Nanosleep(&sfd->intervall, NULL);
 	    continue;
 	 }
 #endif /* WITH_RETRY */
@@ -232,24 +234,24 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
       if (dofork) {
 	 pid_t pid;
 	 int level = E_ERROR;
-	 if (xfd->forever || xfd->retry) {
+	 if (sfd->forever || sfd->retry) {
 	    level = E_WARN;
 	 }
-	 while ((pid = xio_fork(false, level, xfd->shutup)) < 0) {
-	    if (xfd->forever || --xfd->retry) {
-	       Nanosleep(&xfd->intervall, NULL); continue;
+	 while ((pid = xio_fork(false, level, sfd->shutup)) < 0) {
+	    if (sfd->forever || --sfd->retry) {
+	       Nanosleep(&sfd->intervall, NULL); continue;
 	    }
 	    return STAT_RETRYLATER;
 	 }
 
 	 if (pid == 0) {	/* child process */
-	    xfd->forever = false;  xfd->retry = 0;
+	    sfd->forever = false;  sfd->retry = 0;
 	    break;
 	 }
 
 	 /* parent process */
-	 Close(xfd->fd);
-	 Nanosleep(&xfd->intervall, NULL);
+	 Close(sfd->fd);
+	 Nanosleep(&sfd->intervall, NULL);
 	 dropopts(opts, PH_ALL);  opts = copyopts(opts0, GROUP_ALL);
 	 continue;
       } else
@@ -357,7 +359,7 @@ int _xioopen_proxy_prepare(
    return STAT_OK;
 }
 
-int _xioopen_proxy_connect(struct single *xfd,
+int _xioopen_proxy_connect(struct single *sfd,
 			   struct proxyvars *proxyvars,
 			   int level) {
    size_t offset;
@@ -387,11 +389,11 @@ int _xioopen_proxy_connect(struct single *xfd,
    * xiosanitize(request, strlen(request), textbuff) = '\0';
    Info1("sending \"%s\"", textbuff);
    /* write errors are assumed to always be hard errors, no retry */
-   if (writefull(xfd->fd, request, strlen(request)) < 0) {
+   if (writefull(sfd->fd, request, strlen(request)) < 0) {
       Msg4(level, "write(%d, %p, "F_Zu"): %s",
-	   xfd->fd, request, strlen(request), strerror(errno));
-      if (Close(xfd->fd) < 0) {
-	 Info2("close(%d): %s", xfd->fd, strerror(errno));
+	   sfd->fd, request, strlen(request), strerror(errno));
+      if (Close(sfd->fd) < 0) {
+	 Info2("close(%d): %s", sfd->fd, strerror(errno));
       }
       return STAT_RETRYLATER;
    }
@@ -417,11 +419,11 @@ int _xioopen_proxy_connect(struct single *xfd,
       *next = '\0';
       Info1("sending \"%s\\r\\n\"", header);
       *next++ = '\r';  *next++ = '\n'; *next++ = '\0';
-      if (writefull(xfd->fd, header, strlen(header)) < 0) {
+      if (writefull(sfd->fd, header, strlen(header)) < 0) {
 	 Msg4(level, "write(%d, %p, "F_Zu"): %s",
-	      xfd->fd, header, strlen(header), strerror(errno));
-	 if (Close(xfd->fd) < 0) {
-	    Info2("close(%d): %s", xfd->fd, strerror(errno));
+	      sfd->fd, header, strlen(header), strerror(errno));
+	 if (Close(sfd->fd) < 0) {
+	    Info2("close(%d): %s", sfd->fd, strerror(errno));
 	 }
 	 return STAT_RETRYLATER;
       }
@@ -430,11 +432,11 @@ int _xioopen_proxy_connect(struct single *xfd,
    }
 
    Info("sending \"\\r\\n\"");
-   if (writefull(xfd->fd, "\r\n", 2) < 0) {
+   if (writefull(sfd->fd, "\r\n", 2) < 0) {
       Msg2(level, "write(%d, \"\\r\\n\", 2): %s",
-	   xfd->fd, strerror(errno));
-      if (Close(xfd->fd) < 0) {
-	 Info2("close(%d): %s", xfd->fd, strerror(errno));
+	   sfd->fd, strerror(errno));
+      if (Close(sfd->fd) < 0) {
+	 Info2("close(%d): %s", sfd->fd, strerror(errno));
       }
       return STAT_RETRYLATER;
    }
@@ -450,7 +452,7 @@ int _xioopen_proxy_connect(struct single *xfd,
    offset = 0;	/* up to where the buffer is filled (relative) */
    /*eol;*/	/* points to the first lineterm of the current line */
    do {
-      sresult = xioproxy_recvbytes(xfd, buff+offset, 1, level);
+      sresult = xioproxy_recvbytes(sfd, buff+offset, 1, level);
       if (sresult <= 0) {
 	 state = XIOSTATE_ERROR;
 	 break;	/* leave read cycles */

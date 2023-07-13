@@ -731,7 +731,7 @@ int xiotype_ip_add_membership(
 
 #if defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)
 int xioapply_ip_add_membership(
-	xiosingle_t *xfd,
+	struct single *sfd,
 	struct opt *opt)
 {
 	union {
@@ -754,9 +754,9 @@ mc:addr
 	/* First parameter is always multicast address */
 	/*! result */
 	xioresolve(opt->value.u_string/*multiaddr*/, NULL,
-		   xfd->para.socket.la.soa.sa_family,
+		   sfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP, &sockaddr1, &socklen1,
-		   xfd->para.socket.ip.ai_flags);
+		   sfd->para.socket.ip.ai_flags);
 	ip4_mreqn.mreq.imr_multiaddr = sockaddr1.ip4.sin_addr;
 	if (0) {
 		;	/* for canonical reasons */
@@ -765,9 +765,9 @@ mc:addr
 		/* three parameters */
 		/* second parameter is interface address */
 		xioresolve(opt->value2.u_string/*param2*/, NULL,
-			   xfd->para.socket.la.soa.sa_family,
+			   sfd->para.socket.la.soa.sa_family,
 			   SOCK_DGRAM, IPPROTO_IP, &sockaddr2, &socklen2,
-			   xfd->para.socket.ip.ai_flags);
+			   sfd->para.socket.ip.ai_flags);
 		ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
 		/* third parameter is interface */
 		if (ifindex(opt->value3.u_string/*ifindex*/,
@@ -793,10 +793,10 @@ mc:addr
 		} else {
 			/*! result */
 			xioresolve(opt->value2.u_string/*param2*/, NULL,
-				   xfd->para.socket.la.soa.sa_family,
+				   sfd->para.socket.la.soa.sa_family,
 				   SOCK_DGRAM, IPPROTO_IP,
 				   &sockaddr2, &socklen2,
-				   xfd->para.socket.ip.ai_flags);
+				   sfd->para.socket.ip.ai_flags);
 			ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
 		}
 	}
@@ -804,18 +804,18 @@ mc:addr
 #if LATER
 	if (0) {
 		; /* for canonical reasons */
-	} else if (xfd->para.socket.la.soa.sa_family == PF_INET) {
-	} else if (xfd->para.socket.la.soa.sa_family == PF_INET6) {
+	} else if (sfd->para.socket.la.soa.sa_family == PF_INET) {
+	} else if (sfd->para.socket.la.soa.sa_family == PF_INET6) {
 		ip6_mreqn.mreq.imr_multiaddr = sockaddr1.ip6.sin6_addr;
 		ip6_mreqn.mreq.imr_interface = sockaddr2.ip6.sin6_addr;
 	}
 #endif
 
 #if HAVE_STRUCT_IP_MREQN
-	if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+	if (Setsockopt(sfd->fd, opt->desc->major, opt->desc->minor,
 		       &ip4_mreqn.mreqn, sizeof(ip4_mreqn.mreqn)) < 0) {
 		Error8("setsockopt(%d, %d, %d, {0x%08x,0x%08x,%d}, "F_Zu"): %s",
-		       xfd->fd, opt->desc->major, opt->desc->minor,
+		       sfd->fd, opt->desc->major, opt->desc->minor,
 		       ip4_mreqn.mreqn.imr_multiaddr.s_addr,
 		       ip4_mreqn.mreqn.imr_address.s_addr,
 		       ip4_mreqn.mreqn.imr_ifindex,
@@ -825,10 +825,10 @@ mc:addr
 		return -1;
 	}
 #else
-	if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+	if (Setsockopt(sfd->fd, opt->desc->major, opt->desc->minor,
 		       &ip4_mreqn.mreq, sizeof(ip4_mreqn.mreq)) < 0) {
 		Error7("setsockopt(%d, %d, %d, {0x%08x,0x%08x}, "F_Zu"): %s",
-		       xfd->fd, opt->desc->major, opt->desc->minor,
+		       sfd->fd, opt->desc->major, opt->desc->minor,
 		       ip4_mreqn.mreq.imr_multiaddr,
 		       ip4_mreqn.mreq.imr_interface,
 		       sizeof(ip4_mreqn.mreq),
@@ -932,7 +932,7 @@ int xiotype_ip_add_source_membership(char *token, const struct optname *ent, str
    return 0;
 }
 
-int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
+int xioapply_ip_add_source_membership(struct single *sfd, struct opt *opt) {
    struct ip_mreq_source ip4_mreq_src = {{0}};
    /* IPv6 not supported - seems to have different handling */
    union sockaddr_union sockaddr1;
@@ -945,35 +945,35 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
 
    /* first parameter is always multicast address */
    rc = xioresolve(opt->value.u_string/*mcaddr*/, NULL,
-		   xfd->para.socket.la.soa.sa_family,
+		   sfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP,
-		   &sockaddr1, &socklen1, xfd->para.socket.ip.ai_flags);
+		   &sockaddr1, &socklen1, sfd->para.socket.ip.ai_flags);
    if (rc < 0) {
       return -1;
    }
    ip4_mreq_src.imr_multiaddr = sockaddr1.ip4.sin_addr;
    /* second parameter is interface address */
    rc = xioresolve(opt->value.u_string/*ifaddr*/, NULL,
-		   xfd->para.socket.la.soa.sa_family,
+		   sfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP,
-		   &sockaddr2, &socklen2, xfd->para.socket.ip.ai_flags);
+		   &sockaddr2, &socklen2, sfd->para.socket.ip.ai_flags);
    if (rc < 0) {
       return -1;
    }
    ip4_mreq_src.imr_interface = sockaddr2.ip4.sin_addr;
    /* third parameter is source address */
    rc = xioresolve(opt->value.u_string/*srcaddr*/, NULL,
-		   xfd->para.socket.la.soa.sa_family,
+		   sfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP,
-		   &sockaddr3, &socklen3, xfd->para.socket.ip.ai_flags);
+		   &sockaddr3, &socklen3, sfd->para.socket.ip.ai_flags);
    if (rc < 0) {
       return -1;
    }
    ip4_mreq_src.imr_sourceaddr = sockaddr3.ip4.sin_addr;
-   if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+   if (Setsockopt(sfd->fd, opt->desc->major, opt->desc->minor,
 		  &ip4_mreq_src, sizeof(ip4_mreq_src)) < 0) {
       Error8("setsockopt(%d, %d, %d, {0x%08x,0x%08x,0x%08x}, "F_Zu"): %s",
-	     xfd->fd, opt->desc->major, opt->desc->minor,
+	     sfd->fd, opt->desc->major, opt->desc->minor,
 	     htonl((uint32_t)ip4_mreq_src.imr_multiaddr.s_addr),
 	     ip4_mreq_src.imr_interface.s_addr,
 	     ip4_mreq_src.imr_sourceaddr.s_addr,

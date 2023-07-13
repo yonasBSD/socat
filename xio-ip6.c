@@ -259,7 +259,7 @@ int xiocheckrange_ip6(struct sockaddr_in6 *pa, struct xiorange *range) {
    returns STAT_OK on success
  */
 int xiolog_ancillary_ip6(
-	struct single *xfd,
+	struct single *sfd,
 	struct cmsghdr *cmsg,
 	int *num,
 	char *typbuff, int typlen,
@@ -476,7 +476,7 @@ xiosetsockaddrenv_ip6(int idx, char *namebuff, size_t namelen,
 
 #if defined(HAVE_STRUCT_IPV6_MREQ)
 int xioapply_ipv6_join_group(
-	xiosingle_t *xfd,
+	struct single *sfd,
 	struct opt *opt)
 {
 	struct ipv6_mreq ip6_mreq = {{{{0}}}};
@@ -488,10 +488,10 @@ int xioapply_ipv6_join_group(
 	/* First parameter is multicast address */
 	if ((res =
 	     xioresolve(opt->value.u_string/*multiaddr*/, NULL,
-			xfd->para.socket.la.soa.sa_family,
+			sfd->para.socket.la.soa.sa_family,
 			SOCK_DGRAM, IPPROTO_IP,
 			&sockaddr1, &socklen1,
-			xfd->para.socket.ip.ai_flags))
+			sfd->para.socket.ip.ai_flags))
 	    != STAT_OK) {
 	   return res;
 	}
@@ -504,10 +504,10 @@ int xioapply_ipv6_join_group(
 		ip6_mreq.ipv6mr_interface = htonl(0);
 	}
 
-	if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+	if (Setsockopt(sfd->fd, opt->desc->major, opt->desc->minor,
 		       &ip6_mreq, sizeof(ip6_mreq)) < 0) {
 		Error6("setsockopt(%d, %d, %d, {...,0x%08x}, "F_Zu"): %s",
-		       xfd->fd, opt->desc->major, opt->desc->minor,
+		       sfd->fd, opt->desc->major, opt->desc->minor,
 		       ip6_mreq.ipv6mr_interface,
 		       sizeof(ip6_mreq),
 		       strerror(errno));
@@ -618,7 +618,7 @@ int xiotype_ip6_join_source_group(
    return 0;
 }
 
-int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
+int xioapply_ip6_join_source_group(struct single *sfd, struct opt *opt) {
    struct group_source_req ip6_gsr = {0};
    union sockaddr_union sockaddr1;
    socklen_t socklen1 = sizeof(sockaddr1.ip6);
@@ -629,9 +629,9 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
    /* First parameter is always multicast address */
    if ((res =
 	xioresolve(opt->value.u_string/*mcaddr*/, NULL,
-		   xfd->para.socket.la.soa.sa_family,
+		   sfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP, &sockaddr1, &socklen1,
-		   xfd->para.socket.ip.ai_flags))
+		   sfd->para.socket.ip.ai_flags))
        != STAT_OK) {
       return res;
    }
@@ -647,17 +647,17 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
    /* Third parameter is source address */
    if ((res =
 	xioresolve(opt->value3.u_string/*srcaddr*/, NULL,
-		   xfd->para.socket.la.soa.sa_family,
+		   sfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP, &sockaddr2, &socklen2,
-		   xfd->para.socket.ip.ai_flags))
+		   sfd->para.socket.ip.ai_flags))
        != STAT_OK) {
       return res;
    }
    memcpy(&ip6_gsr.gsr_source, &sockaddr2.ip6, socklen2);
-   if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
+   if (Setsockopt(sfd->fd, opt->desc->major, opt->desc->minor,
 		  &ip6_gsr, sizeof(ip6_gsr)) < 0) {
       Error6("setsockopt(%d, %d, %d, {%d,...}, "F_Zu"): %s",
-	     xfd->fd, opt->desc->major, opt->desc->minor,
+	     sfd->fd, opt->desc->major, opt->desc->minor,
 	     ip6_gsr.gsr_interface,
 	     sizeof(ip6_gsr),
 	     strerror(errno));

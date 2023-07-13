@@ -8,11 +8,11 @@
 
 #include "xioopen.h"
 #include "xiomodes.h"
+#include "xiohelp.h"
 #include "nestlex.h"
 
 static xiofile_t *xioallocfd(void);
 
-xiosingle_t hugo;
 static xiosingle_t *xioparse_single(const char **addr);
 static xiofile_t *xioparse_dual(const char **addr);
 static int xioopen_dual(xiofile_t *xfd, int xioflags);
@@ -668,8 +668,7 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    xfd->stream.flags     |= (xioflags & XIO_ACCMODE);
    result = (*addrdesc->func)(xfd->stream.argc, xfd->stream.argv,
 			      xfd->stream.opts, xioflags, xfd,
-			      addrdesc->groups, addrdesc->arg1,
-			      addrdesc->arg2, addrdesc->arg3);
+			      addrdesc);
 
 #if HAVE_RESOLV_H
    if (do_res)
@@ -690,3 +689,11 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    return result;
 }
 
+int xio_syntax(
+	const char *addr,
+	int expectnum,
+	int isnum,
+	const char *syntax)
+{
+	return xiohelp_syntax(addr, expectnum, isnum, syntax);
+}

@@ -14,8 +14,7 @@
 
 #if WITH_SOCKETPAIR
 
-static int xioopen_socketpair(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3);
-
+static int xioopen_socketpair(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 const struct addrdesc xioaddr_socketpair   = { "SOCKETPAIR",   3, xioopen_socketpair,  GROUP_FD|GROUP_SOCKET, 0, 0, 0 HELP(":<filename>") };
 
@@ -27,10 +26,7 @@ static int xioopen_socketpair(
 	struct opt *opts,
 	int xioflags,
 	xiofile_t *xfd,
-	groups_t groups ,
-	int dummy1,
-	int dummy2,
-	int dummy3)
+	const struct addrdesc *addrdesc)
 {
    struct single *sfd = &xfd->stream;
    struct opt *opts2;
@@ -41,7 +37,8 @@ static int xioopen_socketpair(
    int result;
 
    if (argc != 1) {
-      Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
+      xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
+      return STAT_NORETRY;
    }
 
    sfd->para.bipipe.socktype = SOCK_DGRAM;

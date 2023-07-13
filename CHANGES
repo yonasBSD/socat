@@ -188,6 +188,8 @@ Coding:
 
 	Moved multicast related code from xioopts.c to xio-ip.c and xio-ip6.c
 
+	Pointers of type struct single are now always called sfd.
+
 Porting:
 	Removed Config/ because its contents have not been maintained for many
 	years.
@@ -206,6 +208,8 @@ Documentation:
 	Thanks to Martin Buck for sending the patch.
 
 	Renamed xiogetpacketsrc() to xiogetancillary()
+
+	On bad parameter number now print syntax.
 
 ####################### V 1.7.4.5 (not released):
 

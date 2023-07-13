@@ -312,8 +312,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
       if (rw != XIO_WRONLY) {
 	 applyopts_cloexec(rdpip[0], popts);
-	 applyopts(NULL, rdpip[0], popts, PH_FD);
-	 applyopts(NULL, rdpip[1], copts, PH_FD);
+	 applyopts(sfd, rdpip[0], popts, PH_FD);
+	 applyopts(sfd, rdpip[1], copts, PH_FD);
       }
 
       if (rw != XIO_RDONLY) {
@@ -326,8 +326,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       /* wrpip[1]: write by socat; wrpip[0]: read by child */
       if (rw != XIO_RDONLY) {
 	 applyopts_cloexec(wrpip[1], popts);
-	 applyopts(NULL, wrpip[1], popts, PH_FD);
-	 applyopts(NULL, wrpip[0], copts, PH_FD);
+	 applyopts(sfd, wrpip[1], popts, PH_FD);
+	 applyopts(sfd, wrpip[0], copts, PH_FD);
       }
       if (sfd->howtoend == END_UNSPEC) {
 	 sfd->howtoend = END_CLOSE_KILL;
@@ -362,19 +362,19 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	 return -1;
       }
       popts = opts;
-      applyopts(NULL, sv[0], copts, PH_PASTSOCKET);
-      applyopts(NULL, sv[1], popts, PH_PASTSOCKET);
+      applyopts(sfd, sv[0], copts, PH_PASTSOCKET);
+      applyopts(sfd, sv[1], popts, PH_PASTSOCKET);
 
       applyopts_cloexec(sv[0], copts);
-      applyopts(NULL, sv[0], copts, PH_FD);
-      applyopts(NULL, sv[1], popts, PH_FD);
+      applyopts(sfd, sv[0], copts, PH_FD);
+      applyopts(sfd, sv[1], popts, PH_FD);
 
-      applyopts(NULL, sv[0], copts, PH_PREBIND);
-      applyopts(NULL, sv[0], copts, PH_BIND);
-      applyopts(NULL, sv[0], copts, PH_PASTBIND);
-      applyopts(NULL, sv[1], popts, PH_PREBIND);
-      applyopts(NULL, sv[1], popts, PH_BIND);
-      applyopts(NULL, sv[1], popts, PH_PASTBIND);
+      applyopts(sfd, sv[0], copts, PH_PREBIND);
+      applyopts(sfd, sv[0], copts, PH_BIND);
+      applyopts(sfd, sv[0], copts, PH_PASTBIND);
+      applyopts(sfd, sv[1], popts, PH_PREBIND);
+      applyopts(sfd, sv[1], popts, PH_BIND);
+      applyopts(sfd, sv[1], popts, PH_PASTBIND);
 
       if (sfd->howtoend == END_UNSPEC) {
 	 sfd->howtoend = END_SHUTDOWN_KILL;
@@ -437,7 +437,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 #endif
 
 	    /* this for child, was after fork */
-	    applyopts(NULL, ttyfd, copts, PH_FD);
+	    applyopts(sfd, ttyfd, copts, PH_FD);
 
 	    Info1("opened pseudo terminal %s", tn);
 	    Close(ptyfd);
@@ -464,8 +464,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	       applyopts_cloexec(ttyfd, copts);
 	    }
 
-	    applyopts(NULL, ttyfd, copts, PH_LATE);
-	    applyopts(NULL, ttyfd, copts, PH_LATE2);
+	    applyopts(sfd, ttyfd, copts, PH_LATE);
+	    applyopts(sfd, ttyfd, copts, PH_LATE2);
 	 } else
 #endif /* HAVE_PTY */
 	    if (usepipes) {
@@ -515,10 +515,10 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 		  /* applyopts_cloexec(fdi, *copts);*/	/* option is already consumed! */
 	       }
 
-	       applyopts(NULL, fdi, copts, PH_LATE);
-	       applyopts(NULL, fdo, copts, PH_LATE);
-	       applyopts(NULL, fdi, copts, PH_LATE2);
-	       applyopts(NULL, fdo, copts, PH_LATE2);
+	       applyopts(sfd, fdi, copts, PH_LATE);
+	       applyopts(sfd, fdo, copts, PH_LATE);
+	       applyopts(sfd, fdi, copts, PH_LATE2);
+	       applyopts(sfd, fdo, copts, PH_LATE2);
 
 	    } else {	/* socketpair */
 	       Close(sv[0]);
@@ -545,8 +545,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 		  Close(sv[1]);
 	       }
 
-	       applyopts(NULL, fdi, copts, PH_LATE);
-	       applyopts(NULL, fdi, copts, PH_LATE2);
+	       applyopts(sfd, fdi, copts, PH_LATE);
+	       applyopts(sfd, fdi, copts, PH_LATE2);
 	    }
 	 if (withfork) {
 	    Info("notifying parent that child process is ready");
@@ -554,8 +554,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	 }
       } /* withfork */
       else {
-	 applyopts(NULL, -1, copts, PH_LATE);
-	 applyopts(NULL, -1, copts, PH_LATE2);
+	 applyopts(sfd, -1, copts, PH_LATE);
+	 applyopts(sfd, -1, copts, PH_LATE2);
       }
       _xioopen_setdelayeduser();
       if (withstderr) {

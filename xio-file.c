@@ -11,7 +11,7 @@
 #include "xio-file.h"
 
 
-static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
+static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, const struct addrdesc *addrdesc);
 
 
 #if WITH_OPEN
@@ -72,7 +72,14 @@ const struct addrdesc xioaddr_open   = { "OPEN",   3, xioopen_open, GROUP_FD|GRO
    if the filesystem entry already exists, the data is appended
    if it does not exist, a file is created and the data is appended
 */
-static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_open(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    const char *filename = argv[1];
    int rw = (xioflags & XIO_ACCMODE);
    struct single *sfd = &xfd->stream;
@@ -81,7 +88,10 @@ static int xioopen_open(int argc, const char *argv[], struct opt *opts, int xiof
    int result;
 
    /* remove old file, or set user/permissions on old file; parse options */
-   if ((result = _xioopen_named_early(argc, argv, xfd, groups, &exists, opts)) < 0) {
+   if ((result =
+	_xioopen_named_early(argc, argv, xfd, addrdesc->groups, &exists, opts,
+			     addrdesc->syntax))
+       < 0) {
       return result;
    }
 

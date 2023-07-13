@@ -21,12 +21,19 @@ const struct optdesc opt_lowport = { "lowport", NULL, OPT_LOWPORT, GROUP_IPAPP, 
 
 #if WITH_IP4
 /* we expect the form "host:port" */
-int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
-			   int xioflags, xiofile_t *xxfd,
-			   groups_t groups, int socktype, int ipproto,
-			   int pf) {
-   struct single *xfd = &xxfd->stream;
+int xioopen_ipapp_connect(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xxfd,
+	const struct addrdesc *addrdesc)
+{
+   struct single *sfd = &xxfd->stream;
    struct opt *opts0 = NULL;
+   int socktype = addrdesc->arg1;
+   int ipproto = addrdesc->arg2;
+   int pf = addrdesc->arg3;
    const char *hostname = argv[1], *portname = argv[2];
    bool dofork = false;
    union sockaddr_union us_sa,  *us = &us_sa;
@@ -41,19 +48,21 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    int result;
 
    if (argc != 3) {
-      Error2("%s: wrong number of parameters (%d instead of 2)", argv[0], argc-1);
+      xio_syntax(argv[0], 2, argc-1, addrdesc->syntax);
+      return STAT_NORETRY;
    }
 
-   xfd->howtoend = END_SHUTDOWN;
+   xioinit_ip(&pf, xioparms.default_ip);
+   sfd->howtoend = END_SHUTDOWN;
 
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)
       return -1;
-   applyopts(xfd, -1, opts, PH_INIT);
+   applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_FORK, &dofork);
 
    if (_xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
-			      xfd->para.socket.ip.ai_flags,
+			      sfd->para.socket.ip.ai_flags,
 			      &themlist, us, &uslen, &needbind, &lowport,
 			      socktype) != STAT_OK) {
       return STAT_NORETRY;
@@ -95,14 +104,14 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 			       infobuff, sizeof(infobuff)));
 
 #if WITH_RETRY
-	 if (xfd->forever || xfd->retry || ai_sorted[i] != NULL) {
+	 if (sfd->forever || sfd->retry || ai_sorted[i] != NULL) {
 	    level = E_INFO;
          } else
 #endif /* WITH_RETRY */
 	    level = E_ERROR;
 
        result =
-	 _xioopen_connect(xfd,
+	 _xioopen_connect(sfd,
 			  needbind?us:NULL, uslen,
 			  themp->ai_addr, themp->ai_addrlen,
 			  opts, pf?pf:themp->ai_family, socktype, ipproto,
@@ -119,10 +128,10 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 #if WITH_RETRY
       case STAT_RETRYLATER:
       case STAT_RETRYNOW:
-	 if (xfd->forever || xfd->retry) {
-	    --xfd->retry;
+	 if (sfd->forever || sfd->retry) {
+	    --sfd->retry;
 	    if (result == STAT_RETRYLATER) {
-	       Nanosleep(&xfd->intervall, NULL);
+	       Nanosleep(&sfd->intervall, NULL);
 	    }
 	    dropopts(opts, PH_ALL); free(opts); opts = copyopts(opts0, GROUP_ALL);
 	    continue;
@@ -138,13 +147,13 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       if (dofork) {
 	 pid_t pid;
 	 int level = E_ERROR;
-	 if (xfd->forever || xfd->retry) {
+	 if (sfd->forever || sfd->retry) {
 	    level = E_WARN;	/* most users won't expect a problem here,
 				   so Notice is too weak */
 	 }
-	 while ((pid = xio_fork(false, level, xfd->shutup)) < 0) {
-	    if (xfd->forever || --xfd->retry) {
-	       Nanosleep(&xfd->intervall, NULL); continue;
+	 while ((pid = xio_fork(false, level, sfd->shutup)) < 0) {
+	    if (sfd->forever || --sfd->retry) {
+	       Nanosleep(&sfd->intervall, NULL); continue;
 	    }
 	    free(ai_sorted);
 	    free(opts0);
@@ -152,14 +161,14 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 	 }
 
 	 if (pid == 0) {	/* child process */
-	    xfd->forever = false;  xfd->retry = 0;
+	    sfd->forever = false;  sfd->retry = 0;
 	    break;
 	 }
 
 	 /* parent process */
-	 Close(xfd->fd);
+	 Close(sfd->fd);
 	 /* with and without retry */
-	 Nanosleep(&xfd->intervall, NULL);
+	 Nanosleep(&sfd->intervall, NULL);
 	 dropopts(opts, PH_ALL); free(opts); opts = copyopts(opts0, GROUP_ALL);
 	 continue;	/* with next socket() bind() connect() */
       } else
@@ -172,7 +181,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    free(ai_sorted);
    xiofreeaddrinfo(themlist);
 
-   if ((result = _xio_openlate(xfd, opts)) < 0) {
+   if ((result = _xio_openlate(sfd, opts)) < 0) {
 	   free(opts0);free(opts);
       return result;
    }
@@ -302,18 +311,26 @@ int _xioopen_ipapp_listen_prepare(
 
 /* we expect the form: port */
 /* currently only used for TCP4 */
-int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
-			  int xioflags, xiofile_t *xfd,
-			 groups_t groups, int socktype,
-			 int ipproto, int pf) {
+int xioopen_ipapp_listen(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xfd->stream;
    struct opt *opts0 = NULL;
+   int socktype = addrdesc->arg1;
+   int ipproto = addrdesc->arg2;
+   int pf = addrdesc->arg3;
    union sockaddr_union us_sa, *us = &us_sa;
    socklen_t uslen = sizeof(us_sa);
    int result;
 
    if (argc != 2) {
-      Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
+      xio_syntax(argv[0], 2, argc-1, addrdesc->syntax);
+      return STAT_NORETRY;
    }
 
    xioinit_ip(&pf, xioparms.default_ip);
@@ -331,23 +348,23 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 #endif
    }
 
-   xfd->stream.howtoend = END_SHUTDOWN;
+   sfd->howtoend = END_SHUTDOWN;
 
-   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts(sfd, -1, opts, PH_INIT);
    applyopts(sfd, -1, opts, PH_EARLY);
 
    if (_xioopen_ipapp_listen_prepare(opts, &opts0, argv[1], &pf, ipproto,
-				     xfd->stream.para.socket.ip.ai_flags,
+				     sfd->para.socket.ip.ai_flags,
 				     us, &uslen, socktype)
        != STAT_OK) {
       return STAT_NORETRY;
    }
 
    if ((result =
-	xioopen_listen(&xfd->stream, xioflags,
+	xioopen_listen(sfd, xioflags,
 		       (struct sockaddr *)us, uslen,
-		     opts, opts0, pf, socktype, ipproto))
+		       opts, opts0, pf, socktype, ipproto))
        != 0)
       return result;
    return 0;

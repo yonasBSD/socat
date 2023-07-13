@@ -13,23 +13,20 @@
 
 #if WITH_EXEC
 
-static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
-		int xioflags,	/* XIO_RDONLY etc. */
-		xiofile_t *fd,
-		groups_t groups,
-		int dummy1, int dummy2, int dummy3
-		);
+static int xioopen_exec(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 const struct addrdesc xioaddr_exec = { "EXEC",   3, xioopen_exec, GROUP_FD|GROUP_FORK|GROUP_EXEC|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_TERMIOS|GROUP_FIFO|GROUP_PTY|GROUP_PARENT, 0, 0, 0 HELP(":<command-line>") };
 
 const struct optdesc opt_dash = { "dash", "login", OPT_DASH, GROUP_EXEC, PH_PREEXEC, TYPE_BOOL, OFUNC_SPEC };
 
-static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
-		int xioflags,	/* XIO_RDONLY, XIO_MAYCHILD etc. */
-		xiofile_t *xfd,
-		groups_t groups,
-		int dummy1, int dummy2, int dummy3
-		) {
+static int xioopen_exec(
+	int argc,
+	const char *argv[],
+	struct opt *opts,
+	int xioflags,	/* XIO_RDONLY, XIO_MAYCHILD etc. */
+	xiofile_t *xfd,
+	const struct addrdesc *addrdesc)
+{
    struct single *sfd = &xfd->stream;
    int status;
    bool dash = false;
@@ -37,12 +34,14 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
    int numleft;
 
    if (argc != 2) {
-      Error2("\"%s\": wrong number of parameters (%d instead of 1)", argv[0], argc-1);
+      xio_syntax(argv[0], 1, argc-1, addrdesc->syntax);
+      return STAT_NORETRY;
    }
 
    retropt_bool(opts, OPT_DASH, &dash);
 
-   status = _xioopen_foxec(xioflags, sfd, groups, &opts, &duptostderr);
+   status =
+      _xioopen_foxec(xioflags, sfd, addrdesc->groups, &opts, &duptostderr);
    if (status < 0)
       return status;
    if (status == 0) {	/* child */

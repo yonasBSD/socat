@@ -35,7 +35,7 @@ const struct optdesc opt_accept_timeout = { "accept-timeout", "listen-timeout", 
    OPT_SOURCEPORT, OPT_LOWPORT, cloexec
  */
 int
-   xioopen_listen(struct single *xfd, int xioflags,
+   xioopen_listen(struct single *sfd, int xioflags,
 		  struct sockaddr *us, socklen_t uslen,
 		  struct opt *opts, struct opt *opts0,
 		  int pf, int socktype, int proto) {
@@ -43,7 +43,7 @@ int
    int result;
 
 #if WITH_RETRY
-   if (xfd->forever || xfd->retry) {
+   if (sfd->forever || sfd->retry) {
       level = E_INFO;
    } else
 #endif /* WITH_RETRY */
@@ -53,7 +53,7 @@ int
 
       /* tcp listen; this can fork() for us; it only returns on error or on
 	 successful establishment of tcp connection */
-      result = _xioopen_listen(xfd, xioflags,
+      result = _xioopen_listen(sfd, xioflags,
 			       (struct sockaddr *)us, uslen,
 			       opts, pf, socktype, proto, level);
 	 /*! not sure if we should try again on retry/forever */
@@ -62,13 +62,13 @@ int
 #if WITH_RETRY
       case STAT_RETRYLATER:
       case STAT_RETRYNOW:
-	 if (xfd->forever || xfd->retry) {
+	 if (sfd->forever || sfd->retry) {
 	    dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
 	    if (result == STAT_RETRYLATER) {
-	       Nanosleep(&xfd->intervall, NULL);
+	       Nanosleep(&sfd->intervall, NULL);
 	    }
 	    dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
-	    --xfd->retry;
+	    --sfd->retry;
 	    continue;
 	 }
 	 return STAT_NORETRY;
@@ -103,31 +103,31 @@ int
    OPT_FORK, OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_BACKLOG, OPT_RANGE, tcpwrap,
    OPT_SOURCEPORT, OPT_LOWPORT, cloexec
  */
-int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, socklen_t uslen,
+int _xioopen_listen(struct single *sfd, int xioflags, struct sockaddr *us, socklen_t uslen,
 		 struct opt *opts, int pf, int socktype, int proto, int level) {
    int backlog = 5;	/* why? 1 seems to cause problems under some load */
    char infobuff[256];
 
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
 
-   if ((xfd->fd = xiosocket(opts, pf?pf:us->sa_family, socktype, proto, level)) < 0) {
+   if ((sfd->fd = xiosocket(opts, pf?pf:us->sa_family, socktype, proto, level)) < 0) {
       return STAT_RETRYLATER;
    }
-   applyopts(xfd, -1, opts, PH_PASTSOCKET);
+   applyopts(sfd, -1, opts, PH_PASTSOCKET);
 
-   applyopts_offset(xfd, opts);
-   applyopts_cloexec(xfd->fd, opts);
+   applyopts_offset(sfd, opts);
+   applyopts_cloexec(sfd->fd, opts);
 
    /* Phase prebind */
-   xiosock_reuseaddr(xfd->fd, proto, opts);
-   applyopts(xfd, -1, opts, PH_PREBIND);
+   xiosock_reuseaddr(sfd->fd, proto, opts);
+   applyopts(sfd, -1, opts, PH_PREBIND);
 
-   applyopts(xfd, -1, opts, PH_BIND);
-   if (Bind(xfd->fd, (struct sockaddr *)us, uslen) < 0) {
-      Msg4(level, "bind(%d, {%s}, "F_socklen"): %s", xfd->fd,
+   applyopts(sfd, -1, opts, PH_BIND);
+   if (Bind(sfd->fd, (struct sockaddr *)us, uslen) < 0) {
+      Msg4(level, "bind(%d, {%s}, "F_socklen"): %s", sfd->fd,
 	   sockaddr_info(us, uslen, infobuff, sizeof(infobuff)), uslen,
 	   strerror(errno));
-      Close(xfd->fd);
+      Close(sfd->fd);
       return STAT_RETRYLATER;
    }
 
@@ -136,36 +136,36 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       if (((union sockaddr_union *)us)->un.sun_path[0] != '\0') {
 	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_FD);
       } else {
-	 applyopts(xfd, -1, opts, PH_FD);
+	 applyopts(sfd, -1, opts, PH_FD);
       }
    }
 #endif
 
-   applyopts(xfd, -1, opts, PH_PASTBIND);
+   applyopts(sfd, -1, opts, PH_PASTBIND);
 #if WITH_UNIX
    if (us->sa_family == AF_UNIX) {
       if (((union sockaddr_union *)us)->un.sun_path[0] != '\0') {
 	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_EARLY);
 	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
       } else {
-	 applyopts(xfd, -1, opts, PH_EARLY);
-	 applyopts(xfd, -1, opts, PH_PREOPEN);
+	 applyopts(sfd, -1, opts, PH_EARLY);
+	 applyopts(sfd, -1, opts, PH_PREOPEN);
       }
    }
 #endif /* WITH_UNIX */
 
-   applyopts(xfd, -1, opts, PH_PRELISTEN);
+   applyopts(sfd, -1, opts, PH_PRELISTEN);
    retropt_int(opts, OPT_BACKLOG, &backlog);
-   applyopts(xfd, -1, opts, PH_LISTEN);
-   if (Listen(xfd->fd, backlog) < 0) {
-      Error3("listen(%d, %d): %s", xfd->fd, backlog, strerror(errno));
+   applyopts(sfd, -1, opts, PH_LISTEN);
+   if (Listen(sfd->fd, backlog) < 0) {
+      Error3("listen(%d, %d): %s", sfd->fd, backlog, strerror(errno));
       return STAT_RETRYLATER;
    }
-   return _xioopen_accept_fd(xfd, xioflags, us, uslen, opts, pf, proto,level);
+   return _xioopen_accept_fd(sfd, xioflags, us, uslen, opts, pf, proto,level);
 }
 
 int _xioopen_accept_fd(
-	struct single *xfd,
+	struct single *sfd,
 	int xioflags,
 	struct sockaddr *us,
 	socklen_t uslen,
@@ -196,7 +196,7 @@ int _xioopen_accept_fd(
 	 Error("option fork not allowed here");
 	 return STAT_NORETRY;
       }
-      xfd->flags |= XIO_DOESFORK;
+      sfd->flags |= XIO_DOESFORK;
    }
 
    retropt_int(opts, OPT_MAX_CHILDREN, &maxchildren);
@@ -213,33 +213,33 @@ int _xioopen_accept_fd(
    /* Under some circumstances (e.g., TCP listen on port 0) bind() fills empty
       fields that we want to know. */
    salen = sizeof(sa);
-   if (Getsockname(xfd->fd, us, &uslen) < 0) {
+   if (Getsockname(sfd->fd, us, &uslen) < 0) {
       Warn4("getsockname(%d, %p, {%d}): %s",
-	    xfd->fd, &us, uslen, strerror(errno));
+	    sfd->fd, &us, uslen, strerror(errno));
    }
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags)
+      if (xioparserange(rangename, pf, &sfd->para.socket.range,
+			sfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
       free(rangename);
-      xfd->para.socket.dorange = true;
+      sfd->para.socket.dorange = true;
    }
 #endif
 
 #if (WITH_TCP || WITH_UDP) && WITH_LIBWRAP
-   xio_retropt_tcpwrap(xfd, opts);
+   xio_retropt_tcpwrap(sfd, opts);
 #endif /* && (WITH_TCP || WITH_UDP) && WITH_LIBWRAP */
 
 #if WITH_TCP || WITH_UDP
-   if (retropt_ushort(opts, OPT_SOURCEPORT, &xfd->para.socket.ip.sourceport) >= 0) {
-      xfd->para.socket.ip.dosourceport = true;
+   if (retropt_ushort(opts, OPT_SOURCEPORT, &sfd->para.socket.ip.sourceport) >= 0) {
+      sfd->para.socket.ip.dosourceport = true;
    }
-   retropt_bool(opts, OPT_LOWPORT, &xfd->para.socket.ip.lowport);
+   retropt_bool(opts, OPT_LOWPORT, &sfd->para.socket.ip.lowport);
 #endif /* WITH_TCP || WITH_UDP */
 
    if (xioparms.logopt == 'm') {
@@ -259,30 +259,30 @@ int _xioopen_accept_fd(
       do {
 	 /*? int level = E_ERROR;*/
 	 Notice1("listening on %s", sockaddr_info(us, uslen, lisname, sizeof(lisname)));
-	 if (xfd->para.socket.accept_timeout.tv_sec > 0 ||
-	     xfd->para.socket.accept_timeout.tv_usec > 0) {
+	 if (sfd->para.socket.accept_timeout.tv_sec > 0 ||
+	     sfd->para.socket.accept_timeout.tv_usec > 0) {
 	    fd_set rfd;
 	    struct timeval tmo;
 	    FD_ZERO(&rfd);
-	    FD_SET(xfd->fd, &rfd);
-	    tmo.tv_sec = xfd->para.socket.accept_timeout.tv_sec;
-	    tmo.tv_usec = xfd->para.socket.accept_timeout.tv_usec;
+	    FD_SET(sfd->fd, &rfd);
+	    tmo.tv_sec = sfd->para.socket.accept_timeout.tv_sec;
+	    tmo.tv_usec = sfd->para.socket.accept_timeout.tv_usec;
 	    while (1) {
-	       if (Select(xfd->fd+1, &rfd, NULL, NULL, &tmo) < 0) {
+	       if (Select(sfd->fd+1, &rfd, NULL, NULL, &tmo) < 0) {
 		  if (errno != EINTR) {
-		     Error5("Select(%d, &0x%lx, NULL, NULL, {%ld.%06ld}): %s", xfd->fd+1, 1L<<(xfd->fd+1),
-			    xfd->para.socket.accept_timeout.tv_sec, xfd->para.socket.accept_timeout.tv_usec,
+		     Error5("Select(%d, &0x%lx, NULL, NULL, {%ld.%06ld}): %s", sfd->fd+1, 1L<<(sfd->fd+1),
+			    sfd->para.socket.accept_timeout.tv_sec, sfd->para.socket.accept_timeout.tv_usec,
 			    strerror(errno));
 		  }
 	       } else {
 		  break;
 	       }
 	    }
-	    if (!FD_ISSET(xfd->fd, &rfd)) {
+	    if (!FD_ISSET(sfd->fd, &rfd)) {
 	       struct sigaction act;
 
 	       Warn1("accept: %s", strerror(ETIMEDOUT));
-	       Close(xfd->fd);
+	       Close(sfd->fd);
 	       Notice("Waiting for child processes to terminate");
 	       memset(&act, 0, sizeof(struct sigaction));
 	       act.sa_flags   = SA_NOCLDSTOP/*|SA_RESTART*/
@@ -304,9 +304,9 @@ int _xioopen_accept_fd(
 	       Exit(0);
 	    }
 	 }
-	 ps = Accept(xfd->fd, (struct sockaddr *)&sa, &salen);
+	 ps = Accept(sfd->fd, (struct sockaddr *)&sa, &salen);
 	 if (ps >= 0) {
-	    /*0 Info4("accept(%d, %p, {"F_Zu"}) -> %d", xfd->fd, &sa, salen, ps);*/
+	    /*0 Info4("accept(%d, %p, {"F_Zu"}) -> %d", sfd->fd, &sa, salen, ps);*/
 	    break;	/* success, break out of loop */
 	 }
 	 if (errno == EINTR) {
@@ -314,12 +314,12 @@ int _xioopen_accept_fd(
 	 }
 	 if (errno == ECONNABORTED) {
 	    Notice4("accept(%d, %p, {"F_socklen"}): %s",
-		    xfd->fd, &sa, salen, strerror(errno));
+		    sfd->fd, &sa, salen, strerror(errno));
 	    continue;
 	 }
 	 Msg4(level, "accept(%d, %p, {"F_socklen"}): %s",
-	      xfd->fd, &sa, salen, strerror(errno));
-	 Close(xfd->fd);
+	      sfd->fd, &sa, salen, strerror(errno));
+	 Close(sfd->fd);
 	 return STAT_RETRYLATER;
       } while (true);
       applyopts_cloexec(ps, opts);
@@ -339,7 +339,7 @@ int _xioopen_accept_fd(
 	      la?
 	      sockaddr_info(&la->soa, las, sockname, sizeof(sockname)):"NULL");
 
-      if (pa != NULL && la != NULL && xiocheckpeer(xfd, pa, la) < 0) {
+      if (pa != NULL && la != NULL && xiocheckpeer(sfd, pa, la) < 0) {
 	 if (Shutdown(ps, 2) < 0) {
 	    Info2("shutdown(%d, 2): %s", ps, strerror(errno));
 	 }
@@ -363,9 +363,9 @@ int _xioopen_accept_fd(
 
 	 if ((pid =
 	      xio_fork(false, level==E_ERROR?level:E_WARN,
-		       xfd->shutup))
+		       sfd->shutup))
 	     < 0) {
-	    Close(xfd->fd);
+	    Close(sfd->fd);
 	    Sigprocmask(SIG_UNBLOCK, &mask_sigchld, NULL);
 	    return STAT_RETRYLATER;
 	 }
@@ -376,14 +376,14 @@ int _xioopen_accept_fd(
 	    Info1("just born: child process "F_pid, cpid);
 	    xiosetenvulong("PID", cpid, 1);
 
-	    if (Close(xfd->fd) < 0) {
-	       Info2("close(%d): %s", xfd->fd, strerror(errno));
+	    if (Close(sfd->fd) < 0) {
+	       Info2("close(%d): %s", sfd->fd, strerror(errno));
 	    }
-	    xfd->fd = ps;
+	    sfd->fd = ps;
 
 #if WITH_RETRY
 	    /* !? */
-	    xfd->forever = false;  xfd->retry = 0;
+	    sfd->forever = false;  sfd->retry = 0;
 	    level = E_ERROR;
 #endif /* WITH_RETRY */
 
@@ -410,18 +410,18 @@ int _xioopen_accept_fd(
 	 }
 	 Info("still listening");
       } else {
-	 if (Close(xfd->fd) < 0) {
-	    Info2("close(%d): %s", xfd->fd, strerror(errno));
+	 if (Close(sfd->fd) < 0) {
+	    Info2("close(%d): %s", sfd->fd, strerror(errno));
 	 }
-	 xfd->fd = ps;
+	 sfd->fd = ps;
 	break;
       }
    }
 
-   applyopts(xfd, -1, opts, PH_FD);
-   applyopts(xfd, -1, opts, PH_PASTSOCKET);
-   applyopts(xfd, -1, opts, PH_CONNECTED);
-   if ((result = _xio_openlate(xfd, opts)) < 0)
+   applyopts(sfd, -1, opts, PH_FD);
+   applyopts(sfd, -1, opts, PH_PASTSOCKET);
+   applyopts(sfd, -1, opts, PH_CONNECTED);
+   if ((result = _xio_openlate(sfd, opts)) < 0)
       return result;
 
    /* set the env vars describing the local and remote sockets */

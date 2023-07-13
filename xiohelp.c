@@ -218,4 +218,16 @@ int xioopenhelp(FILE *of,
    return 0;
 }
 
+/* This function may be used by address handling code to log syntax error */
+int xiohelp_syntax(
+	const char *addr,
+	int expectnum,
+	int isnum,
+	const char *syntax)
+{
+	Error4("%s: wrong number of parameters (%d instead of %d): usage: %s",
+	       addr, isnum, expectnum, syntax);
+	return -1;
+}
+
 #endif /* WITH_HELP */
