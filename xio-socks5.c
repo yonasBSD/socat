@@ -539,7 +539,7 @@ static int xioopen_socks5(
 
 	xfd->howtoend = END_SHUTDOWN;
 	if (applyopts_single(xfd, opts, PH_INIT) < 0)	return -1;
-	applyopts(-1, opts, PH_INIT);
+	applyopts(xfd, -1, opts, PH_INIT);
 
 	retropt_int(opts, OPT_SO_TYPE, &socktype);
 	retropt_bool(opts, OPT_FORK, &dofork);
@@ -594,7 +594,7 @@ static int xioopen_socks5(
 			}
 		}
 		xiofreeaddrinfo(themlist);
-		applyopts(xfd->fd, opts, PH_ALL);
+		applyopts(xfd, -1, opts, PH_ALL);
 
 		if ((result = _xio_openlate(xfd, opts)) < 0)
 			return result;

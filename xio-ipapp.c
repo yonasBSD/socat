@@ -48,7 +48,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)
       return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_FORK, &dofork);
 
@@ -216,7 +216,7 @@ int
     }
    }
 
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(NULL, -1, opts, PH_EARLY);
 
    /* 3 means: IP address AND port accepted */
    if (retropt_bind(opts, (*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family,
@@ -306,6 +306,7 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 			  int xioflags, xiofile_t *xfd,
 			 groups_t groups, int socktype,
 			 int ipproto, int pf) {
+   struct single *sfd = &xfd->stream;
    struct opt *opts0 = NULL;
    union sockaddr_union us_sa, *us = &us_sa;
    socklen_t uslen = sizeof(us_sa);
@@ -333,8 +334,8 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
    xfd->stream.howtoend = END_SHUTDOWN;
 
    if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(sfd, -1, opts, PH_INIT);
+   applyopts(sfd, -1, opts, PH_EARLY);
 
    if (_xioopen_ipapp_listen_prepare(opts, &opts0, argv[1], &pf, ipproto,
 				     xfd->stream.para.socket.ip.ai_flags,

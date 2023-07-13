@@ -113,16 +113,16 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
    if ((xfd->fd = xiosocket(opts, pf?pf:us->sa_family, socktype, proto, level)) < 0) {
       return STAT_RETRYLATER;
    }
-   applyopts(xfd->fd, opts, PH_PASTSOCKET);
+   applyopts(xfd, -1, opts, PH_PASTSOCKET);
 
    applyopts_offset(xfd, opts);
    applyopts_cloexec(xfd->fd, opts);
 
    /* Phase prebind */
    xiosock_reuseaddr(xfd->fd, proto, opts);
-   applyopts(xfd->fd, opts, PH_PREBIND);
+   applyopts(xfd, -1, opts, PH_PREBIND);
 
-   applyopts(xfd->fd, opts, PH_BIND);
+   applyopts(xfd, -1, opts, PH_BIND);
    if (Bind(xfd->fd, (struct sockaddr *)us, uslen) < 0) {
       Msg4(level, "bind(%d, {%s}, "F_socklen"): %s", xfd->fd,
 	   sockaddr_info(us, uslen, infobuff, sizeof(infobuff)), uslen,
@@ -136,28 +136,27 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       if (((union sockaddr_union *)us)->un.sun_path[0] != '\0') {
 	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_FD);
       } else {
-	 applyopts(xfd->fd, opts, PH_FD);
+	 applyopts(xfd, -1, opts, PH_FD);
       }
    }
 #endif
 
-   applyopts(xfd->fd, opts, PH_PASTBIND);
+   applyopts(xfd, -1, opts, PH_PASTBIND);
 #if WITH_UNIX
    if (us->sa_family == AF_UNIX) {
       if (((union sockaddr_union *)us)->un.sun_path[0] != '\0') {
-	 /*applyopts_early(((struct sockaddr_un *)us)->sun_path, opts);*/
 	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_EARLY);
 	 applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
       } else {
-	 applyopts(xfd->fd, opts, PH_EARLY);
-	 applyopts(xfd->fd, opts, PH_PREOPEN);
+	 applyopts(xfd, -1, opts, PH_EARLY);
+	 applyopts(xfd, -1, opts, PH_PREOPEN);
       }
    }
 #endif /* WITH_UNIX */
 
-   applyopts(xfd->fd, opts, PH_PRELISTEN);
+   applyopts(xfd, -1, opts, PH_PRELISTEN);
    retropt_int(opts, OPT_BACKLOG, &backlog);
-   applyopts(xfd->fd, opts, PH_LISTEN);
+   applyopts(xfd, -1, opts, PH_LISTEN);
    if (Listen(xfd->fd, backlog) < 0) {
       Error3("listen(%d, %d): %s", xfd->fd, backlog, strerror(errno));
       return STAT_RETRYLATER;
@@ -419,9 +418,9 @@ int _xioopen_accept_fd(
       }
    }
 
-   applyopts(xfd->fd, opts, PH_FD);
-   applyopts(xfd->fd, opts, PH_PASTSOCKET);
-   applyopts(xfd->fd, opts, PH_CONNECTED);
+   applyopts(xfd, -1, opts, PH_FD);
+   applyopts(xfd, -1, opts, PH_PASTSOCKET);
+   applyopts(xfd, -1, opts, PH_CONNECTED);
    if ((result = _xio_openlate(xfd, opts)) < 0)
       return result;
 

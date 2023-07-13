@@ -111,6 +111,15 @@ static int xiohelp_option(FILE *of, const struct optname *on, const char *name) 
    return 0;
 }
 
+const char *xiohelp_opttypename(enum e_types typnum)
+{
+	if (typnum < 0 || typnum >= TYPE_OVERFLOW) {
+		Warn2("%s(): invalid type number %d", __func__, typnum);
+		return "<invalid>";
+	}
+	return optiontypenames[typnum];
+}
+
 int xioopenhelp(FILE *of,
 	       int level	/* 0..only addresses, 1..and options */
 	       ) {

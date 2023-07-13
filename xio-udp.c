@@ -149,7 +149,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
       }
       doreuseaddr |= (retropt_2integrals(opts, OPT_SO_REUSEADDR,
 					 &reuseaddr, &notnull) >= 0);
-      applyopts(sfd->fd, opts, PH_PASTSOCKET);
+      applyopts(sfd, -1, opts, PH_PASTSOCKET);
 
       /* SO_REUSEADDR handling of UDP sockets is helpful on Solaris */
       if (doreuseaddr) {
@@ -163,8 +163,8 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 	 }
       }
       applyopts_cloexec(sfd->fd, opts);
-      applyopts(sfd->fd, opts, PH_PREBIND);
-      applyopts(sfd->fd, opts, PH_BIND);
+      applyopts(sfd, -1, opts, PH_PREBIND);
+      applyopts(sfd, -1, opts, PH_BIND);
       if (Bind(sfd->fd, &us->soa, uslen) < 0) {
 	 Error4("bind(%d, {%s}, "F_socklen"): %s", sfd->fd,
 		sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
@@ -176,7 +176,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 	 Error4("getsockname(%d, %p, {%d}): %s",
 		sfd->fd, &us->soa, uslen, strerror(errno));
       }
-      applyopts(sfd->fd, opts, PH_PASTBIND);
+      applyopts(sfd, -1, opts, PH_PASTBIND);
 
       if (ipproto == IPPROTO_UDP) {
 	 Notice1("listening on UDP %s",
@@ -255,7 +255,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
       break;
    } /* end of the big while loop */
 
-   applyopts(sfd->fd, opts, PH_CONNECT);
+   applyopts(sfd, -1, opts, PH_CONNECT);
    if ((result = Connect(sfd->fd, &them->soa, themlen)) < 0) {
       Error4("connect(%d, {%s}, "F_socklen"): %s",
 	     sfd->fd,
@@ -274,7 +274,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 
    sfd->howtoend = END_SHUTDOWN;
    applyopts_fchown(sfd->fd, opts);
-   applyopts(sfd->fd, opts, PH_LATE);
+   applyopts(sfd, -1, opts, PH_LATE);
 
    if ((result = _xio_openlate(sfd, opts)) < 0)
       return result;
@@ -287,6 +287,7 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
 			   int xioflags, xiofile_t *xfd,
 			  groups_t groups, int pf, int ipproto,
 			  int protname) {
+   struct single *sfd = &xfd->stream;
    const char *portname = argv[1];
    union sockaddr_union us;
    int socktype = SOCK_DGRAM;
@@ -314,8 +315,9 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_PROTOTYPE, &ipproto);
 
-   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)
+      return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
    uslen = socket_init(pf, &us);
    retropt_bind(opts, pf, socktype, ipproto,
@@ -383,7 +385,7 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
    xfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
 
    xfd->salen = sizeof(xfd->peersa);
    if ((result =

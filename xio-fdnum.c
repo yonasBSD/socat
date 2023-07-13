@@ -120,10 +120,10 @@ int xioopen_fd(struct opt *opts, int rw, xiosingle_t *xfd, int numfd, int dummy2
       }
    }
 #endif /* WITH_TERMIOS */
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(xfd, opts, PH_INIT) < 0)
+      return -1;
 
-   applyopts2(xfd->fd, opts, PH_INIT, PH_FD);
+   applyopts2(xfd, -1, opts, PH_INIT, PH_FD);
 
    return _xio_openlate(xfd, opts);
 }

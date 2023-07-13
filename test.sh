@@ -17093,11 +17093,12 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -T 1 PIPE EXEC:cat,setsid,sigint"
+CMD0="$TRACE $SOCAT $opts -T 2 PIPE EXEC:\"$CAT\",pty,setsid,sigint"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
-relsleep 2
+#echo "pid0=$pid0" >&2  #!!!
+sleep 1
 kill -INT $pid0
 wait
 if grep -q " W waitpid..: child .* exited with status 130" "${te}0" ||

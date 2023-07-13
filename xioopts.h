@@ -82,10 +82,12 @@ enum e_types {
 #endif
 
    TYPE_GENERIC, 	/* type is determined from (text) data provided (dalan syntax) */
+   TYPE_OVERFLOW 	/* marker: beyond last type */
 } ;
 
 enum e_func {
    OFUNC_NONE,		/* no function - should not occur */
+   /* Options to be applied to FD directly */
    OFUNC_FLAG,		/* no function, but bitposition, only with bool; arg1 is mask */
    OFUNC_FLAG_PATTERN,	/* no function, but bitpattern: arg1 is pattern, arg2 is mask */
    OFUNC_SEEK32,	/* lseek(): arg1 is whence (SEEK_SET etc.) */
@@ -100,12 +102,6 @@ enum e_func {
    OFUNC_SOCKOPT_APPEND,/* getsockopt(), append data, setsockopt() */
    OFUNC_SOCKOPT_GENERIC,/* generic setsockopt() (level, optname on cmdline) */
    OFUNC_FLOCK,		/* flock() */
-   OFUNC_TERMIO,	/* termio() ? */
-   OFUNC_SPEC,		/* special, i.e. no generalizable function call */
-   OFUNC_OFFSET,	/* put a value into xiofile struct; major is offset */
-   OFUNC_OFFSET_MASKS,	/* set pos or neg bit pattern in array[2] */
-   /*OFUNC_APPL,*/	/* special, i.e. application must know which f. */
-   OFUNC_EXT,		/* with extended file descriptors only */
    OFUNC_TERMIOS_FLAG,	/* a flag in struct termios: major..tcflag, minor..bit
 			 */
    OFUNC_TERMIOS_PATTERN, /* a multibit: major..tcflag, minor..pattern,
@@ -114,14 +110,23 @@ enum e_func {
    OFUNC_TERMIOS_CHAR,	/* a termios functional character: major..c_cc index */
    OFUNC_TERMIOS_SPEED,	/* termios c_ispeed etc on FreeBSD */
    OFUNC_TERMIOS_SPEC,	/* termios combined modes */
+
+   OFUNC_EXT,		/* with extended file descriptors only */
+#  define OFUNC_XIO OFUNC_EXT
+   OFUNC_SPEC,		/* special, i.e. no generalizable function call */
+   OFUNC_OFFSET,	/* put a value into xiofile struct; major is offset */
+   OFUNC_OFFSET_MASK,	/* set/unset bit pattern in variable */
+   OFUNC_OFFSET_MASKS,	/* set pos or neg bit pattern in array[2] */
+   /*OFUNC_APPL,*/	/* special, i.e. application must know which f. */
    OFUNC_SIGNAL,	/* a signal that should be passed to child process */
    OFUNC_RESOLVER,	/* a bit position used on _res.options */
-   OFUNC_IFFLAG,	/* interface flag: locical-or a 1bit mask */
+   OFUNC_IFFLAG,	/* interface flag: logical-or a 1bit mask */
+   OFUNC_SET_NAMESPACE, 	/* set/change Linux namespace */
+   OFUNC_RESET_NAMESPACE,	/* set Linux namespace back to default */
 #  define ENABLE_OFUNC
 #  include "xio-streams.h"	/* push a POSIX STREAMS module */
 #  undef ENABLE_OFUNC
-   OFUNC_SET_NAMESPACE, 	/* set/change Linux namespace */
-   OFUNC_RESET_NAMESPACE,	/* set Linux namespace back to default */
+   OFUNC_OVERFLOW 	/* marker: beyond last func */
 } ;
 
 /* for simpler handling of option-to-connection-type relations we define
@@ -980,12 +985,13 @@ extern int retropt_flag(struct opt *opts, int optcode, flags_t *result);
 extern int retropt_string(struct opt *opts, int optcode, char **result);
 extern int retropt_timespec(struct opt *opts, int optcode, struct timespec *result);
 extern int retropt_bind(struct opt *opts, int af, int socktype, int ipproto, struct sockaddr *sa, socklen_t *salen, int feats, const int ai_flags[2]);
-extern int applyopts(int fd, struct opt *opts, enum e_phase phase);
-extern int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to);
-extern int applyopts_optgroup(int fd, struct opt *opts, int from, int to, groups_t groups);
+extern int applyopt_fd(int fd, struct opt *opt);
+extern int applyopt_single(struct single *sfd, struct opt *opt);
+extern int applyopts(struct single *sfd, int fd, struct opt *opts, enum e_phase phase);
+extern int applyopts2(struct single *sfd, int fd, struct opt *opts, unsigned int from, unsigned int to);
+extern int applyopts_optgroup(struct single *sfd, int fd, struct opt *opts, groups_t groups);
 extern int applyopts_flags(struct opt *opts, groups_t group, flags_t *result);
 extern int applyopts_cloexec(int fd, struct opt *opts);
-extern int applyopts_early(const char *path, struct opt *opts);
 extern int applyopts_fchown(int fd, struct opt *opts);
 extern int applyopts_single(struct single *fd, struct opt *opts, enum e_phase phase);
 extern int applyopts_offset(struct single *xfd, struct opt *opts);
@@ -1005,6 +1011,7 @@ extern groups_t groupbits(int fd);
 extern groups_t _groupbits(mode_t mode);
 extern int dropopts(struct opt *opts, unsigned int phase);
 extern int dropopts2(struct opt *opts, unsigned int from, unsigned int to);
+extern int dumpopts(struct opt *opts);
 
 #if HAVE_BASIC_UID_T==1
 #  define retropt_uid(o,c,r) retropt_short(o,c,r)

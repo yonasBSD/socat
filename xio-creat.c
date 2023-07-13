@@ -37,7 +37,8 @@ static int _xioopen_creat(const char *path, int rw, struct opt *opts) {
 }
 
 
-static int xioopen_creat(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_creat(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+   struct single *sfd = &xxfd->stream;
    const char *filename = argv[1];
    int rw = (xioflags&XIO_ACCMODE);
    bool exists;
@@ -45,32 +46,32 @@ static int xioopen_creat(int argc, const char *argv[], struct opt *opts, int xio
    int result;
 
    /* remove old file, or set user/permissions on old file; parse options */
-   if ((result = _xioopen_named_early(argc, argv, fd, groups, &exists, opts)) < 0) {
+   if ((result = _xioopen_named_early(argc, argv, xxfd, groups, &exists, opts)) < 0) {
       return result;
    }
 
    retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    if (opt_unlink_close) {
-      if ((fd->stream.unlink_close = strdup(filename)) == NULL) {
+      if ((sfd->unlink_close = strdup(filename)) == NULL) {
 	 Error1("strdup(\"%s\"): out of memory", filename);
       }
-      fd->stream.opt_unlink_close = true;
+      sfd->opt_unlink_close = true;
    }
 
    Notice2("creating regular file \"%s\" for %s", filename, ddirection[rw]);
    if ((result = _xioopen_creat(filename, rw, opts)) < 0)
       return result;
-   fd->stream.fd = result;
+   sfd->fd = result;
 
    applyopts_named(filename, opts, PH_PASTOPEN);
-   if ((result = applyopts2(fd->stream.fd, opts, PH_PASTOPEN, PH_LATE2)) < 0)
+   if ((result = applyopts2(sfd, -1, opts, PH_PASTOPEN, PH_LATE2)) < 0)
       return result;
 
-   applyopts_cloexec(fd->stream.fd, opts);
+   applyopts_cloexec(sfd->fd, opts);
 
-   applyopts_fchown(fd->stream.fd, opts);
+   applyopts_fchown(sfd->fd, opts);
 
-   if ((result = _xio_openlate(&fd->stream, opts)) < 0)
+   if ((result = _xio_openlate(sfd, opts)) < 0)
       return result;
 
    return 0;

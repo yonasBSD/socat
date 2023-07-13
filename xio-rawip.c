@@ -118,7 +118,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    retropt_int(opts, OPT_PROTOCOL_FAMILY, pf);
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
 
    xfd->salen = sizeof(xfd->peersa);
    if ((result =

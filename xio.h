@@ -172,7 +172,7 @@ typedef struct single {
    size_t actbytes;	/* so many bytes still to be read (when readbytes!=0)*/
    xiolock_t lock;	/* parameters of lockfile */
    bool      havelock;	/* we are happy owner of the above lock */
-   int       triggerfd; 	/* close this FD in child process to notify parent */
+   int       triggerfd; 	/* in child process close this FD to notify parent */
    bool	     cool_write;	/* downlevel EPIPE, ECONNRESET to notice */
    /* until here, keep consistent with bipipe.dual ! */
    int argc;		/* number of fields in argv */

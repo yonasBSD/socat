@@ -12,6 +12,7 @@
 #include "xiomodes.h"
 #include "xiolockfile.h"
 #include "nestlex.h"
+#include "xiohelp.h"
 
 bool xioopts_ignoregroups;
 
@@ -151,6 +152,7 @@ bool xioopts_ignoregroups;
 
 
 static int applyopt_offset(struct single *xfd, struct opt *opt);
+static int applyopt(struct single *sfd,	int fd,	struct opt *opt);
 
 
 /* address options - keep this array strictly alphabetically sorted for
@@ -3253,606 +3255,684 @@ int retropt_bind(struct opt *opts,
 #endif /* _WITH_SOCKET */
 
 
-/* Applies to FD all options belonging to phase */
-/* Note: not all options can be applied this way */
-int applyopt(
+int applyopt_seek32(
 	int fd,
 	struct opt *opt)
 {
-      if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR)
-	 return 0;
+	if (Lseek(fd, opt->value.u_off, opt->desc->major) < 0) {
+		Error4("lseek(%d, "F_off", %d): %s",
+		       fd, opt->value.u_off, opt->desc->major, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
 
-      if (opt->desc->func == OFUNC_SEEK32) {
-	 if (Lseek(fd, opt->value.u_off, opt->desc->major) < 0) {
-	    Error4("lseek(%d, "F_off", %d): %s",
-		   fd, opt->value.u_off, opt->desc->major, strerror(errno));
-	    return -1;
-	 }
 #if HAVE_LSEEK64
-      } else if (opt->desc->func == OFUNC_SEEK64) {
-	 /*! this depends on off64_t atomic type */
-	 if (Lseek64(fd, opt->value.u_off64, opt->desc->major) < 0) {
-	    Error4("lseek64(%d, "F_off64", %d): %s",
-		   fd, opt->value.u_off64, opt->desc->major, strerror(errno));
-	    return -1;
-	 }
+int applyopt_seek64(
+	int fd,
+	struct opt *opt)
+{
+	/*! this depends on off64_t atomic type */
+	if (Lseek64(fd, opt->value.u_off64, opt->desc->major) < 0) {
+		Error4("lseek64(%d, "F_off64", %d): %s",
+		       fd, opt->value.u_off64, opt->desc->major,
+		       strerror(errno));
+		return -1;
+	}
+	return 0;
+}
 #endif /* HAVE_LSEEK64 */
 
-      } else if (opt->desc->func == OFUNC_FCNTL) {
-	 int flag;
+int applyopt_fcntl(
+	int fd,
+	struct opt *opt)
+{
+	int flag;
 
-	 /* retrieve existing flag setttings */
-	 if ((flag = Fcntl(fd, opt->desc->major-1)) < 0) {
-	    Error3("fcntl(%d, %d): %s",
-		   fd, opt->desc->major, strerror(errno));
-	    return -1;
-	 } else {
-	    if (opt->value.u_bool) {
-	       flag |= opt->desc->minor;
-	    } else {
-	       flag &= ~opt->desc->minor;
-	    }
-	    if (Fcntl_l(fd, opt->desc->major, flag) < 0) {
-	       Error4("fcntl(%d, %d, %d): %s",
-		      fd, opt->desc->major, flag, strerror(errno));
-	       return -1;
-	    }
-	 }
+	/* retrieve existing flag setttings */
+	if ((flag = Fcntl(fd, opt->desc->major-1)) < 0) {
+		Error3("fcntl(%d, %d): %s",
+		       fd, opt->desc->major, strerror(errno));
+		return -1;
+	} else {
+		if (opt->value.u_bool) {
+			flag |= opt->desc->minor;
+		} else {
+			flag &= ~opt->desc->minor;
+		}
+		if (Fcntl_l(fd, opt->desc->major, flag) < 0) {
+			Error4("fcntl(%d, %d, %d): %s",
+			       fd, opt->desc->major, flag,
+			       strerror(errno));
+			return -1;
+		}
+	}
+	return 0;
+}
 
-      } else if (opt->desc->func == OFUNC_IOCTL) {
-	 if (Ioctl(fd, opt->desc->major, (void *)&opt->value) < 0) {
-	    Error4("ioctl(%d, 0x%x, %p): %s",
-		   fd, opt->desc->major, (void *)&opt->value, strerror(errno));
-	    return -1;
-	 }
+int applyopt_ioctl(
+	int fd,
+	struct opt *opt)
+{
+	if (Ioctl(fd, opt->desc->major, (void *)&opt->value) < 0) {
+		Error4("ioctl(%d, 0x%x, %p): %s",
+		       fd, opt->desc->major, (void *)&opt->value, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
 
-      } else if (opt->desc->func == OFUNC_IOCTL_MASK_LONG) {
-	 long val;
-	 int getreq = opt->desc->major;
-	 int setreq = opt->desc->minor;
-	 long mask  = opt->desc->arg3;
+int applyopt_ioctl_mask_long(
+	int fd,
+	struct opt *opt)
+{
+	long val;
+	int getreq = opt->desc->major;
+	int setreq = opt->desc->minor;
+	long mask  = opt->desc->arg3;
 
-	 if (Ioctl(fd, getreq, (void *)&val) < 0) {
-	    Error4("ioctl(%d, 0x%x, %p): %s",
-		   fd, opt->desc->major, (void *)&val, strerror(errno));
-	    return -1;
-	 }
-	 val &= ~mask;
-	 if (opt->value.u_bool)  val |= mask;
-	 if (Ioctl(fd, setreq, (void *)&val) < 0) {
-	    Error4("ioctl(%d, 0x%x, %p): %s",
-		   fd, opt->desc->major, (void *)&val, strerror(errno));
-	    return -1;
-	 }
+	if (Ioctl(fd, getreq, (void *)&val) < 0) {
+		Error4("ioctl(%d, 0x%x, %p): %s",
+		       fd, opt->desc->major, (void *)&val, strerror(errno));
+		return -1;
+	}
+	val &= ~mask;
+	if (opt->value.u_bool)
+		val |= mask;
+	if (Ioctl(fd, setreq, (void *)&val) < 0) {
+		Error4("ioctl(%d, 0x%x, %p): %s",
+		       fd, opt->desc->major, (void *)&val, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
 
-      } else if (opt->desc->func == OFUNC_IOCTL_GENERIC) {
-	 switch (opt->desc->type) {
-	 case TYPE_INT:
-	    if (Ioctl(fd, opt->value.u_int, NULL) < 0) {
-	       Error3("ioctl(%d, 0x%x, NULL): %s",
-		      fd, opt->value.u_int, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case TYPE_INT_INT:
-	    if (Ioctl_int(fd, opt->value.u_int, opt->value2.u_int) < 0) {
-	       Error4("ioctl(%d, 0x%x, 0x%x): %s",
-		      fd, opt->value.u_int, opt->value2.u_int, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case TYPE_INT_INTP:
-	    if (Ioctl(fd, opt->value.u_int, (void *)&opt->value2.u_int) < 0) {
-	       Error4("ioctl(%d, 0x%x, %p): %s",
-		      fd, opt->value.u_int, (void *)&opt->value2.u_int, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case TYPE_INT_BIN:
-	    if (Ioctl(fd, opt->value.u_int, (void *)opt->value2.u_bin.b_data) < 0) {
-	       Error4("ioctl(%d, 0x%x, %p): %s",
-		      fd, opt->value.u_int, (void *)opt->value2.u_bin.b_data, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case TYPE_INT_STRING:
-	    if (Ioctl(fd, opt->value.u_int, (void *)opt->value2.u_string) < 0) {
-	       Error4("ioctl(%d, 0x%x, %p): %s",
-		      fd, opt->value.u_int, (void *)opt->value2.u_string, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 default:
-	    Error1("ioctl() data type %d not implemented",
-		   opt->desc->type);
-	    return -1;
-	 }
+int applyopt_ioctl_generic(
+	int fd,
+	struct opt *opt)
+{
+	switch (opt->desc->type) {
+	case TYPE_INT:
+		if (Ioctl(fd, opt->value.u_int, NULL) < 0) {
+			Error3("ioctl(%d, 0x%x, NULL): %s",
+			       fd, opt->value.u_int, strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_INT:
+		if (Ioctl_int(fd, opt->value.u_int, opt->value2.u_int) < 0) {
+			Error4("ioctl(%d, 0x%x, 0x%x): %s",
+			       fd, opt->value.u_int, opt->value2.u_int, strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_INTP:
+		if (Ioctl(fd, opt->value.u_int, (void *)&opt->value2.u_int) < 0) {
+			Error4("ioctl(%d, 0x%x, %p): %s",
+			       fd, opt->value.u_int, (void *)&opt->value2.u_int, strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_BIN:
+		if (Ioctl(fd, opt->value.u_int, (void *)opt->value2.u_bin.b_data) < 0) {
+			Error4("ioctl(%d, 0x%x, %p): %s",
+			       fd, opt->value.u_int, (void *)opt->value2.u_bin.b_data, strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_STRING:
+		if (Ioctl(fd, opt->value.u_int, (void *)opt->value2.u_string) < 0) {
+			Error4("ioctl(%d, 0x%x, %p): %s",
+			       fd, opt->value.u_int, (void *)opt->value2.u_string, strerror(errno));
+			return -1;
+		}
+		break;
+	default:
+		Error3("%s(opt:%s) data type %d not implemented",
+		       __func__, opt->desc->defname, opt->desc->type);
+		return -1;
+	}
+	return 0;
+}
 
-#if _WITH_SOCKET
-      } else if (opt->desc->func == OFUNC_SOCKOPT) {
-	 if (0) {
-	    ;
+int applyopt_sockopt(
+	int fd,
+	struct opt *opt)
+{
 #if 0 && HAVE_STRUCT_LINGER
-	 } else if (opt->desc->optcode == OPT_SO_LINGER) {
-	    struct linger lingstru;
-	    lingstru.l_onoff = (opt->value.u_int>=0 ? 1 : 0);
-	    lingstru.l_linger = opt->value.u_int;
-	    if (Setsockopt(fd, opt->desc->major, opt->desc->minor, &lingstru,
-			   sizeof(lingstru)) < 0) {
-	       Error6("setsockopt(%d, %d, %d, {%d,%d}, "F_Zu,
-		      fd, opt->desc->major, opt->desc->minor, lingstru.l_onoff,
-		      lingstru.l_linger, sizeof(lingstru));
-	       return -1;
-	    }
+	if (opt->desc->optcode == OPT_SO_LINGER) {
+		struct linger lingstru;
+		lingstru.l_onoff = (opt->value.u_int>=0 ? 1 : 0);
+		lingstru.l_linger = opt->value.u_int;
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor, &lingstru,
+			       sizeof(lingstru)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%d,%d}, "F_Zu,
+			       fd, opt->desc->major, opt->desc->minor, lingstru.l_onoff,
+			       lingstru.l_linger, sizeof(lingstru));
+			return -1;
+		}
+	}
+	return 0;
 #endif /* HAVE_STRUCT_LINGER */
-	 } else {
-	    switch (opt->desc->type) {
-	    case TYPE_BIN:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      opt->value.u_bin.b_data, opt->value.u_bin.b_len)
-		   < 0) {
-		  Error6("setsockopt(%d, %d, %d, %p, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_bin.b_data, opt->value.u_bin.b_len,
-			 strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_BOOL:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_bool, sizeof(opt->value.u_bool))
-		   < 0) {
-		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s", fd,
-			 opt->desc->major, opt->desc->minor,
-			 opt->value.u_bool, sizeof(opt->value.u_bool),
-			 strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_BYTE:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_byte, sizeof(uint8_t)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {%u}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_byte, sizeof(uint8_t), strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_INT:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_int, sizeof(int)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_int, sizeof(int), strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_INT_NULL:
-	       if (opt->value2.u_bool &&
-		   Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_int, sizeof(int)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_int, sizeof(int), strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_LONG:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_long, sizeof(long)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {%ld}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_long, sizeof(long), strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_STRING:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      opt->value.u_string,
-			      strlen(opt->value.u_string)+1) < 0) {
-		  Error6("setsockopt(%d, %d, %d, \"%s\", "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_string, strlen(opt->value.u_string)+1,
-			 strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_UINT:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_uint, sizeof(unsigned int)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {%u}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_uint, sizeof(unsigned int),
-			 strerror(errno));
-		  return -1;
-	       }
-	       break;
-	    case TYPE_TIMEVAL:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_timeval, sizeof(struct timeval)) < 0) {
-		  Error7("setsockopt(%d, %d, %d, {%ld,%ld}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 opt->value.u_timeval.tv_sec, opt->value.u_timeval.tv_usec,
-			 sizeof(struct timeval), strerror(errno));
-		  return -1;
-	       }
-	       break;
+
+	switch (opt->desc->type) {
+	case TYPE_BIN:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_bin.b_data, opt->value.u_bin.b_len)
+		    < 0) {
+			Error6("setsockopt(%d, %d, %d, %p, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_bin.b_data, opt->value.u_bin.b_len,
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_BOOL:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_bool, sizeof(opt->value.u_bool))
+		    < 0) {
+			Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s", fd,
+			       opt->desc->major, opt->desc->minor,
+			       opt->value.u_bool, sizeof(opt->value.u_bool),
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_BYTE:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_byte, sizeof(uint8_t)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%u}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_byte, sizeof(uint8_t), strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_int, sizeof(int)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_int, sizeof(int), strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_NULL:
+		if (opt->value2.u_bool &&
+		    Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_int, sizeof(int)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_int, sizeof(int), strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_LONG:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_long, sizeof(long)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%ld}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_long, sizeof(long), strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_STRING:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_string,
+			       strlen(opt->value.u_string)+1) < 0) {
+			Error6("setsockopt(%d, %d, %d, \"%s\", "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_string, strlen(opt->value.u_string)+1,
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_UINT:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_uint, sizeof(unsigned int)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%u}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_uint, sizeof(unsigned int),
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_TIMEVAL:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_timeval, sizeof(struct timeval)) < 0) {
+			Error7("setsockopt(%d, %d, %d, {%ld,%ld}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       opt->value.u_timeval.tv_sec, opt->value.u_timeval.tv_usec,
+			       sizeof(struct timeval), strerror(errno));
+			return -1;
+		}
+		break;
 #if HAVE_STRUCT_LINGER
-	    case TYPE_LINGER:
-	       {
-		  struct linger lingstru;
-		  lingstru.l_onoff = (opt->value.u_linger.l_onoff>=0 ? 1 : 0);
-		  lingstru.l_linger = opt->value.u_linger.l_linger;
-		  if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-				 &lingstru, sizeof(lingstru)) < 0) {
-		     Error6("setsockopt(%d, %d, %d, {%d,%d}): %s",
-			    fd, opt->desc->major, opt->desc->minor,
-			    lingstru.l_onoff, lingstru.l_linger,
-			    strerror(errno));
-		     return -1;
-		  }
-	       }
-	       break;
+	case TYPE_LINGER:
+	{
+		struct linger lingstru;
+		lingstru.l_onoff = (opt->value.u_linger.l_onoff>=0 ? 1 : 0);
+		lingstru.l_linger = opt->value.u_linger.l_linger;
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &lingstru, sizeof(lingstru)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%d,%d}): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       lingstru.l_onoff, lingstru.l_linger,
+			       strerror(errno));
+			return -1;
+		}
+	}
+	break;
 #endif /* HAVE_STRUCT_LINGER */
 #if defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)
-	    case TYPE_IP_MREQN:
-	       /* handled in applyopts_single */
-	       break;
+	case TYPE_IP_MREQN:
+		/* handled in applyopts_single */
+		break;
 #endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
 
 #if defined(HAVE_STRUCT_GROUP_SOURCE_REQ)
-	    case TYPE_GROUP_SOURCE_REQ:
-	       /* handled in applyopts_single */
-	       break;
+	case TYPE_GROUP_SOURCE_REQ:
+		/* handled in applyopts_single */
+		break;
 #endif /* defined(HAVE_STRUCT_GROUP_SOURCE_REQ) */
 
-	       /*! still many types missing; implement on demand */
+		/*! still many types missing; implement on demand */
 #if WITH_IP4
-	    case TYPE_IP4NAME:
-	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			      &opt->value.u_ip4addr, sizeof(opt->value.u_ip4addr)) < 0) {
-		  Error6("setsockopt(%d, %d, %d, {0x%x}, "F_Zu"): %s",
-			 fd, opt->desc->major, opt->desc->minor,
-			 *(uint32_t *)&opt->value.u_ip4addr, sizeof(opt->value.u_ip4addr),
-			 strerror(errno));
-		  return -1;
-	       }
-	       break;
+	case TYPE_IP4NAME:
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       &opt->value.u_ip4addr, sizeof(opt->value.u_ip4addr)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {0x%x}, "F_Zu"): %s",
+			       fd, opt->desc->major, opt->desc->minor,
+			       *(uint32_t *)&opt->value.u_ip4addr, sizeof(opt->value.u_ip4addr),
+			       strerror(errno));
+			return -1;
+		}
+		break;
 #endif /* defined(WITH_IP4) */
-	    default:
+	default:
 #if !NDEBUG
-	       Error1("applyopts(): type %d not implemented",
-			    opt->desc->type);
+		Error3("%s(opt:\"%s\"): type %d no implemented",
+		      __func__, opt->desc->defname, opt->desc->type);
 #else
-	       Warn1("applyopts(): type %d not implemented",
-			    opt->desc->type);
+		Warn3("%s(opt:\"%s\"): type %d no implemented",
+		      __func__, opt->desc->defname, opt->desc->type);
 #endif
-	       return -1;
-	    }
-	 }
+		return -1;
+	}
+	return 0;
+}
 
-      } else if (opt->desc->func == OFUNC_SOCKOPT_APPEND) {
-	 switch (opt->desc->type) {
-	    uint8_t data[256];
-	    socklen_t oldlen, newlen;
-	 case TYPE_BIN:
-	    oldlen = sizeof(data);
-	    if (Getsockopt(fd, opt->desc->major, opt->desc->minor,
-			   data, &oldlen)
-		< 0) {
-	       Error6("getsockopt(%d, %d, %d, %p, {"F_socklen"}): %s",
-		      fd, opt->desc->major, opt->desc->minor, data, oldlen,
-		      strerror(errno));
-	       return -1;
-	    }
-	    memcpy(&data[oldlen], opt->value.u_bin.b_data,
-		   MIN(opt->value.u_bin.b_len, sizeof(data)-oldlen));
-	    newlen = oldlen + MIN(opt->value.u_bin.b_len, sizeof(data)-oldlen);
-	    if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
-			   data, newlen)
-		< 0) {
-	       Error6("setsockopt(%d, %d, %d, %p, %d): %s",
-		      fd, opt->desc->major, opt->desc->minor, data, newlen,
-		      strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 default:
-	    Error2("internal: option \"%s\": unimplemented type %d",
-		   opt->desc->defname, opt->desc->type);
-	    break;
-	 }
-      } else if (opt->desc->func == OFUNC_SOCKOPT_GENERIC) {
-	 switch (opt->desc->type) {
-	 case TYPE_INT_INT_INT:
-	    if (Setsockopt(fd, opt->value.u_int, opt->value2.u_int,
-			   &opt->value3.u_int, sizeof(int)) < 0) {
-	       Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
-		      fd, opt->value.u_int, opt->value2.u_int,
-		      opt->value3.u_int, sizeof(int), strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case TYPE_INT_INT_BIN:
-	    if (Setsockopt(fd, opt->value.u_int, opt->value2.u_int,
-			   opt->value3.u_bin.b_data, opt->value3.u_bin.b_len) < 0) {
-	       Error5("setsockopt(%d, %d, %d, {...}, "F_Zu"): %s",
-		      fd, opt->value.u_int, opt->value2.u_int,
-		      opt->value3.u_bin.b_len, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case TYPE_INT_INT_STRING:
-	    if (Setsockopt(fd, opt->value.u_int, opt->value2.u_int,
-			   opt->value3.u_string,
-			   strlen(opt->value3.u_string)+1) < 0) {
-	       Error6("setsockopt(%d, %d, %d, \"%s\", "F_Zu"): %s",
-		      fd, opt->value.u_int, opt->value2.u_int,
-		      opt->value3.u_string, strlen(opt->value3.u_string)+1,
-		      strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 default:
-	    Error1("setsockopt() data type %d not implemented",
-		   opt->desc->type);
-	    return -1;
-	 }
+/* Appends the provided data to the current value of this sockopt.
+   Used (e.g.) for IP_OPTIONS.
+*/
+int applyopt_sockopt_append(
+	int fd,
+	struct opt *opt)
+{
+	switch (opt->desc->type) {
+		uint8_t data[256];
+		socklen_t oldlen, newlen;
+	case TYPE_BIN:
+		oldlen = sizeof(data);
+		if (Getsockopt(fd, opt->desc->major, opt->desc->minor,
+			       data, &oldlen)
+		    < 0) {
+			Error6("getsockopt(%d, %d, %d, %p, {"F_socklen"}): %s",
+			       fd, opt->desc->major, opt->desc->minor, data, oldlen,
+			       strerror(errno));
+			return -1;
+		}
+		memcpy(&data[oldlen], opt->value.u_bin.b_data,
+		       MIN(opt->value.u_bin.b_len, sizeof(data)-oldlen));
+		newlen = oldlen + MIN(opt->value.u_bin.b_len, sizeof(data)-oldlen);
+		if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			       data, newlen)
+		    < 0) {
+			Error6("setsockopt(%d, %d, %d, %p, %d): %s",
+			       fd, opt->desc->major, opt->desc->minor, data, newlen,
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	default:
+		Error2("internal: option \"%s\": unimplemented type %d",
+		       opt->desc->defname, opt->desc->type);
+		break;
+	}
+	return 0;
+}
+
+int applyopt_sockopt_generic(
+	int fd,
+	struct opt *opt)
+{
+	switch (opt->desc->type) {
+	case TYPE_INT_INT_INT:
+		if (Setsockopt(fd, opt->value.u_int, opt->value2.u_int,
+			       &opt->value3.u_int, sizeof(int)) < 0) {
+			Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
+			       fd, opt->value.u_int, opt->value2.u_int,
+			       opt->value3.u_int, sizeof(int), strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_INT_BIN:
+		if (Setsockopt(fd, opt->value.u_int, opt->value2.u_int,
+			       opt->value3.u_bin.b_data, opt->value3.u_bin.b_len) < 0) {
+			Error5("setsockopt(%d, %d, %d, {...}, "F_Zu"): %s",
+			       fd, opt->value.u_int, opt->value2.u_int,
+			       opt->value3.u_bin.b_len, strerror(errno));
+			return -1;
+		}
+		break;
+	case TYPE_INT_INT_STRING:
+		if (Setsockopt(fd, opt->value.u_int, opt->value2.u_int,
+			       opt->value3.u_string,
+			       strlen(opt->value3.u_string)+1) < 0) {
+			Error6("setsockopt(%d, %d, %d, \"%s\", "F_Zu"): %s",
+			       fd, opt->value.u_int, opt->value2.u_int,
+			       opt->value3.u_string, strlen(opt->value3.u_string)+1,
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	default:
+		Error3("%s(opt:\"%s\"): INTERNAL: data type %d not implemented",
+		       __func__, opt->desc->defname, opt->desc->type);
+		return -1;
+	}
+	return 0;
+}
+
+int applyopt_flock(
+	int fd,
+	struct opt *opt)
+{
+	if (Flock(fd, opt->desc->major) < 0) {
+		Error3("flock(%d, %d): %s",
+		       fd, opt->desc->major, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+/* Applies an option that needs handling specific to its OPT_* setting.
+   Does not overwrite the option instance with ODESC_DONE or ODESC_ERROR,
+   instead:
+   Returns 0 if option was just applied (caller has to ODESC_DONE);
+   returns -1 if a problem occurred (caller has to ODESC_ERROR);
+   returns 1 if the instance has to be kept, this happens when the option desc has
+   been overwritten to, e.g., undo the option in a later phase. */
+int applyopt_spec(
+	struct single *sfd,
+	int fd,
+	struct opt *opt)
+{
+	if (fd < 0 && sfd != NULL)
+		fd = sfd->fd;
+
+	switch (opt->desc->optcode) {
+	case OPT_USER:
+	case OPT_USER_LATE:
+		if (Fchown(fd, opt->value.u_uidt, -1) < 0) {
+			Error3("fchown(%d, "F_uid", -1): %s",
+			       fd, opt->value.u_uidt, strerror(errno));
+			return -1;
+		}
+		break;
+	case OPT_GROUP:
+	case OPT_GROUP_LATE:
+		if (Fchown(fd, -1, opt->value.u_gidt) < 0) {
+			Error3("fchown(%d, -1, "F_gid"): %s",
+			       fd, opt->value.u_gidt, strerror(errno));
+			return -1;
+		}
+		break;
+	case OPT_PERM:
+	case OPT_PERM_LATE:
+		if (Fchmod(fd, opt->value.u_modet) < 0) {
+			Error3("fchmod(%d, %u): %s",
+			       fd, opt->value.u_modet, strerror(errno));
+			return -1;
+		}
+		break;
+	case OPT_FTRUNCATE32:
+		if (Ftruncate(fd, opt->value.u_off) < 0) {
+			Error3("ftruncate(%d, "F_off"): %s",
+			       fd, opt->value.u_off, strerror(errno));
+			return -1;
+		}
+		break;
+#if HAVE_FTRUNCATE64
+	case OPT_FTRUNCATE64:
+		if (Ftruncate64(fd, opt->value.u_off64) < 0) {
+			Error3("ftruncate64(%d, "F_off64"): %s",
+			       fd, opt->value.u_off64, strerror(errno));
+			return -1;
+		}
+#endif /* HAVE_FTRUNCATE64 */
+		break;
+	case OPT_F_SETLK_RD:
+	case OPT_F_SETLK_WR:
+	case OPT_F_SETLKW_RD:
+	case OPT_F_SETLKW_WR:
+	{
+		struct flock l;	/* Linux: <asm/fcntl.h> */
+		l.l_type   = opt->desc->minor;
+		l.l_whence = SEEK_SET;
+		l.l_start  = 0;
+		l.l_len    = LONG_MAX;
+		l.l_pid    = 0;	/* hope this uses our current process */
+		if (Fcntl_lock(fd, opt->desc->major, &l) < 0) {
+			Error3("fcntl(%d, %d, {type=F_WRLCK,whence=SEEK_SET,start=0,len=LONG_MAX,pid=0}): %s", fd, opt->desc->major, strerror(errno));
+			return -1;
+		}
+	}
+	break;
+	case OPT_SETUID_EARLY:
+	case OPT_SETUID:
+		if (Setuid(opt->value.u_uidt) < 0) {
+			Error2("setuid("F_uid"): %s", opt->value.u_uidt,
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	case OPT_SETGID_EARLY:
+	case OPT_SETGID:
+		if (Setgid(opt->value.u_gidt) < 0) {
+			Error2("setgid("F_gid"): %s", opt->value.u_gidt,
+			       strerror(errno));
+			return -1;
+		}
+		break;
+	case OPT_SUBSTUSER_EARLY:
+	case OPT_SUBSTUSER:
+	{
+		struct passwd *pwd;
+		if ((pwd = getpwuid(opt->value.u_uidt)) == NULL) {
+			Error1("getpwuid("F_uid"): no such user",
+			       opt->value.u_uidt);
+			return -1;
+		}
+		if (Initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
+			Error3("initgroups(%s, "F_gid"): %s",
+			       pwd->pw_name, pwd->pw_gid, strerror(errno));
+			return -1;
+		}
+		if (Setgid(pwd->pw_gid) < 0) {
+			Error2("setgid("F_gid"): %s", pwd->pw_gid,
+			       strerror(errno));
+			return -1;
+		}
+		if (Setuid(opt->value.u_uidt) < 0) {
+			Error2("setuid("F_uid"): %s", opt->value.u_uidt,
+			       strerror(errno));
+			return -1;
+		}
+#if 1
+		if (setenv("USER", pwd->pw_name, 1) < 0) {
+			Error1("setenv(\"USER\", \"%s\", 1): insufficient space",
+			       pwd->pw_name);
+			return -1;
+		}
+		if (setenv("LOGNAME", pwd->pw_name, 1) < 0) {
+			Error1("setenv(\"LOGNAME\", \"%s\", 1): insufficient space",
+			       pwd->pw_name);
+			return -1;
+		}
+		if (setenv("HOME", pwd->pw_dir, 1) < 0) {
+			Error1("setenv(\"HOME\", \"%s\", 1): insufficient space",
+			       pwd->pw_dir);
+			return -1;
+		}
+		if (setenv("SHELL", pwd->pw_shell, 1) < 0) {
+			Error1("setenv(\"SHELL\", \"%s\", 1): insufficient space",
+			       pwd->pw_shell);
+			return -1;
+		}
+#endif
+	}
+	break;
+#if defined(HAVE_SETGRENT) && defined(HAVE_GETGRENT) && defined(HAVE_ENDGRENT)
+	case OPT_SUBSTUSER_DELAYED:
+	{
+		struct passwd *pwd;
+
+		if ((pwd = getpwuid(opt->value.u_uidt)) == NULL) {
+			Error1("getpwuid("F_uid"): no such user",
+			       opt->value.u_uidt);
+			return -1;
+		}
+		delayeduser_uid = opt->value.u_uidt;
+		delayeduser_gid = pwd->pw_gid;
+		if ((delayeduser_name = strdup(pwd->pw_name)) == NULL) {
+			Error1("strdup("F_Zu"): out of memory",
+			       strlen(pwd->pw_name)+1);
+			return -1;
+		}
+		if ((delayeduser_dir = strdup(pwd->pw_dir)) == NULL) {
+			Error1("strdup("F_Zu"): out of memory",
+			       strlen(pwd->pw_dir)+1);
+			return -1;
+		}
+		if ((delayeduser_shell = strdup(pwd->pw_shell)) == NULL) {
+			Error1("strdup("F_Zu"): out of memory",
+			       strlen(pwd->pw_shell)+1);
+			return -1;
+		}
+		/* function to get all supplementary groups of user */
+		delayeduser_ngids = sizeof(delayeduser_gids)/sizeof(gid_t);
+		getusergroups(delayeduser_name, delayeduser_gids,
+			      &delayeduser_ngids);
+		delayeduser = true;
+	}
+	break;
+#endif
+	case OPT_CHROOT_EARLY:
+	case OPT_CHROOT:
+		if (Chroot(opt->value.u_string) < 0) {
+			Error2("chroot(\"%s\"): %s", opt->value.u_string,
+			       strerror(errno));
+			return -1;
+		}
+		if (Chdir("/") < 0) {
+			Error1("chdir(\"/\"): %s", strerror(errno));
+			return -1;
+		}
+		break;
+	case OPT_SETSID:
+		if (Setsid() < 0) {
+			Warn1("setsid(): %s", strerror(errno));
+			if (Setpgid(getpid(), getppid()) < 0) {
+				Warn3("setpgid(%d, %d): %s",
+				      getpid(), getppid(), strerror(errno));
+			} else {
+				if (Setsid() < 0) {
+					Error1("setsid(): %s", strerror(errno));
+					return -1;
+				}
+			}
+		}
+		break;
+	case OPT_SETPGID:
+		if (Setpgid(0, opt->value.u_int) < 0) {
+			Warn2("setpgid(0, "F_pid"): %s",
+			      opt->value.u_int, strerror(errno));
+		}
+		break;
+	case OPT_TIOCSCTTY:
+	{
+		int mytty;
+		/* this code idea taken from ssh/pty.c: make pty controlling term. */
+		if ((mytty = Open("/dev/tty", O_NOCTTY, 0640)) < 0) {
+			Warn1("open(\"/dev/tty\", O_NOCTTY, 0640): %s", strerror(errno));
+		} else {
+			/*0 Info1("open(\"/dev/tty\", O_NOCTTY, 0640) -> %d", mytty);*/
+#ifdef TIOCNOTTY
+			if (Ioctl(mytty, TIOCNOTTY, NULL) < 0) {
+				Warn2("ioctl(%d, TIOCNOTTY, NULL): %s",
+				      mytty, strerror(errno));
+			}
+#endif
+			if (Close(mytty) < 0) {
+				Info2("close(%d): %s",
+				      mytty, strerror(errno));
+			}
+		}
+#ifdef TIOCSCTTY
+		if (Ioctl(fd, TIOCSCTTY, NULL) < 0) {
+			Warn2("ioctl(%d, TIOCSCTTY, NULL): %s", fd, strerror(errno));
+		}
+#endif
+		if (Tcsetpgrp(0, getpid()) < 0) {
+			Warn2("tcsetpgrp("F_pid"): %s", getpid(), strerror(errno));
+		}
+	}
+	break;
+
+#if _WITH_SOCKET
+#if WITH_IP4 && (defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN))
+	 case OPT_IP_ADD_MEMBERSHIP:
+	    return xioapply_ip_add_membership(sfd, opt);
+#endif /* WITH_IP4 && (defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)) */
+
+#if WITH_IP4 && defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
+	 case OPT_IP_ADD_SOURCE_MEMBERSHIP:
+	    return xioapply_ip_add_source_membership(sfd, opt);
+#endif /* WITH_IP4 && defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP) */
+
+#if WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ)
+	 case OPT_IPV6_JOIN_GROUP:
+	    return xioapply_ipv6_join_group(sfd, opt);
+#endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
+
+#if WITH_IP6 && defined(HAVE_STRUCT_GROUP_SOURCE_REQ)
+	 case OPT_IPV6_JOIN_SOURCE_GROUP:
+	    return xioapply_ip6_join_source_group(sfd, opt);
+#endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
 #endif /* _WITH_SOCKET */
 
-#if HAVE_FLOCK
-      } else if (opt->desc->func == OFUNC_FLOCK) {
-	 if (Flock(fd, opt->desc->major) < 0) {
-	    Error3("flock(%d, %d): %s",
-		   fd, opt->desc->major, strerror(errno));
-	    return -1;
-	 }
-#endif /* defined(HAVE_FLOCK) */
-
-      } else if (opt->desc->func == OFUNC_SPEC ||
-		 opt->desc->func == OFUNC_FLAG) {
-	 switch (opt->desc->optcode) {
-	 case OPT_USER:
-	 case OPT_USER_LATE:
-	    if (Fchown(fd, opt->value.u_uidt, -1) < 0) {
-	       Error3("fchown(%d, "F_uid", -1): %s",
-		      fd, opt->value.u_uidt, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case OPT_GROUP:
-	 case OPT_GROUP_LATE:
-	    if (Fchown(fd, -1, opt->value.u_gidt) < 0) {
-	       Error3("fchown(%d, -1, "F_gid"): %s",
-		      fd, opt->value.u_gidt, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case OPT_PERM:
-	 case OPT_PERM_LATE:
-	    if (Fchmod(fd, opt->value.u_modet) < 0) {
-	       Error3("fchmod(%d, %u): %s",
-		      fd, opt->value.u_modet, strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case OPT_FTRUNCATE32:
-	    if (Ftruncate(fd, opt->value.u_off) < 0) {
-	       Error3("ftruncate(%d, "F_off"): %s",
-		      fd, opt->value.u_off, strerror(errno));
-	       return -1;
-	    }
-	    break;
-#if HAVE_FTRUNCATE64
-	 case OPT_FTRUNCATE64:
-	    if (Ftruncate64(fd, opt->value.u_off64) < 0) {
-	       Error3("ftruncate64(%d, "F_off64"): %s",
-		      fd, opt->value.u_off64, strerror(errno));
-	       return -1;
-	    }
-#endif /* HAVE_FTRUNCATE64 */
-	    break;
-	 case OPT_F_SETLK_RD:
-	 case OPT_F_SETLK_WR:
-	 case OPT_F_SETLKW_RD:
-	 case OPT_F_SETLKW_WR:
-	    {
-	       struct flock l;	/* Linux: <asm/fcntl.h> */
-	       l.l_type   = opt->desc->minor;
-	       l.l_whence = SEEK_SET;
-	       l.l_start  = 0;
-	       l.l_len    = LONG_MAX;
-	       l.l_pid    = 0;	/* hope this uses our current process */
-	       if (Fcntl_lock(fd, opt->desc->major, &l) < 0) {
-		  Error3("fcntl(%d, %d, {type=F_WRLCK,whence=SEEK_SET,start=0,len=LONG_MAX,pid=0}): %s", fd, opt->desc->major, strerror(errno));
-		  return -1;
-	       }
-	    }
-	    break;
-	 case OPT_SETUID_EARLY:
-	 case OPT_SETUID:
-	    if (Setuid(opt->value.u_uidt) < 0) {
-	       Error2("setuid("F_uid"): %s", opt->value.u_uidt,
-		      strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case OPT_SETGID_EARLY:
-	 case OPT_SETGID:
-	    if (Setgid(opt->value.u_gidt) < 0) {
-	       Error2("setgid("F_gid"): %s", opt->value.u_gidt,
-		      strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case OPT_SUBSTUSER_EARLY:
-	 case OPT_SUBSTUSER:
-	    {
-	       struct passwd *pwd;
-	       if ((pwd = getpwuid(opt->value.u_uidt)) == NULL) {
-		  Error1("getpwuid("F_uid"): no such user",
-			 opt->value.u_uidt);
-		  return -1;
-	       }
-	       if (Initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
-		  Error3("initgroups(%s, "F_gid"): %s",
-			 pwd->pw_name, pwd->pw_gid, strerror(errno));
-		  return -1;
-	       }
-	       if (Setgid(pwd->pw_gid) < 0) {
-		  Error2("setgid("F_gid"): %s", pwd->pw_gid,
-			 strerror(errno));
-		  return -1;
-	       }
-	       if (Setuid(opt->value.u_uidt) < 0) {
-		  Error2("setuid("F_uid"): %s", opt->value.u_uidt,
-			 strerror(errno));
-		  return -1;
-	       }
-#if 1
-	       if (setenv("USER", pwd->pw_name, 1) < 0) {
-		  Error1("setenv(\"USER\", \"%s\", 1): insufficient space",
-			 pwd->pw_name);
-		  return -1;
-	       }
-	       if (setenv("LOGNAME", pwd->pw_name, 1) < 0) {
-		  Error1("setenv(\"LOGNAME\", \"%s\", 1): insufficient space",
-			 pwd->pw_name);
-		  return -1;
-	       }
-	       if (setenv("HOME", pwd->pw_dir, 1) < 0) {
-		  Error1("setenv(\"HOME\", \"%s\", 1): insufficient space",
-			 pwd->pw_dir);
-		  return -1;
-	       }
-	       if (setenv("SHELL", pwd->pw_shell, 1) < 0) {
-		  Error1("setenv(\"SHELL\", \"%s\", 1): insufficient space",
-			 pwd->pw_shell);
-		  return -1;
-	       }
-#endif
-	    }
-	    break;
-#if defined(HAVE_SETGRENT) && defined(HAVE_GETGRENT) && defined(HAVE_ENDGRENT)
-	 case OPT_SUBSTUSER_DELAYED:
-	    {
-	       struct passwd *pwd;
-
-	       if ((pwd = getpwuid(opt->value.u_uidt)) == NULL) {
-		  Error1("getpwuid("F_uid"): no such user",
-			 opt->value.u_uidt);
-		  return -1;
-	       }
-	       delayeduser_uid = opt->value.u_uidt;
-	       delayeduser_gid = pwd->pw_gid;
-	       if ((delayeduser_name = strdup(pwd->pw_name)) == NULL) {
-		  Error1("strdup("F_Zu"): out of memory",
-			 strlen(pwd->pw_name)+1);
-		  return -1;
-	       }
-	       if ((delayeduser_dir = strdup(pwd->pw_dir)) == NULL) {
-		  Error1("strdup("F_Zu"): out of memory",
-			 strlen(pwd->pw_dir)+1);
-		  return -1;
-	       }
-	       if ((delayeduser_shell = strdup(pwd->pw_shell)) == NULL) {
-		  Error1("strdup("F_Zu"): out of memory",
-			 strlen(pwd->pw_shell)+1);
-		  return -1;
-	       }
-	       /* function to get all supplementary groups of user */
-	       delayeduser_ngids = sizeof(delayeduser_gids)/sizeof(gid_t);
-	       getusergroups(delayeduser_name, delayeduser_gids,
-			     &delayeduser_ngids);
-	       delayeduser = true;
-	    }
-	    break;
-#endif
-	 case OPT_CHROOT_EARLY:
-	 case OPT_CHROOT:
-	    if (Chroot(opt->value.u_string) < 0) {
-	       Error2("chroot(\"%s\"): %s", opt->value.u_string,
-		      strerror(errno));
-	       return -1;
-	    }
-	    if (Chdir("/") < 0) {
-	       Error1("chdir(\"/\"): %s", strerror(errno));
-	       return -1;
-	    }
-	    break;
-	 case OPT_SETSID:
-	    if (Setsid() < 0) {
-	       Warn1("setsid(): %s", strerror(errno));
-	       if (Setpgid(getpid(), getppid()) < 0) {
-		  Warn3("setpgid(%d, %d): %s",
-			getpid(), getppid(), strerror(errno));
-	       } else {
-		  if (Setsid() < 0) {
-		     Error1("setsid(): %s", strerror(errno));
-		     return -1;
-		  }
-	       }
-	    }
-	    break;
-	 case OPT_SETPGID:
-	    if (Setpgid(0, opt->value.u_int) < 0) {
-	       Warn2("setpgid(0, "F_pid"): %s",
-		     opt->value.u_int, strerror(errno));
-	    }
-	    break;
-	 case OPT_TIOCSCTTY:
-	    {
-	       int mytty;
-	       /* this code idea taken from ssh/pty.c: make pty controlling term. */
-	       if ((mytty = Open("/dev/tty", O_NOCTTY, 0640)) < 0) {
-		  Warn1("open(\"/dev/tty\", O_NOCTTY, 0640): %s", strerror(errno));
-	       } else {
-		  /*0 Info1("open(\"/dev/tty\", O_NOCTTY, 0640) -> %d", mytty);*/
-#ifdef TIOCNOTTY
-		  if (Ioctl(mytty, TIOCNOTTY, NULL) < 0) {
-		     Warn2("ioctl(%d, TIOCNOTTY, NULL): %s",
-			   mytty, strerror(errno));
-		  }
-#endif
-		  if (Close(mytty) < 0) {
-		     Info2("close(%d): %s",
-			   mytty, strerror(errno));
-		  }
-	       }
-#ifdef TIOCSCTTY
-	       if (Ioctl(fd, TIOCSCTTY, NULL) < 0) {
-		  Warn2("ioctl(%d, TIOCSCTTY, NULL): %s", fd, strerror(errno));
-	       }
-#endif
-	       if (Tcsetpgrp(0, getpid()) < 0) {
-		  Warn2("tcsetpgrp("F_pid"): %s", getpid(), strerror(errno));
-	       }
-	    }
-	    break;
-
 #if _WITH_INTERFACE
-	 case OPT_RETRIEVE_VLAN:
-	    if (!xioparms.experimental) {
-	       Warn1("option %s is experimental", opt->desc->defname);
-	    }
-	    if (_interface_setsockopt_auxdata(fd, 1) < 0) {
-	       return -1;
-	    }
-	    break;
+	case OPT_RETRIEVE_VLAN:
+		if (!xioparms.experimental) {
+			Warn1("option %s is experimental", opt->desc->defname);
+		}
+		if (_interface_setsockopt_auxdata(fd, 1) < 0) {
+			return -1;
+		}
+		break;
 #endif /* _WITH_INTERFACE */
 
-	 default: Error1("INTERNAL: applyopts(): option \"%s\" not implemented",
-			 opt->desc->defname);
-	    return -1;
-	 }
+	default: Error1("applyopt_spec(opt:%s): INTERNAL option not implemented",
+			opt->desc->defname);
+		return -1;
+	}
+	return 0;
+}
 
-#if WITH_TERMIOS
-      } else if (opt->desc->func == OFUNC_TERMIOS_FLAG) {
-	 if (xiotermiosflag_applyopt(fd, opt) < 0) {
-	    return -1;
-	 }
-
-      } else if (opt->desc->func == OFUNC_TERMIOS_VALUE) {
+int applyopts_termios_value(
+	int fd,
+	struct opt *opt)
+{
 	 if (((opt->value.u_uint << opt->desc->arg3) & opt->desc->minor) !=
 	     (opt->value.u_uint << opt->desc->arg3)) {
 	    Error2("option %s: invalid value %u",
@@ -3863,141 +3943,79 @@ int applyopt(
 			      (opt->value.u_uint << opt->desc->arg3) & opt->desc->minor) < 0) {
 	    return -1;
 	 }
-
-      } else if (opt->desc->func == OFUNC_TERMIOS_PATTERN) {
-	 if (xiotermios_value(fd, opt->desc->major,  opt->desc->arg3, opt->desc->minor) < 0) {
-	    return -1;
-	 }
-
-      } else if (opt->desc->func == OFUNC_TERMIOS_CHAR) {
-	 if (xiotermios_char(fd, opt->desc->major, opt->value.u_byte) < 0) {
-	    return -1;
-	 }
-
-#ifdef HAVE_TERMIOS_ISPEED
-      } else if (opt->desc->func == OFUNC_TERMIOS_SPEED) {
-	 if (xiotermios_speed(fd, opt->desc->major, opt->value.u_uint) < 0) {
-	    return -1;
-	 }
-#endif /* HAVE_TERMIOS_ISPEED */
-
-      } else if (opt->desc->func == OFUNC_TERMIOS_SPEC) {
-	 if (xiotermios_spec(fd, opt->desc->optcode) < 0) {
-	    return -1;
-	 }
-
-#endif /* WITH_TERMIOS */
-
-#if WITH_STREAMS
-#define ENABLE_APPLYOPT
-#include "xio-streams.c"
-#undef ENABLE_APPLYOPT
-#endif /* WITH_STREAMS */
-
-      } else {
-	/*Error1("applyopts(): function %d not implemented",
-	  opt->desc->func);*/
-	 if (opt->desc->func != OFUNC_EXT && opt->desc->func != OFUNC_SIGNAL) {
-	    Error1("applyopts(): internal error: option \"%s\" does not apply",
-		   opt->desc->defname);
-	    return -1;
-	 }
-	 return 0;
-      }
-      opt->desc = ODESC_DONE;
-      return 0;
+	return 0;
 }
 
 /* Note: not all options can be applied this way (e.g. OFUNC_SPEC with PH_OPEN)
    implemented are: OFUNC_FCNTL, OFUNC_SOCKOPT (probably not all types),
    OFUNC_TERMIOS_FLAG, OFUNC_TERMIOS_PATTERN, and some OFUNC_SPEC */
-int applyopts(int fd, struct opt *opts, enum e_phase phase)
+int applyopts(struct single  *sfd, int fd, struct opt *opts, enum e_phase phase)
 {
    struct opt *opt;
-   int rc;
+   int rc = 0;
 
    opt = opts;
    while (opt && opt->desc != ODESC_END) {
       if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
 	  (phase == PH_ALL || phase == opt->desc->phase)) {
-	 rc = applyopt(fd, opt);
-	 if (rc < 0)
-	    opt->desc = ODESC_ERROR;
+	 if (applyopt(sfd, fd, opt) < 0)
+	    rc = -1;
       }
       ++opt;
    }
 
 #if WITH_TERMIOS
-   if (phase == PH_FD || phase == PH_ALL) {
-      xiotermios_flush(fd);
+   if ((phase == PH_FD || phase == PH_ALL) && (fd >= 0 || sfd != NULL)) {
+      xiotermios_flush(fd >= 0 ? fd : sfd->fd);
    }
 #endif /* WITH_TERMIOS */
-  return 0;
+  return rc;
 }
 
 /* applies to fd all options belonging to phases */
 /* note: not all options can be applied this way (e.g. OFUNC_SPEC with PH_OPEN)
    implemented are: OFUNC_FCNTL, OFUNC_SOCKOPT (probably not all types),
    OFUNC_TERMIOS_FLAG, OFUNC_TERMIOS_PATTERN, and some OFUNC_SPEC */
-int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to) {
-   unsigned int i;
-   int stat;
-
-   for (i = from; i <= to; ++i) {
-      if ((stat = applyopts(fd, opts, i)) < 0)
-	 return stat;
-   }
-   return 0;
-}
-
-/* Apply and consume all options of type FLAG and group.
-   Return 0 when everything went right, or -1 if an error occurred. */
-int applyopts_optgroup(
+int applyopts2(
+	struct single *sfd,
 	int fd,
 	struct opt *opts,
-	int from, 	/* -1: from first phase, not in order */
-	int to, 	/* -1: to last phase, not in order */
+	unsigned int from,
+	unsigned int to) {
+   unsigned int ph;
+   int rc = 0;
+
+   for (ph = from; ph <= to; ++ph) {
+      rc |= applyopts(sfd, fd, opts, ph);
+   }
+   return rc;
+}
+
+int applyopts_optgroup(
+	struct single *sfd,
+	int fd,
+	struct opt *opts,
 	groups_t groups)
 {
-	struct opt *opt = opts;
-	unsigned int i;
+	int i;
+	int rc = 0;
 
 	if (opts == NULL)
 		return 0;
 
-	/* Just apply all opts matching from/to phases, in their stored order */
-	if (from < 0 || to < 0) {
-		if (from < 0)
-			from = 0;
-		if (to < 0)
-			to = UINT_MAX;
-		while (opt->desc != ODESC_END) {
-			if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR)
-				continue;
-			if ((opt->desc->group & groups) == 0)
-				continue;
-			if (opt->desc->phase < from ||
-			    opt->desc->phase > to)
-				continue;
-			applyopt(fd, opt);
-			/* Dont check rc: on error is should not come here */
-
-			++opt;
+	i = 0;
+	while (opts[i].desc != ODESC_END) {
+		if (opts[i].desc == ODESC_DONE &&
+		    opts[i].desc == ODESC_ERROR) {
+			++i;
+			continue;
 		}
-	}
-
-	/* Just apply all opts from, to phase, in their phases order */
-	for (i = from; i <= to; ++i) {
-		while (opt->desc != ODESC_END) {
-			if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
-			    (opt->desc->group & groups) && opt->desc->phase == i) {
-				applyopt(fd, opt);
-				/* Dont check rc: on error is should not come here */
-			}
-			++opt;
+		if (opts[i].desc->group & groups) {
+			rc |= applyopt(sfd, sfd->fd, &opts[i]);
 		}
+		++i;
 	}
-	return 0;
+	return rc;
 }
 
 /* apply and consume all options of type FLAG and group.
@@ -4091,8 +4109,8 @@ static int applyopt_offset(struct single *xfd, struct opt *opt) {
       *(int *)ptr = opt->desc->minor;
       break;
    default:
-      Error1("applyopt_offset(): type %d not implemented",
-	     opt->desc->type);
+      Error2("applyopt_offset(opt:%s): type %s not implemented",
+	     opt->desc->defname, xiohelp_opttypename(opt->desc->type));
       return -1;
    }
    opt->desc = ODESC_DONE;
@@ -4118,83 +4136,225 @@ int applyopts_offset(struct single *xfd, struct opt *opts) {
    returns -1 if an error occurred */
 int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
    struct opt *opt;
-   int lockrc;
+   int rc = 0;
 
-   if (!opts)  return 0;
+   if (!opts)
+      return 0;
 
    opt = opts; while (opt->desc != ODESC_END) {
-      if ((opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR) ||
-	  (opt->desc->phase != phase && phase != PH_ALL)) {
-	 /* option not handled in this function */
-	 ++opt; continue;
-      } else {
-     switch (opt->desc->func) {
+      if ((opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR) &&
+	  (opt->desc->phase == phase && phase != PH_ALL)) {
+	 if (opt->desc->func < OFUNC_XIO) {
+		 rc = applyopt(NULL, xfd->fd, opt);
+	 } else {
+		 rc = applyopt(xfd, -1, opt);
+	 }
+	 if (rc == 0)
+	    opt->desc = ODESC_DONE;
+	 else
+	    opt->desc = ODESC_ERROR;
+      }
+      ++opt;
+   }
+   return rc;
+}
+
+/* Applies to sfd or fd the given option.
+   Note: not all options can be applied this way.
+   Returns 0.
+*/
+static int applyopt(
+	struct single *sfd,
+	int fd,
+	struct opt *opt)
+{
+	int lockrc;
+	int rc = 0;
+
+	if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR)
+		return 0;
+
+	if (sfd != NULL && fd < 0)
+		fd = sfd->fd;
+
+	switch (opt->desc->func) {
+
+	case OFUNC_SPEC:
+	   rc = applyopt_spec(sfd, fd, opt);
+	   break;
+	case OFUNC_SEEK32:
+		rc = applyopt_seek32(fd, opt);
+		break;
+
+#if HAVE_LSEEK64
+	case OFUNC_SEEK64:
+		rc = applyopt_seek64(fd, opt);
+		break;
+#endif /* HAVE_LSEEK64 */
+
+	case OFUNC_FCNTL:
+		rc = applyopt_fcntl(fd, opt);
+		break;
+
+	case OFUNC_IOCTL:
+		rc = applyopt_ioctl(fd, opt);
+		break;
+
+	case OFUNC_IOCTL_MASK_LONG:
+		rc = applyopt_ioctl_mask_long(fd, opt);
+		break;
+
+	case OFUNC_IOCTL_GENERIC:
+		rc = applyopt_ioctl_generic(fd, opt);
+		break;
+
+#if _WITH_SOCKET
+	case OFUNC_SOCKOPT:
+		rc = applyopt_sockopt(fd, opt);
+		break;
+
+	case OFUNC_SOCKOPT_APPEND:
+		rc = applyopt_sockopt_append(fd, opt);
+		break;
+
+	case OFUNC_SOCKOPT_GENERIC:
+		rc = applyopt_sockopt_generic(fd, opt);
+		break;
+#endif /* _WITH_SOCKET */
+
+#if HAVE_FLOCK
+	case OFUNC_FLOCK:
+		rc = applyopt_flock(fd, opt);
+		break;
+#endif /* defined(HAVE_FLOCK) */
+
+#if WITH_TERMIOS
+	case OFUNC_TERMIOS_FLAG:
+		rc = xiotermiosflag_applyopt(fd, opt);
+		break;
+
+	case OFUNC_TERMIOS_VALUE:
+		rc = applyopts_termios_value(fd, opt);
+		break;
+
+	case OFUNC_TERMIOS_PATTERN:
+		rc = xiotermios_value(fd, opt->desc->major,
+				      opt->desc->arg3, opt->desc->minor);
+		break;
+
+	case OFUNC_TERMIOS_CHAR:
+		rc = xiotermios_char(fd, opt->desc->major, opt->value.u_byte);
+		break;
+
+#ifdef HAVE_TERMIOS_ISPEED
+	case OFUNC_TERMIOS_SPEED:
+		rc = xiotermios_speed(fd, opt->desc->major, opt->value.u_uint);
+		break;
+#endif /* HAVE_TERMIOS_ISPEED */
+
+	case OFUNC_TERMIOS_SPEC:
+		rc = xiotermios_spec(fd, opt->desc->optcode);
+	   break;
+#endif /* WITH_TERMIOS */
+
+#if WITH_STREAMS
+#define ENABLE_APPLYOPT
+#include "xio-streams.c"
+#undef ENABLE_APPLYOPT
+#endif /* WITH_STREAMS */
 
      case OFUNC_OFFSET:
-	applyopt_offset(xfd, opt);
+	rc = applyopt_offset(sfd, opt);
 	break;
 
      case OFUNC_EXT:
       switch (opt->desc->optcode) {
 #if 0
       case OPT_IGNOREEOF:
-	 xfd->ignoreeof = true;
-	 break;
+	 sfd->ignoreeof = true;
+	 return 0;
       case OPT_CR:
-	 xfd->lineterm = LINETERM_CR;
-	 break;
+	 sfd->lineterm = LINETERM_CR;
+	 return 0;
       case OPT_CRNL:
-	 xfd->lineterm = LINETERM_CRNL;
-	 break;
+	 sfd->lineterm = LINETERM_CRNL;
+	 return 0;
 #endif /* 0 */
       case OPT_READBYTES:
-	 xfd->readbytes = opt->value.u_sizet;
-	 xfd->actbytes  = xfd->readbytes;
+	 sfd->readbytes = opt->value.u_sizet;
+	 sfd->actbytes  = sfd->readbytes;
 	 break;
+
       case OPT_LOCKFILE:
-	 if (xfd->lock.lockfile) {
+	 if (sfd->lock.lockfile) {
 	    Error("only one use of options lockfile and waitlock allowed");
 	 }
-	 xfd->lock.lockfile = strdup(opt->value.u_string);
-	 xfd->lock.intervall.tv_sec  = 1;
-	 xfd->lock.intervall.tv_nsec = 0;
+	 sfd->lock.lockfile = strdup(opt->value.u_string);
+	 sfd->lock.intervall.tv_sec  = 1;
+	 sfd->lock.intervall.tv_nsec = 0;
 
-	 if ((lockrc = xiolock(&xfd->lock)) < 0) {
+	 if ((lockrc = xiolock(&sfd->lock)) < 0) {
 	    /* error message already printed */
-	    return -1;
+	    rc = -1;
 	 }
 	 if (lockrc) {
-	    Error1("could not obtain lock \"%s\"", xfd->lock.lockfile);
+	    Error1("could not obtain lock \"%s\"", sfd->lock.lockfile);
+	    rc = -1;
 	 } else {
-	    xfd->havelock = true;
+	    sfd->havelock = true;
 	 }
 	 break;
+
       case OPT_WAITLOCK:
-	 if (xfd->lock.lockfile) {
+	 if (sfd->lock.lockfile) {
 	    Error("only one use of options lockfile and waitlock allowed");
 	 }
-	 xfd->lock.lockfile = strdup(opt->value.u_string);
-	 xfd->lock.waitlock = true;
-	 xfd->lock.intervall.tv_sec  = 1;
-	 xfd->lock.intervall.tv_nsec = 0;
+	 sfd->lock.lockfile = strdup(opt->value.u_string);
+	 sfd->lock.waitlock = true;
+	 sfd->lock.intervall.tv_sec  = 1;
+	 sfd->lock.intervall.tv_nsec = 0;
 
 	 /*! this should be integrated into central select()/poll() loop */
-	 if (xiolock(&xfd->lock) < 0) {
-	    return -1;
-	 }
-	 xfd->havelock = true;
+	 rc = xiolock(&sfd->lock);
+	 if (rc < 0)
+	    break;
+	 sfd->havelock = true;
 	 break;
 
       default:
 	 /* just store the value in the correct component of struct single */
 	 if (opt->desc->type == TYPE_CONST) {
 	    /* only for integral types compatible to int */
-	    *(int *)(&((char *)xfd)[opt->desc->major]) = opt->desc->arg3;
+	    *(int *)(&((char *)sfd)[opt->desc->major]) = opt->desc->arg3;
 	 } else {
-	    memcpy(&((char *)xfd)[opt->desc->major], &opt->value, opt->desc->minor);
+	    memcpy(&((char *)sfd)[opt->desc->major], &opt->value, opt->desc->minor);
 	 }
       }
       break;
+
+     case OFUNC_OFFSET_MASK:
+	/* Currently not used */
+	/* Data target is some integer with independent bits in sfd;
+	   set or unset the specified bits. */
+	{
+	   void *mask = (char *)sfd + opt->desc->major;
+	   size_t masksize = opt->desc->minor;
+	   unsigned long bit = opt->desc->arg3;
+	   switch (masksize) {
+	   case sizeof(int):
+	      if (opt->value.u_bool) {
+		 (*(int *)mask) |= bit;
+	      } else {
+		 (*(int *)mask) &= ~bit;
+	      }
+	      break;
+	   default:
+	      Info1("sizeof(int)="F_Zu, sizeof(int));
+	      Error2("applyopts_single(opt:%s): INTERNAL: OFUNC_OFFSET_MASK size "F_Zu" not implemented",
+		     opt->desc->defname, masksize);
+	   }
+	}
+	break;
 
      case OFUNC_OFFSET_MASKS:
 	/* An external (e.g. library) variable with independent bits is to be
@@ -4202,7 +4362,7 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
 	   element holds the bit mask to be set, the second one those to be
 	   cleared. Each related option sets or unsets a specific bit. */
 	{
-	   void *masks = (char *)xfd + opt->desc->major;
+	   void *masks = (char *)sfd + opt->desc->major;
 	   size_t masksize = opt->desc->minor;
 	   unsigned long bit = opt->desc->arg3;
 	   switch (masksize>>1) {
@@ -4228,104 +4388,53 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
 	      }
 	      break;
 	   default:
-	      Error1("applyopts_single: masksize "F_Zu" not implemented",
-		     masksize);
+	      Info1("sizeof(uint32_t)="F_Zu, sizeof(uint32_t));
+	      Error2("applyopts_single(opt:%s): INTERNAL: OFUNC_OFFSET_MASKS size "F_Zu" not implemented",
+		     opt->desc->defname, masksize);
+	      rc = -1;
+	      break;
 	   }
 	}
 	break;
 
-#if _WITH_SOCKET
-     case OFUNC_SOCKOPT:
-	 switch (opt->desc->optcode) {
-#if WITH_IP4 && (defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN))
-	 case OPT_IP_ADD_MEMBERSHIP:
-	    if (xioapply_ip_add_membership(xfd, opt) < 0) {
-	       continue;
-	    }
-	    break;
-#endif /* WITH_IP4 && (defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)) */
+   case OFUNC_SIGNAL:
+      rc = xio_opt_signal(sfd->para.exec.pid, opt->desc->major);
+      break;
 
-#if WITH_IP4 && defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
-	 case OPT_IP_ADD_SOURCE_MEMBERSHIP:
-	    if (xioapply_ip_add_source_membership(xfd, opt) < 0) {
-	       continue;
-	    }
-	    break;
-#endif /* WITH_IP4 && defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP) */
-
-#if WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ)
-	 case OPT_IPV6_JOIN_GROUP:
-	    if (xioapply_ipv6_join_group(xfd, opt) < 0) {
-	       continue;
-	    }
-	    break;
-#endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
-
-#if WITH_IP6 && defined(HAVE_STRUCT_GROUP_SOURCE_REQ)
-	 case OPT_IPV6_JOIN_SOURCE_GROUP:
-	    if (xioapply_ip6_join_source_group(xfd, opt) < 0) {
-	       continue;
-	    }
-	   break;
-#endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
-	default:
-	   /* ignore here */
-	   ++opt; continue;
-	}
+   default:
+	Error2("applyopt(opt:%s): INTERNAL: ofunc %d not implemented",
+	       opt->desc->defname, opt->desc->func);
+	rc = -1;
 	break;
-#endif /* _WITH_SOCKET */
-
-     default:
-	++opt;
-	continue;
-     }
-     opt->desc = ODESC_DONE;
-     ++opt;
-      }
    }
-   return 0;
-}
-
-
-/* xfd->para.exec.pid must be set */
-int applyopts_signal(struct single *xfd, struct opt *opts) {
-   struct opt *opt;
-
-   if (!opts)  return 0;
-
-   opt = opts; while (opt->desc != ODESC_END) {
-      if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR ||
-	  opt->desc->func != OFUNC_SIGNAL) {
-	 ++opt; continue;
-      }
-
-      if (xio_opt_signal(xfd->para.exec.pid, opt->desc->major) < 0) {
-	 opt->desc = ODESC_ERROR; continue;
-      }
+   if (rc == 0)
       opt->desc = ODESC_DONE;
-      ++opt;
-   }
+   else if (rc < 0)
+      opt->desc = ODESC_ERROR;
+   /* rc > 0: no action */
+
    return 0;
 }
+
 
 /* apply remaining options to file descriptor, and tell us if something is
    still unused */
-int _xio_openlate(struct single *fd, struct opt *opts) {
+int _xio_openlate(struct single *sfd, struct opt *opts) {
    int numleft;
    int result;
 
    _xioopen_setdelayeduser();
 
-   if ((result = applyopts(fd->fd, opts, PH_LATE)) < 0) {
+   if ((result = applyopts(sfd, sfd->fd, opts, PH_LATE)) < 0) {
       return result;
    }
-   if ((result = applyopts_single(fd, opts, PH_LATE)) < 0) {
+   if ((result = applyopts_single(sfd, opts, PH_LATE)) < 0) {
       return result;
    }
-   if ((result = applyopts(fd->fd, opts, PH_LATE2)) < 0) {
+   if ((result = applyopts(sfd, sfd->fd, opts, PH_LATE2)) < 0) {
       return result;
    }
-   if ((result = applyopts(fd->fd, opts, PH_PASTEXEC)) < 0) {
+   if ((result = applyopts(sfd, sfd->fd, opts, PH_PASTEXEC)) < 0) {
       return result;
    }
 
@@ -4364,3 +4473,21 @@ int dropopts2(struct opt *opts, unsigned int from, unsigned int to) {
    return 0;
 }
 
+int dumpopts(struct opt *opts)
+{
+	int i;
+
+	if (opts == NULL) {
+		Warn("dumpopts: NULL");
+		return 0;
+	}
+	i = 0;
+	while (opts[i].desc != ODESC_END) {
+		if (opts[i].desc != ODESC_DONE &&
+		    opts[i].desc != ODESC_ERROR) {
+			Warn2("dumpopts(): %d %s", i, opts[i].desc->defname);
+		}
+		++i;
+	}
+	return 0;
+}

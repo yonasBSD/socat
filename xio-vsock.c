@@ -52,8 +52,8 @@ static int vsock_init(struct opt *opts, struct single *xfd) {
    if (applyopts_single(xfd, opts, PH_INIT) < 0)
       return STAT_NORETRY;
 
-   applyopts(-1, opts, PH_INIT);
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(xfd, -1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_EARLY);
 
    xfd->dtype = XIODATA_STREAM;
 

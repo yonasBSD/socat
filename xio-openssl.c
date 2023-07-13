@@ -240,6 +240,7 @@ static int
 					   addr_openssl */
 {
    struct single *xfd = &xxfd->stream;
+   struct single *sfd = xfd;
    struct opt *opts0 = NULL;
    const char *hostname, *portname;
    int pf = PF_UNSPEC;
@@ -284,7 +285,7 @@ static int
 
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_FORK, &dofork);
 
@@ -561,6 +562,7 @@ static int
 					   addr_openssl */
 {
    struct single *xfd = &xxfd->stream;
+   struct single *sfd = xfd;
    const char *portname;
    struct opt *opts0 = NULL;
    union sockaddr_union us_sa, *us = &us_sa;
@@ -604,7 +606,7 @@ static int
 
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_string(opts, OPT_OPENSSL_CERTIFICATE, &opt_cert);
    if (opt_cert == NULL) {
@@ -613,7 +615,7 @@ static int
 
    retropt_string(opts, OPT_OPENSSL_COMMONNAME, (char **)&opt_commonname);
 
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(sfd, -1, opts, PH_EARLY);
 
    result =
       _xioopen_openssl_prepare(opts, xfd, true, &opt_ver, opt_cert, &ctx, &use_dtls);

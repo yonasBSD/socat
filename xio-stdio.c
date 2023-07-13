@@ -89,16 +89,16 @@ int xioopen_stdio_bi(xiofile_t *sock) {
 			sock->dual.stream[1]->opts, PH_INIT)
        < 0)
       return -1;
-   applyopts(-1, sock->dual.stream[0]->opts, PH_INIT);
-   applyopts(-1, sock->dual.stream[1]->opts, PH_INIT);
-   if ((result = applyopts(-1, optspr, PH_EARLY)) < 0)
+   applyopts(sock->dual.stream[0], -1, sock->dual.stream[0]->opts, PH_INIT);
+   applyopts(sock->dual.stream[1], -1, sock->dual.stream[1]->opts, PH_INIT);
+   if ((result = applyopts(NULL, -1, optspr, PH_EARLY)) < 0)
       return result;
-   if ((result = applyopts(-1, optspr, PH_PREOPEN)) < 0)
+   if ((result = applyopts(NULL, -1, optspr, PH_PREOPEN)) < 0)
       return result;
 
    /* apply options to first FD */
    if ((result =
-	applyopts(sock->dual.stream[0]->fd,
+	applyopts(sock->dual.stream[0], -1,
 		  sock->dual.stream[0]->opts, PH_ALL))
        < 0) {
       return result;
@@ -113,7 +113,7 @@ int xioopen_stdio_bi(xiofile_t *sock) {
 #endif
 
    /* apply options to second FD */
-   if ((result = applyopts(sock->dual.stream[1]->fd,
+   if ((result = applyopts(sock->dual.stream[1], -1,
 			   sock->dual.stream[1]->opts, PH_ALL)) < 0) {
       return result;
    }

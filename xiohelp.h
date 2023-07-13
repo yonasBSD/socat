@@ -5,6 +5,8 @@
 #ifndef __xiohelp_h_included
 #define __xiohelp_h_included 1
 
+extern const char *xiohelp_opttypename(enum e_types typnum);
+
 extern int xioopenhelp(FILE *of,
 	       int level	/* 0..only addresses, 1..and options */
 	       );

@@ -62,14 +62,19 @@ void socatsignalpass(int sig) {
       return;
    }
 
+  { /*debug*/
+     int n = 0;
    for (i=0; i<sigdesc->sig_use; ++i) {
       if (sigdesc->sig_pids[i]) {
+	 ++n;
 	 if (Kill(sigdesc->sig_pids[i], sig) < 0) {
 	    Warn2("kill("F_pid", %d): %m",
 		  sigdesc->sig_pids[i], sig);
 	 }
       }
    }
+   Info1("socatsignalpass(): n=%d", n);
+  }
 #if !HAVE_SIGACTION
    Signal(sig, socatsignalpass);
 #endif /* !HAVE_SIGACTION */

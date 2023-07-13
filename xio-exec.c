@@ -26,13 +26,15 @@ const struct optdesc opt_dash = { "dash", "login", OPT_DASH, GROUP_EXEC, PH_PREE
 
 static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
 		int xioflags,	/* XIO_RDONLY, XIO_MAYCHILD etc. */
-		xiofile_t *fd,
+		xiofile_t *xfd,
 		groups_t groups,
 		int dummy1, int dummy2, int dummy3
 		) {
+   struct single *sfd = &xfd->stream;
    int status;
    bool dash = false;
    int duptostderr;
+   int numleft;
 
    if (argc != 2) {
       Error2("\"%s\": wrong number of parameters (%d instead of 1)", argv[0], argc-1);
@@ -40,8 +42,9 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
 
    retropt_bool(opts, OPT_DASH, &dash);
 
-   status = _xioopen_foxec(xioflags, &fd->stream, groups, &opts, &duptostderr);
-   if (status < 0)  return status;
+   status = _xioopen_foxec(xioflags, sfd, groups, &opts, &duptostderr);
+   if (status < 0)
+      return status;
    if (status == 0) {	/* child */
       const char *ends[] = { " ", NULL };
       const char *hquotes[] = { "'", NULL };
@@ -61,7 +64,6 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
       char *tokp;
       char *path = NULL;
       char *tmp;
-      int numleft;
 
       /*! Close(something) */
       /* parse command line */
@@ -143,6 +145,7 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
    }
 
    /* parent */
+   _xio_openlate(sfd, opts);
    return 0;
 }
 #endif /* WITH_EXEC */

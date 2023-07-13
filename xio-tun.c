@@ -46,6 +46,7 @@ static const struct optname xio_route_options[] = {
 #endif
 
 static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+   struct single *sfd = &xfd->stream;
    char *tundevice = NULL;
    char *tunname = NULL, *tuntype = NULL;
    int pf = /*! PF_UNSPEC*/ PF_INET;
@@ -79,10 +80,10 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
 
    /*========================= the tunnel interface =========================*/
    Notice("creating tunnel network interface");
-   applyopts_optgroup(-1, opts, PH_PRESOCKET, PH_PRESOCKET, GROUP_PROCESS);
+   applyopts_optgroup(&xfd->stream, -1, opts, GROUP_PROCESS);
    if ((result = _xioopen_open(tundevice, rw, opts)) < 0)
       return result;
-   xfd->stream.fd = result;
+   sfd->fd = result;
 
    /* prepare configuration of the new network interface */
    memset(&ifr, 0, sizeof(ifr));
@@ -113,10 +114,10 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
       }
    }
 
-   if (Ioctl(xfd->stream.fd, TUNSETIFF, &ifr) < 0) {
+   if (Ioctl(sfd->fd, TUNSETIFF, &ifr) < 0) {
       Error3("ioctl(%d, TUNSETIFF, {\"%s\"}: %s",
-	     xfd->stream.fd, ifr.ifr_name, strerror(errno));
-      Close(xfd->stream.fd);
+	     sfd->fd, ifr.ifr_name, strerror(errno));
+      Close(sfd->fd);
    }
    Notice1("TUN: new device \"%s\"", ifr.ifr_name);
 
@@ -125,7 +126,7 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
    /* we seem to need a socket for manipulating the interface */
    if ((sockfd = Socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
       Error1("socket(PF_INET, SOCK_DGRAM, 0): %s", strerror(errno));
-      sockfd = xfd->stream.fd;	/* desparate fallback attempt */
+      sockfd = sfd->fd;	/* desparate fallback attempt */
    }
 
    /*--------------------- setting interface address and netmask ------------*/
@@ -135,7 +136,7 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
           return STAT_RETRYLATER;
        }
        if ((result = xioparsenetwork(ifaddr, pf, &network,
-				     xfd->stream.para.socket.ip.ai_flags))
+				     sfd->para.socket.ip.ai_flags))
 	   != STAT_OK) {
           /*! recover */
           return result;
@@ -157,16 +158,16 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
        free(ifaddr);
    }
    /*--------------------- setting interface flags --------------------------*/
-   applyopts_single(&xfd->stream, opts, PH_FD);
+   applyopts_single(sfd, opts, PH_FD);
 
-   _xiointerface_apply_iff(sockfd, ifr.ifr_name, xfd->stream.para.interface.iff_opts);
+   _xiointerface_apply_iff(sockfd, ifr.ifr_name, sfd->para.interface.iff_opts);
 
-   applyopts(xfd->stream.fd, opts, PH_FD);
-   applyopts_cloexec(xfd->stream.fd, opts);
+   applyopts(sfd, -1, opts, PH_FD);
+   applyopts_cloexec(sfd->fd, opts);
 
-   applyopts_fchown(xfd->stream.fd, opts);
+   applyopts_fchown(sfd->fd, opts);
 
-   if ((result = _xio_openlate(&xfd->stream, opts)) < 0)
+   if ((result = _xio_openlate(sfd, opts)) < 0)
       return result;
 
    return 0;

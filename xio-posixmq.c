@@ -90,7 +90,7 @@ static int xioopen_posixmq(
 	}
 	applyopts_offset(sfd, opts);
 	if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
-	applyopts(-1, opts, PH_INIT);
+	applyopts(sfd, -1, opts, PH_INIT);
 
 	if ((sfd->para.posixmq.name = strdup(name)) == NULL) {
 		Error1("strdup(\"%s\"): out of memory", name);

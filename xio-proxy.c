@@ -114,7 +114,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, 1, opts, PH_INIT);
 
    retropt_int(opts, OPT_SO_TYPE, &socktype);
 
@@ -203,6 +203,8 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 	 return result;
       }
       }
+      xiofreeaddrinfo(themlist);
+      applyopts(xfd, -1, opts, PH_ALL);
 
       if ((result = _xio_openlate(xfd, opts)) < 0)
 	 return result;

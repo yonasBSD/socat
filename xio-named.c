@@ -99,6 +99,7 @@ int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
 			 groups_t groups, bool *exists, struct opt *opts)
 {
    const char *path = argv[1];
+   struct single *sfd = &xfd->stream;
 #if HAVE_STAT64
    struct stat64 statbuf;
 #else
@@ -127,8 +128,9 @@ int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
       *exists = true;
    }
 
-   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)
+      return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_UNLINK_EARLY, &opt_unlink_early);
    if (*exists && opt_unlink_early) {
@@ -141,7 +143,7 @@ int _xioopen_named_early(int argc, const char *argv[], xiofile_t *xfd,
    }
 
    applyopts_named(path, opts, PH_EARLY);
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(sfd, -1, opts, PH_EARLY);
    if (*exists) {
       applyopts_named(path, opts, PH_PREOPEN);
    } else {

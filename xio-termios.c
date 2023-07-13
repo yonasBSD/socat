@@ -12,7 +12,7 @@
 /****** TERMIOS addresses ******/
 #if _WITH_TERMIOS
 #if WITH_TERMIOS
-const struct optdesc opt_tiocsctty={ "tiocsctty", "ctty",OPT_TIOCSCTTY,  GROUP_TERMIOS,   PH_LATE2, TYPE_BOOL,     OFUNC_SPEC };
+const struct optdesc opt_tiocsctty = { "tiocsctty", "ctty",OPT_TIOCSCTTY,  GROUP_TERMIOS,   PH_LATE2, TYPE_BOOL,     OFUNC_SPEC };
 
 /* it is important for handling of these options that they have PH_FD */
 const struct optdesc opt_brkint  = { "brkint",  NULL, OPT_BRKINT,  GROUP_TERMIOS, PH_FD, TYPE_BOOL, OFUNC_TERMIOS_FLAG, 0, BRKINT };

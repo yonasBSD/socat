@@ -20,7 +20,7 @@ static int xioopen_socketpair(int argc, const char *argv[], struct opt *opts, in
 const struct addrdesc xioaddr_socketpair   = { "SOCKETPAIR",   3, xioopen_socketpair,  GROUP_FD|GROUP_SOCKET, 0, 0, 0 HELP(":<filename>") };
 
 
-/* open a socketpair */
+/* Open a socketpair */
 static int xioopen_socketpair(
 	int argc,
 	const char *argv[],
@@ -32,7 +32,7 @@ static int xioopen_socketpair(
 	int dummy2,
 	int dummy3)
 {
-   struct single *sfd;
+   struct single *sfd = &xfd->stream;
    struct opt *opts2;
    int pf = PF_UNIX;
    int protocol = 0;
@@ -44,10 +44,9 @@ static int xioopen_socketpair(
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
-   sfd = &xfd->stream;
    sfd->para.bipipe.socktype = SOCK_DGRAM;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(sfd, -1, opts, PH_INIT);
    retropt_int(opts, OPT_PROTOCOL_FAMILY, &pf);
    retropt_int(opts, OPT_SO_TYPE, &sfd->para.bipipe.socktype);
    retropt_int(opts, OPT_SO_PROTOTYPE, &protocol);
@@ -78,7 +77,7 @@ static int xioopen_socketpair(
    }
 
    /* apply options to first FD */
-   if ((result = applyopts(sfd->fd, opts, PH_ALL)) < 0) {
+   if ((result = applyopts(sfd, -1, opts, PH_ALL)) < 0) {
       return result;
    }
    if ((result = applyopts_single(sfd, opts, PH_ALL)) < 0) {
@@ -86,10 +85,8 @@ static int xioopen_socketpair(
    }
 
    /* apply options to second FD */
-   if ((result = applyopts(sfd->para.bipipe.fdout, opts2, PH_ALL)) < 0)
-   {
-      return result;
-   }
+   if (applyopts(sfd, sfd->para.bipipe.fdout, opts2, PH_ALL) < 0)
+      return -1;
 
    if ((numleft = leftopts(opts)) > 0) {
       Error1("%d option(s) could not be used", numleft);

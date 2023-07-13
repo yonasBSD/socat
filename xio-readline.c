@@ -40,6 +40,7 @@ const struct optdesc opt_noecho       = { "noecho",       NULL,      OPT_NOECHO,
 static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
 			    int xioflags, xiofile_t *xfd, groups_t groups,
 			    int dummy1, int dummy2, int dummy3) {
+   struct single *sfd = &xfd->stream;
    int rw = (xioflags & XIO_ACCMODE);
    char msgbuf[256], *cp = msgbuf;
    bool noprompt = false;
@@ -85,10 +86,10 @@ static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
    }
 #endif /* WITH_TERMIOS */
 
-   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
-   applyopts2(xfd->stream.fd, opts, PH_INIT, PH_FD);
+   applyopts2(sfd, -1, opts, PH_INIT, PH_FD);
 
    Using_history();
    applyopts_offset(&xfd->stream, opts);

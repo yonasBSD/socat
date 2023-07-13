@@ -30,6 +30,7 @@ const struct optdesc opt_pty_intervall  = { "pty-interval",  NULL,         OPT_P
 
 static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
    /* we expect the form: filename */
+   struct single *sfd = &xfd->stream;
    int ptyfd = -1, ttyfd = -1;
 #if defined(HAVE_DEV_PTMX) || defined(HAVE_DEV_PTC)
    bool useptmx = false;	/* use /dev/ptmx or equivalent */
@@ -51,10 +52,10 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
       Error2("%s: wrong number of parameters (%d instead of 0)", argv[0], argc-1);
    }
 
-   xfd->stream.howtoend = END_CLOSE;
+   sfd->howtoend = END_CLOSE;
 
-   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
 
@@ -88,10 +89,10 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
    retropt_timespec(opts, OPT_PTY_INTERVALL, &pollintv);
 #endif /* HAVE_POLL */
 
-   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts2(-1, opts, PH_INIT, PH_EARLY);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
+   applyopts2(sfd, -1, opts, PH_INIT, PH_EARLY);
 
-   applyopts(-1, opts, PH_PREBIGEN);
+   applyopts(sfd, -1, opts, PH_PREBIGEN);
 
 #if defined(HAVE_DEV_PTMX)
 #  define PTMX "/dev/ptmx"	/* Linux */
@@ -155,10 +156,10 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
 		ptyname, linkname, strerror(errno));
       }
       if (opt_unlink_close) {
-	 if ((xfd->stream.unlink_close = strdup(linkname)) == NULL) {
+	 if ((sfd->unlink_close = strdup(linkname)) == NULL) {
 	    Error1("strdup(\"%s\"): out of memory", linkname);
 	 }
-	 xfd->stream.opt_unlink_close = true;
+	 sfd->opt_unlink_close = true;
       }
    }
 
@@ -166,9 +167,9 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
    applyopts_named(ptyname, opts, PH_FD);
 
    applyopts_cloexec(ptyfd, opts);/*!*/
-   xfd->stream.dtype    = XIODATA_PTY;
+   sfd->dtype    = XIODATA_PTY;
 
-   applyopts(ptyfd, opts, PH_FD);
+   applyopts(sfd, ptyfd, opts, PH_FD);
 
    {
       /* special handling of user-late etc.; with standard behaviour (up to
@@ -196,9 +197,10 @@ static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xiofl
 
    }
 
-   xfd->stream.fd = ptyfd;
-   applyopts(ptyfd, opts, PH_LATE);
-   if (applyopts_single(&xfd->stream, opts, PH_LATE) < 0)  return -1;
+   sfd->fd = ptyfd;
+   applyopts(sfd, -1, opts, PH_LATE);
+   if (applyopts_single(sfd, opts, PH_LATE) < 0)
+      return -1;
 
 #if HAVE_POLL
    /* if you can and wish: */

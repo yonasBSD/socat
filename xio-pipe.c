@@ -24,13 +24,14 @@ const struct addrdesc xioaddr_pipe   = { "PIPE",   3, xioopen_fifo,  GROUP_FD|GR
 /* process an unnamed bidirectional "pipe" or "fifo" or "echo" argument with
    options */
 static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
+   struct single *sfd = &sock->stream;
    struct opt *opts2;
    int filedes[2];
    int numleft;
    int result;
 
-   if (applyopts_single(&sock->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
    if (Pipe(filedes) != 0) {
       Error2("pipe(%p): %s", filedes, strerror(errno));
@@ -39,15 +40,15 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
    /*0 Info2("pipe({%d,%d})", filedes[0], filedes[1]);*/
 
    sock->common.tag               = XIO_TAG_RDWR;
-   sock->stream.dtype             = XIODATA_PIPE;
-   sock->stream.fd                = filedes[0];
-   sock->stream.para.bipipe.fdout = filedes[1];
-   sock->stream.para.bipipe.socktype = SOCK_STREAM; 	/* due to socketpair reuse */
-   applyopts_cloexec(sock->stream.fd,                opts);
-   applyopts_cloexec(sock->stream.para.bipipe.fdout, opts);
+   sfd->dtype             = XIODATA_PIPE;
+   sfd->fd                = filedes[0];
+   sfd->para.bipipe.fdout = filedes[1];
+   sfd->para.bipipe.socktype = SOCK_STREAM; 	/* due to socketpair reuse */
+   applyopts_cloexec(sfd->fd,                opts);
+   applyopts_cloexec(sfd->para.bipipe.fdout, opts);
 
    /* one-time and input-direction options, no second application */
-   retropt_bool(opts, OPT_IGNOREEOF, &sock->stream.ignoreeof);
+   retropt_bool(opts, OPT_IGNOREEOF, &sfd->ignoreeof);
 
    /* here we copy opts! */
    if ((opts2 = copyopts(opts, GROUP_FIFO)) == NULL) {
@@ -55,18 +56,16 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
    }
 
    /* apply options to first FD */
-   if ((result = applyopts(sock->stream.fd, opts, PH_ALL)) < 0) {
+   if ((result = applyopts(sfd, -1, opts, PH_ALL)) < 0) {
       return result;
    }
-   if ((result = applyopts_single(&sock->stream, opts, PH_ALL)) < 0) {
+   if ((result = applyopts_single(sfd, opts, PH_ALL)) < 0) {
       return result;
    }
 
    /* apply options to second FD */
-   if ((result = applyopts(sock->stream.para.bipipe.fdout, opts2, PH_ALL)) < 0)
-   {
-      return result;
-   }
+   if (applyopts(&sock->stream, sfd->para.bipipe.fdout, opts2, PH_ALL) < 0)
+      return -1;
 
    if ((numleft = leftopts(opts)) > 0) {
       showleft(opts);
@@ -78,7 +77,8 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
 
 
 /* open a named or unnamed pipe/fifo */
-static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, groups_t groups, int dummy1, int dummy2, int dummy3) {
+   struct single *sfd = &xfd->stream;
    const char *pipename = argv[1];
    int rw = (xioflags & XIO_ACCMODE);
 #if HAVE_STAT64
@@ -92,19 +92,20 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
    int result;
 
    if (argc == 1) {
-      return xioopen_fifo_unnamed(fd, fd->stream.opts);
+      return xioopen_fifo_unnamed(xfd, sfd->opts);
    }
 
    if (argc != 2) {
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
-   if (applyopts_single(&fd->stream, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   if (applyopts_single(sfd, opts, PH_INIT) < 0)
+      return -1;
+   applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_UNLINK_EARLY, &opt_unlink_early);
    applyopts_named(pipename, opts, PH_EARLY);	/* umask! */
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(sfd, -1, opts, PH_EARLY);
 
    if (opt_unlink_early) {
       if (Unlink(pipename) < 0) {
@@ -149,10 +150,10 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
 
       }
       if (opt_unlink_close) {
-	 if ((fd->stream.unlink_close = strdup(pipename)) == NULL) {
+	 if ((sfd->unlink_close = strdup(pipename)) == NULL) {
 	    Error1("strdup(\"%s\"): out of memory", pipename);
 	 }
-	 fd->stream.opt_unlink_close = true;
+	 sfd->opt_unlink_close = true;
       }
    } else {
       /* exists */
@@ -160,19 +161,18 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
       Notice3("opening %s \"%s\" for %s",
 	      filetypenames[(pipstat.st_mode&S_IFMT)>>12],
 	      pipename, ddirection[rw]);
-      /*applyopts_early(pipename, opts);*/
       applyopts_named(pipename, opts, PH_EARLY);
    }
 
    if ((result = _xioopen_open(pipename, rw, opts)) < 0) {
       return result;
    }
-   fd->stream.fd = result;
+   sfd->fd = result;
 
    applyopts_named(pipename, opts, PH_FD);
-   applyopts(fd->stream.fd, opts, PH_FD);
-   applyopts_cloexec(fd->stream.fd, opts);
-   return _xio_openlate(&fd->stream, opts);
+   applyopts(sfd, -1, opts, PH_FD);
+   applyopts_cloexec(sfd->fd, opts);
+   return _xio_openlate(sfd, opts);
 }
 
 #endif /* WITH_PIPE */

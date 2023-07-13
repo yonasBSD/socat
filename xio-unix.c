@@ -148,10 +148,10 @@ static int xioopen_unix_listen(int argc, const char *argv[], struct opt *opts, i
    }
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0) return STAT_NORETRY;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
    applyopts_named(name, opts, PH_EARLY);	/* umask! */
    applyopts_offset(xfd, opts);
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(xfd, -1, opts, PH_EARLY);
 
    uslen = xiosetunix(pf, &us, name, abstract, xfd->para.socket.un.tight);
 
@@ -229,9 +229,9 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
    retropt_socket_pf(opts, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
    applyopts_offset(xfd, opts);
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(xfd, -1, opts, PH_EARLY);
 
    themlen = xiosetunix(pf, &them, name, abstract, xfd->para.socket.un.tight);
 
@@ -361,6 +361,7 @@ static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, i
    socklen_t uslen = sizeof(us);
    bool needbind = false;
    bool opt_unlink_close = (abstract != 1);
+   int result;
 
    if (argc != 2) {
       Error2("%s: wrong number of parameters (%d instead of 1)",
@@ -394,20 +395,24 @@ static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, i
       Error1("Option \"%s\" only with bind option", namedopt->desc->defname);
    }
 
+   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
+   applyopts(xfd, -1, opts, PH_INIT);
+
+   result =
+      _xioopen_dgram_sendto(needbind?(union sockaddr_union *)&us:NULL, uslen,
+			    opts, xioflags, xfd, groups,
+			    pf, socktype, protocol, 0);
+   if (result != 0) {
+      return result;
+   }
+
    if (opt_unlink_close && needbind) {
       if ((xfd->unlink_close = strdup(us.un.sun_path)) == NULL) {
 	 Error1("strdup(\"%s\"): out of memory", name);
       }
       xfd->opt_unlink_close = true;
    }
-
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
-
-   return
-      _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
-			    opts, xioflags, xfd, groups,
-			    pf, socktype, protocol, 0);
+   return STAT_OK;
 }
 
 
@@ -438,7 +443,7 @@ int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    xfd->howtoend = END_NONE;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
    applyopts_named(name, opts, PH_EARLY);       /* umask! */
    applyopts_offset(xfd, opts);
 
@@ -447,7 +452,7 @@ int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
       retropt_bool(opts, OPT_UNLINK_EARLY, &opt_unlink_early);
       retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    }
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(xfd, -1, opts, PH_EARLY);
 
    uslen = xiosetunix(pf, &us, name, abstract, xfd->para.socket.un.tight);
 
@@ -519,7 +524,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
    applyopts_named(name, opts, PH_EARLY);       /* umask! */
    applyopts_offset(xfd, opts);
 
@@ -528,7 +533,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
       retropt_bool(opts, OPT_UNLINK_EARLY, &opt_unlink_early);
       retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    }
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(xfd, -1, opts, PH_EARLY);
 
    uslen = xiosetunix(pf, &us.un, name, abstract, xfd->para.socket.un.tight);
 
@@ -607,11 +612,11 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, groups_t groups,
    retropt_socket_pf(opts, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
    applyopts_offset(xfd, opts);
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    retropt_int(opts, OPT_SO_PROTOTYPE, &protocol);
-   applyopts(-1, opts, PH_EARLY);
+   applyopts(xfd, -1, opts, PH_EARLY);
 
    themlen = xiosetunix(pf, &them.un, name, abstract, xfd->para.socket.un.tight);
    if (!(ABSTRACT && abstract)) {

@@ -25,18 +25,20 @@ const struct addrdesc xioaddr_system = { "SYSTEM", 3, xioopen_system, GROUP_FD|G
 
 static int xioopen_system(int argc, const char *argv[], struct opt *opts,
 		int xioflags,	/* XIO_RDONLY etc. */
-		xiofile_t *fd,
+		xiofile_t *xfd,
 		groups_t groups,
 		int dummy1, int dummy2, int dummy3
 		) {
+   struct single *sfd = &xfd->stream;
    int status;
    char *path = NULL;
    int duptostderr;
    int result;
    const char *string = argv[1];
 
-   status = _xioopen_foxec(xioflags, &fd->stream, groups, &opts, &duptostderr);
-   if (status < 0)  return status;
+   status = _xioopen_foxec(xioflags, sfd, groups, &opts, &duptostderr);
+   if (status < 0)
+      return status;
    if (status == 0) {	/* child */
       int numleft;
 
@@ -72,6 +74,7 @@ static int xioopen_system(int argc, const char *argv[], struct opt *opts,
    }
 
    /* parent */
+   _xio_openlate(sfd, opts);
    return 0;
 }
 

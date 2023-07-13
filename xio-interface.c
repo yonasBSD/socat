@@ -84,7 +84,7 @@ int _xioopen_interface(const char *ifname,
 
    /* ...res_opts[] */
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-   applyopts(-1, opts, PH_INIT);
+   applyopts(xfd, -1, opts, PH_INIT);
 
    xfd->salen = sizeof(xfd->peersa);
    if (pf == PF_UNSPEC) {
