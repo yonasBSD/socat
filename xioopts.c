@@ -2074,7 +2074,7 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
       }
 
       if (!(ent->desc->group & groups) && !(ent->desc->group & GROUP_ANY) &&
-	  !xioopts_ignoregroups) {
+	  (ent->desc->group != GROUP_ADDR) && !xioopts_ignoregroups) {
 	 Error1("parseopts_table(): option \"%s\" not supported with this address type",
 		token /*a0*/);
 	 Info2("parseopts_table()  groups="F_groups_t", ent->group="F_groups_t,

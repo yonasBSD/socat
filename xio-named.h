@@ -14,7 +14,6 @@ extern const struct optdesc opt_unlink;
 extern const struct optdesc opt_unlink_early;
 extern const struct optdesc opt_unlink_late;
 extern const struct optdesc opt_unlink_close;
-extern const struct optdesc opt_umask;
 
 extern int
    applyopts_named(const char *filename, struct opt *opts, unsigned int phase);

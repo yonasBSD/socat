@@ -341,6 +341,7 @@ label(ADDRESS_EXEC)dit(bf(tt(EXEC:<command-line>)))
    link(ctty)(OPTION_CTTY),
    link(setsid)(OPTION_SETSID),
    link(pipes)(OPTION_PIPES),
+   link(umask)(OPTION_UMASK),
    link(login)(OPTION_LOGIN),
    link(sigint)(OPTION_SIGINT),
    link(sigquit)(OPTION_SIGQUIT),
@@ -1111,6 +1112,7 @@ label(ADDRESS_SHELL)dit(bf(tt(SHELL:<shell-command>)))
    link(ctty)(OPTION_CTTY),
    link(setsid)(OPTION_SETSID),
    link(pipes)(OPTION_PIPES),
+   link(umask)(OPTION_UMASK),
    link(sigint)(OPTION_SIGINT),
    link(sigquit)(OPTION_SIGQUIT)nl()
    See also: link(EXEC)(ADDRESS_EXEC), link(SYSTEM)(ADDRESS_SYSTEM)
@@ -1137,6 +1139,7 @@ label(ADDRESS_SYSTEM)dit(bf(tt(SYSTEM:<shell-command>)))
    link(ctty)(OPTION_CTTY),
    link(setsid)(OPTION_SETSID),
    link(pipes)(OPTION_PIPES),
+   link(umask)(OPTION_UMASK),
    link(sigint)(OPTION_SIGINT),
    link(sigquit)(OPTION_SIGQUIT),
    link(netns)(OPTION_NETNS)nl()
@@ -1503,6 +1506,7 @@ label(ADDRESS_UNIX_RECVFROM)dit(bf(tt(UNIX-RECVFROM:<filename>)))
    See the link(note about RECVFROM addresses)(NOTE_RECVFROM).nl()
    Useful options:
    link(fork)(OPTION_FORK)nl()
+   link(umask)(OPTION_UMASK)nl()
    See also:
    link(UNIX-SENDTO)(ADDRESS_UNIX_SENDTO),
    link(UNIX-RECV)(ADDRESS_UNIX_RECV),
@@ -1518,6 +1522,8 @@ label(ADDRESS_UNIX_RECV)dit(bf(tt(UNIX-RECV:<filename>)))
    It can be, e.g., addressed by socat UNIX-SENDTO address peers.
    It behaves similar to a syslog server.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(NAMED)(GROUP_NAMED),link(UNIX)(GROUP_SOCK_UNIX) nl()
+   Useful options:
+   link(umask)(OPTION_UMASK)nl()
    See also:
    link(UNIX-SENDTO)(ADDRESS_UNIX_SENDTO),
    link(UNIX-RECVFROM)(ADDRESS_UNIX_RECVFROM),
@@ -1856,11 +1862,6 @@ label(OPTION_PERM_EARLY)dit(bf(tt(perm-early=<mode>)))
    before accessing it, using the 
    code(chmod()) system call. This call might require ownership or root
    privilege. 
-label(OPTION_UMASK)dit(bf(tt(umask=<mode>)))
-   Sets the umask of the process to <mode> [link(mode_t)(TYPE_MODE_T)] before
-   accessing the file system entry (useful 
-   with unixdomain() sockets!). This call might affect all further operations
-   of the socat() process!  
 label(OPTION_UNLINK_EARLY)dit(bf(tt(unlink-early[=<bool>])))
    Unlinks (removes) the file before opening it and even before applying
    user-early etc. 
@@ -1978,6 +1979,24 @@ label(OPTION_FS_DIRSYNC)dit(bf(tt(dirsync[=<bool>])))
    successors, xfs, or reiserfs. See man 1 chattr for information on these
    options. Please note that there might be a race condition between creating
    the file and applying these options.
+enddit()
+
+startdit()enddit()nl()
+
+
+label(GROUP_ADDRS)em(bf(General address options))
+
+These options may be applied to all address types. They change some process
+properties that are restored after opening the address.
+
+startdit()
+label(OPTION_UMASK)dit(bf(tt(umask=<mode>)))
+   Sets the umask of the process to <mode> [link(mode_t)(TYPE_MODE_T)] before
+   opening the address. Useful when file system entries are created or a shell
+   or program is invoked. Usually the value is specified as octal number.nl()
+   The processes tt(umask) value is inherited by child processes.
+   Note: umask is an inverted value: creating a file with umask=0026 results in
+   permissions 0640.
 enddit()
 
 startdit()enddit()nl()

@@ -148,6 +148,7 @@ enum e_func {
 /* keep consistent with xiohelp.c:addressgroupnames[] ! */
 /* a dummy group */
 #define GROUP_NONE	0x00000000
+#define GROUP_ADDR	0x00000000 	/* options that apply to all addresses */
 
 #define GROUP_FD	0x00000001	/* everything applyable to a fd */
 #define GROUP_FIFO	0x00000002
@@ -862,6 +863,7 @@ enum e_optcode {
    OPT_UNLINK_CLOSE,
    OPT_UNLINK_EARLY,
    OPT_UNLINK_LATE,
+   OPT_UN_UMASK,
    OPT_USER,
    OPT_USER_EARLY,
    OPT_USER_LATE,

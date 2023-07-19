@@ -21,7 +21,6 @@ const struct optdesc opt_unlink      = { "unlink",      NULL, OPT_UNLINK,      G
 const struct optdesc opt_unlink_early= { "unlink-early",NULL, OPT_UNLINK_EARLY,GROUP_NAMED, PH_EARLY,    TYPE_BOOL, OFUNC_SPEC };
 const struct optdesc opt_unlink_late = { "unlink-late", NULL, OPT_UNLINK_LATE, GROUP_NAMED, PH_PASTOPEN, TYPE_BOOL, OFUNC_SPEC };
 const struct optdesc opt_unlink_close  = { "unlink-close", NULL, OPT_UNLINK_CLOSE, GROUP_NAMED, PH_LATE,  TYPE_BOOL, OFUNC_SPEC };
-const struct optdesc opt_umask       = { "umask",       NULL, OPT_UMASK,       GROUP_NAMED, PH_EARLY,  TYPE_MODET, OFUNC_SPEC };
 #endif /* WITH_NAMED */
 
 /* applies to filesystem entry all options belonging to phase */
@@ -69,12 +68,6 @@ int applyopts_named(const char *filename, struct opt *opts, unsigned int phase) 
 	    } else {
 	       Error2("unlink(\"%s\"): %s", filename, strerror(errno));
 	    }
-	 }
-	 break;
-      case OPT_UMASK:
-	 if (Umask(opt->value.u_modet) < 0) {
-	    /* linux docu says it always succeeds, but who believes it? */
-	    Error2("umask("F_mode"): %s", opt->value.u_modet, strerror(errno));
 	 }
 	 break;
       default: Error1("applyopts_named(): option \"%s\" not implemented",

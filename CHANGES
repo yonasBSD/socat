@@ -143,6 +143,11 @@ Features:
 	Added option res-nsaddr that overrides /etc/resolv.conf nameserver
 	address based on an undocumented resolver feature.
 
+	Option umask now applies only during opening of its very address, not
+	for the lifetime of the process; the original umask is restored
+	afterwards.
+	Tests: UMASK_ON_CREATE UMASK_ON_SYSTEM
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

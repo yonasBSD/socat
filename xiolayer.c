@@ -24,3 +24,4 @@ const struct optdesc opt_intervall = { "interval",  NULL, OPT_INTERVALL, GROUP_R
 const struct optdesc opt_retry     = { "retry",     NULL, OPT_RETRY,     GROUP_RETRY, PH_INIT, TYPE_UINT, OFUNC_EXT, XIO_OFFSETOF(retry),     XIO_SIZEOF(retry) };
 #endif
 
+const struct optdesc opt_umask       = { "umask",       NULL, OPT_UMASK,       GROUP_ADDR, PH_INIT,  TYPE_MODET, OFUNC_SPEC };

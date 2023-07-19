@@ -621,6 +621,9 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    struct single *sfd = &xfd->stream;
    const struct addrdesc *addrdesc;
    const char *modetext[4] = { "none", "read-only", "write-only", "read-write" } ;
+   /* Values to be saved until xioopen() is finished */
+   bool have_umask = false;
+   mode_t orig_umask, tmp_umask;
    int result;
    /* Values to be saved until xioopen() is finished */
 #if WITH_RESOLVE && HAVE_RESOLV_H
@@ -632,6 +635,8 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    int save_netfd = -1;
 #endif
    int rc;
+
+   /* Apply "temporary" process properties, save value for later restore */
 
    if (applyopts_single(sfd, sfd->opts, PH_OFFSET) < 0)
       return -1;
@@ -676,9 +681,22 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    }
    xfd->stream.flags     &= (~XIO_ACCMODE);
    xfd->stream.flags     |= (xioflags & XIO_ACCMODE);
+
+   if (retropt_mode(xfd->stream.opts, OPT_UMASK, &tmp_umask) >= 0) {
+      Info1("changing umask to 0%3o", tmp_umask);
+      orig_umask = Umask(tmp_umask);
+      have_umask = true;
+   }
+
    result = (*addrdesc->func)(xfd->stream.argc, xfd->stream.argv,
 			      xfd->stream.opts, xioflags, xfd,
 			      addrdesc);
+
+   /* Restore process properties */
+   if (have_umask) {
+      Info1("restoring umask to 0%3o", orig_umask);
+      Umask(orig_umask);
+   }
 
 #if WITH_RESOLVE && HAVE_RESOLV_H
    if (do_res)

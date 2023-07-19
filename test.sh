@@ -17355,6 +17355,161 @@ else
     listFAIL="$listFAIL $N"
     namesFAIL="$namesFAIL $NAME"
 fi
+
+
+# Test the modified umask option, in particular if umask with first address
+# (CREATE) does not affect umask of second address, i.e. original umask is
+# recovered
+NAME=UMASK_ON_CREATE
+case "$TESTS" in
+*%$N%*|*%functions%*|*%creat%*|*%system%*|*%umask%*|*%$NAME%*)
+TEST="$NAME: test restore after CREAT with umask option"
+# Run Socat with first address CREAT with modified umask,
+# and second address SYSTEM (shell) with umask command
+# Check if the file is created with modified umask but shell has original umask
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats CREAT SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - CREAT SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions umask) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tc="$td/test$N.creat"
+    tdiff="$td/test$N.diff"
+    tdebug="$td/test$N.debug"
+    oumask=$(umask)
+    # Construct a temp umask differing from original umask
+    case oumask in
+	*066) tumask=0026 ;;
+	*)    tumask=0066 ;;
+    esac
+    CMD0="$TRACE $SOCAT $opts -U CREAT:$tc,umask=$tumask SYSTEM:umask"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0"
+    rc0=$?
+    tperms=$(fileperms $tc)
+    case $tperms in
+	0*) ;;
+	*) tperms=0$tperms ;;
+    esac
+    echo "Original umask:  $oumask" >>$tdebug
+    echo "Temporary umask: $tumask" >>$tdebug
+    echo "Created umask:   $tperms" >>$tdebug
+    if [ "$rc0" -ne 0 ]; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif [ $((tumask + tperms - 0666)) -ne 0 ]; then
+	$PRINTF "$FAILED (umask failed)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$oumask" |diff "$tc" - >$tdiff; then
+	$PRINTF "$FAILED (bad umask)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the modified umask option, in particular if umask with first address
+# (SHELL) does not affect umask of second address, i.e. original umask is
+# recovered
+NAME=UMASK_ON_SYSTEM
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%umask%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test restore after SHELL with umask option"
+# Run Socat with first address SHELL:"cat >file" with modified umask,
+# and second address SYSTEM (shell) with umask command.
+# Check if the file is created with modified umask but shell has original umask
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats SHELL SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs SHELL SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions umask) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tc="$td/test$N.creat"
+    tdiff="$td/test$N.diff"
+    tdebug="$td/test$N.debug"
+    oumask=$(umask)
+    # Construct a temp umask differing from original umask
+    case oumask in
+	*066) tumask=0026 ;;
+	*)    tumask=0066 ;;
+    esac
+    CMD0="$TRACE $SOCAT $opts -U SHELL:\"cat\ >$tc\",umask=$tumask SYSTEM:umask"
+    printf "test $F_n $TEST... " $N
+    eval "$CMD0" >/dev/null 2>"${te}0"
+    rc0=$?
+    tperms=$(fileperms $tc)
+    case $tperms in
+	0*) ;;
+	*) tperms=0$tperms ;;
+    esac
+    echo "Original umask:  $oumask" >>$tdebug
+    echo "Temporary umask: $tumask" >>$tdebug
+    echo "Created umask:   $tperms" >>$tdebug
+    if [ "$rc0" -ne 0 ]; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif [ $((tumask + tperms - 0666)) -ne 0 ]; then
+	$PRINTF "$FAILED (umask failed)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$oumask" |diff "$tc" - >$tdiff; then
+	$PRINTF "$FAILED (bad umask)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+    fi
 fi # NUMCOND
  ;;
 esac

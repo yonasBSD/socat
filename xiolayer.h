@@ -15,5 +15,7 @@ extern const struct optdesc opt_escape;
 extern const struct optdesc opt_forever;
 extern const struct optdesc opt_intervall;
 extern const struct optdesc opt_retry;
+extern const struct optdesc opt_umask;
+extern const struct optdesc opt_un_umask;
 
 #endif /* !defined(__xiolayer_h_included) */
