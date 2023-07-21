@@ -1012,6 +1012,9 @@ const struct optname optionnames[] = {
 #else
 	IF_ANY    ("ndelay",	&opt_nonblock)
 #endif
+#if WITH_NAMESPACES
+	IF_ANY    ("netns",	&opt_set_netns)
+#endif
 	IF_NAMED  ("new",	&opt_unlink_early)
 #ifdef NLDLY
 #  ifdef NL0
@@ -2766,7 +2769,7 @@ int leftopts(const struct opt *opts) {
    if (!opts)  return 0;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR) {
 	 ++num;
       }
       ++opt;
@@ -2779,7 +2782,7 @@ int showleft(const struct opt *opts) {
    const struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR) {
 	 Warn1("showleft(): option \"%s\" not inquired", opt->desc->defname);
       }
       ++opt;
@@ -2852,7 +2855,8 @@ int retropt(struct opt *opts, int optcode, union integral *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -2867,7 +2871,8 @@ static struct opt *xio_findopt(struct opt *opts, int optcode) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 return opt;
       }
       ++opt;
@@ -2895,7 +2900,8 @@ int retropt_bool(struct opt *opts, int optcode, bool *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value.u_bool;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -2914,7 +2920,8 @@ int retropt_short(struct opt *opts, int optcode, short *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value.u_short;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -2933,7 +2940,8 @@ int retropt_ushort(struct opt *opts, int optcode, unsigned short *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value.u_ushort;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -2951,7 +2959,8 @@ int retropt_int(struct opt *opts, int optcode, int *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 char *rest;
 	 switch (opt->desc->type) {
 	 case TYPE_INT: *result = opt->value.u_int; break;
@@ -3012,7 +3021,8 @@ int retropt_uint(struct opt *opts, int optcode, unsigned int *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value.u_uint;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -3030,7 +3040,8 @@ int retropt_long(struct opt *opts, int optcode, long *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value.u_long;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -3048,7 +3059,8 @@ int retropt_ulong(struct opt *opts, int optcode, unsigned long *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 *result = opt->value.u_ulong;
 	 opt->desc = ODESC_DONE;
 	 return 0;
@@ -3066,7 +3078,8 @@ int retropt_flag(struct opt *opts, int optcode, flags_t *result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 if (opt->value.u_bool) {
 	    *result |= opt->desc->major;
 	 } else {
@@ -3092,7 +3105,8 @@ int retropt_string(struct opt *opts, int optcode, char **result) {
    struct opt *opt = opts;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->optcode == optcode) {
 	 if (opt->value.u_string == NULL) {
 	    *result = NULL;
 	 } else if ((*result = strdup(opt->value.u_string)) == NULL) {
@@ -3231,30 +3245,28 @@ int retropt_bind(struct opt *opts,
 #endif /* _WITH_SOCKET */
 
 
-/* applies to fd all options belonging to phase */
-/* note: not all options can be applied this way (e.g. OFUNC_SPEC with PH_OPEN)
-   implemented are: OFUNC_FCNTL, OFUNC_SOCKOPT (probably not all types),
-   OFUNC_TERMIOS_FLAG, OFUNC_TERMIOS_PATTERN, and some OFUNC_SPEC */
-int applyopts(int fd, struct opt *opts, enum e_phase phase) {
-   struct opt *opt;
-
-   opt = opts; while (opt && opt->desc != ODESC_END) {
-      if (opt->desc == ODESC_DONE ||
-	  (phase != PH_ALL && opt->desc->phase != phase)) {
-	 ++opt; continue; }
+/* Applies to FD all options belonging to phase */
+/* Note: not all options can be applied this way */
+int applyopt(
+	int fd,
+	struct opt *opt)
+{
+      if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR)
+	 return 0;
 
       if (opt->desc->func == OFUNC_SEEK32) {
 	 if (Lseek(fd, opt->value.u_off, opt->desc->major) < 0) {
 	    Error4("lseek(%d, "F_off", %d): %s",
 		   fd, opt->value.u_off, opt->desc->major, strerror(errno));
+	    return -1;
 	 }
 #if HAVE_LSEEK64
       } else if (opt->desc->func == OFUNC_SEEK64) {
-
 	 /*! this depends on off64_t atomic type */
 	 if (Lseek64(fd, opt->value.u_off64, opt->desc->major) < 0) {
 	    Error4("lseek64(%d, "F_off64", %d): %s",
 		   fd, opt->value.u_off64, opt->desc->major, strerror(errno));
+	    return -1;
 	 }
 #endif /* HAVE_LSEEK64 */
 
@@ -3265,7 +3277,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	 if ((flag = Fcntl(fd, opt->desc->major-1)) < 0) {
 	    Error3("fcntl(%d, %d): %s",
 		   fd, opt->desc->major, strerror(errno));
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 } else {
 	    if (opt->value.u_bool) {
 	       flag |= opt->desc->minor;
@@ -3275,7 +3287,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Fcntl_l(fd, opt->desc->major, flag) < 0) {
 	       Error4("fcntl(%d, %d, %d): %s",
 		      fd, opt->desc->major, flag, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	 }
 
@@ -3283,7 +3295,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	 if (Ioctl(fd, opt->desc->major, (void *)&opt->value) < 0) {
 	    Error4("ioctl(%d, 0x%x, %p): %s",
 		   fd, opt->desc->major, (void *)&opt->value, strerror(errno));
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
       } else if (opt->desc->func == OFUNC_IOCTL_MASK_LONG) {
@@ -3295,14 +3307,14 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	 if (Ioctl(fd, getreq, (void *)&val) < 0) {
 	    Error4("ioctl(%d, 0x%x, %p): %s",
 		   fd, opt->desc->major, (void *)&val, strerror(errno));
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 	 val &= ~mask;
 	 if (opt->value.u_bool)  val |= mask;
 	 if (Ioctl(fd, setreq, (void *)&val) < 0) {
 	    Error4("ioctl(%d, 0x%x, %p): %s",
 		   fd, opt->desc->major, (void *)&val, strerror(errno));
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
       } else if (opt->desc->func == OFUNC_IOCTL_GENERIC) {
@@ -3311,40 +3323,41 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Ioctl(fd, opt->value.u_int, NULL) < 0) {
 	       Error3("ioctl(%d, 0x%x, NULL): %s",
 		      fd, opt->value.u_int, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case TYPE_INT_INT:
 	    if (Ioctl_int(fd, opt->value.u_int, opt->value2.u_int) < 0) {
 	       Error4("ioctl(%d, 0x%x, 0x%x): %s",
 		      fd, opt->value.u_int, opt->value2.u_int, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case TYPE_INT_INTP:
 	    if (Ioctl(fd, opt->value.u_int, (void *)&opt->value2.u_int) < 0) {
 	       Error4("ioctl(%d, 0x%x, %p): %s",
 		      fd, opt->value.u_int, (void *)&opt->value2.u_int, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case TYPE_INT_BIN:
 	    if (Ioctl(fd, opt->value.u_int, (void *)opt->value2.u_bin.b_data) < 0) {
 	       Error4("ioctl(%d, 0x%x, %p): %s",
 		      fd, opt->value.u_int, (void *)opt->value2.u_bin.b_data, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case TYPE_INT_STRING:
 	    if (Ioctl(fd, opt->value.u_int, (void *)opt->value2.u_string) < 0) {
 	       Error4("ioctl(%d, 0x%x, %p): %s",
 		      fd, opt->value.u_int, (void *)opt->value2.u_string, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 default:
 	    Error1("ioctl() data type %d not implemented",
 		   opt->desc->type);
+	    return -1;
 	 }
 
 #if _WITH_SOCKET
@@ -3361,7 +3374,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       Error6("setsockopt(%d, %d, %d, {%d,%d}, "F_Zu,
 		      fd, opt->desc->major, opt->desc->minor, lingstru.l_onoff,
 		      lingstru.l_linger, sizeof(lingstru));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 #endif /* HAVE_STRUCT_LINGER */
 	 } else {
@@ -3374,7 +3387,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_bin.b_data, opt->value.u_bin.b_len,
 			 strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_BOOL:
@@ -3385,7 +3398,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			 opt->desc->major, opt->desc->minor,
 			 opt->value.u_bool, sizeof(opt->value.u_bool),
 			 strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_BYTE:
@@ -3394,7 +3407,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 		  Error6("setsockopt(%d, %d, %d, {%u}, "F_Zu"): %s",
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_byte, sizeof(uint8_t), strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_INT:
@@ -3403,7 +3416,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_int, sizeof(int), strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_INT_NULL:
@@ -3413,7 +3426,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_int, sizeof(int), strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_LONG:
@@ -3422,7 +3435,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 		  Error6("setsockopt(%d, %d, %d, {%ld}, "F_Zu"): %s",
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_long, sizeof(long), strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_STRING:
@@ -3433,7 +3446,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_string, strlen(opt->value.u_string)+1,
 			 strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_UINT:
@@ -3443,7 +3456,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_uint, sizeof(unsigned int),
 			 strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 	    case TYPE_TIMEVAL:
@@ -3453,7 +3466,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			 fd, opt->desc->major, opt->desc->minor,
 			 opt->value.u_timeval.tv_sec, opt->value.u_timeval.tv_usec,
 			 sizeof(struct timeval), strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       break;
 #if HAVE_STRUCT_LINGER
@@ -3468,7 +3481,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			    fd, opt->desc->major, opt->desc->minor,
 			    lingstru.l_onoff, lingstru.l_linger,
 			    strerror(errno));
-		     opt->desc = ODESC_ERROR; ++opt; continue;
+		     return -1;
 		  }
 	       }
 	       break;
@@ -3476,13 +3489,13 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 #if defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN)
 	    case TYPE_IP_MREQN:
 	       /* handled in applyopts_single */
-	       ++opt; continue;
+	       break;
 #endif /* defined(HAVE_STRUCT_IP_MREQ) || defined (HAVE_STRUCT_IP_MREQN) */
 
 #if defined(HAVE_STRUCT_GROUP_SOURCE_REQ)
 	    case TYPE_GROUP_SOURCE_REQ:
 	       /* handled in applyopts_single */
-	       ++opt; continue;
+	       break;
 #endif /* defined(HAVE_STRUCT_GROUP_SOURCE_REQ) */
 
 	       /*! still many types missing; implement on demand */
@@ -3494,6 +3507,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 			 fd, opt->desc->major, opt->desc->minor,
 			 *(uint32_t *)&opt->value.u_ip4addr, sizeof(opt->value.u_ip4addr),
 			 strerror(errno));
+		  return -1;
 	       }
 	       break;
 #endif /* defined(WITH_IP4) */
@@ -3505,7 +3519,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       Warn1("applyopts(): type %d not implemented",
 			    opt->desc->type);
 #endif
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	 }
 
@@ -3521,7 +3535,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       Error6("getsockopt(%d, %d, %d, %p, {"F_socklen"}): %s",
 		      fd, opt->desc->major, opt->desc->minor, data, oldlen,
 		      strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    memcpy(&data[oldlen], opt->value.u_bin.b_data,
 		   MIN(opt->value.u_bin.b_len, sizeof(data)-oldlen));
@@ -3532,7 +3546,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       Error6("setsockopt(%d, %d, %d, %p, %d): %s",
 		      fd, opt->desc->major, opt->desc->minor, data, newlen,
 		      strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 default:
@@ -3548,6 +3562,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
 		      fd, opt->value.u_int, opt->value2.u_int,
 		      opt->value3.u_int, sizeof(int), strerror(errno));
+	       return -1;
 	    }
 	    break;
 	 case TYPE_INT_INT_BIN:
@@ -3556,6 +3571,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       Error5("setsockopt(%d, %d, %d, {...}, "F_Zu"): %s",
 		      fd, opt->value.u_int, opt->value2.u_int,
 		      opt->value3.u_bin.b_len, strerror(errno));
+	       return -1;
 	    }
 	    break;
 	 case TYPE_INT_INT_STRING:
@@ -3566,11 +3582,13 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 		      fd, opt->value.u_int, opt->value2.u_int,
 		      opt->value3.u_string, strlen(opt->value3.u_string)+1,
 		      strerror(errno));
+	       return -1;
 	    }
 	    break;
 	 default:
 	    Error1("setsockopt() data type %d not implemented",
 		   opt->desc->type);
+	    return -1;
 	 }
 #endif /* _WITH_SOCKET */
 
@@ -3579,7 +3597,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	 if (Flock(fd, opt->desc->major) < 0) {
 	    Error3("flock(%d, %d): %s",
 		   fd, opt->desc->major, strerror(errno));
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 #endif /* defined(HAVE_FLOCK) */
 
@@ -3591,7 +3609,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Fchown(fd, opt->value.u_uidt, -1) < 0) {
 	       Error3("fchown(%d, "F_uid", -1): %s",
 		      fd, opt->value.u_uidt, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case OPT_GROUP:
@@ -3599,7 +3617,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Fchown(fd, -1, opt->value.u_gidt) < 0) {
 	       Error3("fchown(%d, -1, "F_gid"): %s",
 		      fd, opt->value.u_gidt, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case OPT_PERM:
@@ -3607,14 +3625,14 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Fchmod(fd, opt->value.u_modet) < 0) {
 	       Error3("fchmod(%d, %u): %s",
 		      fd, opt->value.u_modet, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case OPT_FTRUNCATE32:
 	    if (Ftruncate(fd, opt->value.u_off) < 0) {
 	       Error3("ftruncate(%d, "F_off"): %s",
 		      fd, opt->value.u_off, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 #if HAVE_FTRUNCATE64
@@ -3622,7 +3640,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Ftruncate64(fd, opt->value.u_off64) < 0) {
 	       Error3("ftruncate64(%d, "F_off64"): %s",
 		      fd, opt->value.u_off64, strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 #endif /* HAVE_FTRUNCATE64 */
 	    break;
@@ -3639,7 +3657,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       l.l_pid    = 0;	/* hope this uses our current process */
 	       if (Fcntl_lock(fd, opt->desc->major, &l) < 0) {
 		  Error3("fcntl(%d, %d, {type=F_WRLCK,whence=SEEK_SET,start=0,len=LONG_MAX,pid=0}): %s", fd, opt->desc->major, strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	    }
 	    break;
@@ -3648,7 +3666,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Setuid(opt->value.u_uidt) < 0) {
 	       Error2("setuid("F_uid"): %s", opt->value.u_uidt,
 		      strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case OPT_SETGID_EARLY:
@@ -3656,7 +3674,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Setgid(opt->value.u_gidt) < 0) {
 	       Error2("setgid("F_gid"): %s", opt->value.u_gidt,
 		      strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    break;
 	 case OPT_SUBSTUSER_EARLY:
@@ -3666,36 +3684,44 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       if ((pwd = getpwuid(opt->value.u_uidt)) == NULL) {
 		  Error1("getpwuid("F_uid"): no such user",
 			 opt->value.u_uidt);
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       if (Initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
 		  Error3("initgroups(%s, "F_gid"): %s",
 			 pwd->pw_name, pwd->pw_gid, strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       if (Setgid(pwd->pw_gid) < 0) {
 		  Error2("setgid("F_gid"): %s", pwd->pw_gid,
 			 strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       if (Setuid(opt->value.u_uidt) < 0) {
 		  Error2("setuid("F_uid"): %s", opt->value.u_uidt,
 			 strerror(errno));
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 #if 1
-	       if (setenv("USER", pwd->pw_name, 1) < 0)
+	       if (setenv("USER", pwd->pw_name, 1) < 0) {
 		  Error1("setenv(\"USER\", \"%s\", 1): insufficient space",
 			 pwd->pw_name);
-	       if (setenv("LOGNAME", pwd->pw_name, 1) < 0)
+		  return -1;
+	       }
+	       if (setenv("LOGNAME", pwd->pw_name, 1) < 0) {
 		  Error1("setenv(\"LOGNAME\", \"%s\", 1): insufficient space",
 			 pwd->pw_name);
-	       if (setenv("HOME", pwd->pw_dir, 1) < 0)
+		  return -1;
+	       }
+	       if (setenv("HOME", pwd->pw_dir, 1) < 0) {
 		  Error1("setenv(\"HOME\", \"%s\", 1): insufficient space",
 			 pwd->pw_dir);
-	       if (setenv("SHELL", pwd->pw_shell, 1) < 0)
+		  return -1;
+	       }
+	       if (setenv("SHELL", pwd->pw_shell, 1) < 0) {
 		  Error1("setenv(\"SHELL\", \"%s\", 1): insufficient space",
 			 pwd->pw_shell);
+		  return -1;
+	       }
 #endif
 	    }
 	    break;
@@ -3707,24 +3733,24 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       if ((pwd = getpwuid(opt->value.u_uidt)) == NULL) {
 		  Error1("getpwuid("F_uid"): no such user",
 			 opt->value.u_uidt);
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       delayeduser_uid = opt->value.u_uidt;
 	       delayeduser_gid = pwd->pw_gid;
 	       if ((delayeduser_name = strdup(pwd->pw_name)) == NULL) {
 		  Error1("strdup("F_Zu"): out of memory",
 			 strlen(pwd->pw_name)+1);
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       if ((delayeduser_dir = strdup(pwd->pw_dir)) == NULL) {
 		  Error1("strdup("F_Zu"): out of memory",
 			 strlen(pwd->pw_dir)+1);
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       if ((delayeduser_shell = strdup(pwd->pw_shell)) == NULL) {
 		  Error1("strdup("F_Zu"): out of memory",
 			 strlen(pwd->pw_shell)+1);
-		  opt->desc = ODESC_ERROR; ++opt; continue;
+		  return -1;
 	       }
 	       /* function to get all supplementary groups of user */
 	       delayeduser_ngids = sizeof(delayeduser_gids)/sizeof(gid_t);
@@ -3739,10 +3765,11 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    if (Chroot(opt->value.u_string) < 0) {
 	       Error2("chroot(\"%s\"): %s", opt->value.u_string,
 		      strerror(errno));
-	       opt->desc = ODESC_ERROR; ++opt; continue;
+	       return -1;
 	    }
 	    if (Chdir("/") < 0) {
 	       Error1("chdir(\"/\"): %s", strerror(errno));
+	       return -1;
 	    }
 	    break;
 	 case OPT_SETSID:
@@ -3754,6 +3781,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       } else {
 		  if (Setsid() < 0) {
 		     Error1("setsid(): %s", strerror(errno));
+		     return -1;
 		  }
 	       }
 	    }
@@ -3805,15 +3833,15 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	    break;
 #endif /* _WITH_INTERFACE */
 
-	 default: Error1("applyopts(): option \"%s\" not implemented",
+	 default: Error1("INTERNAL: applyopts(): option \"%s\" not implemented",
 			 opt->desc->defname);
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
 #if WITH_TERMIOS
       } else if (opt->desc->func == OFUNC_TERMIOS_FLAG) {
 	 if (xiotermiosflag_applyopt(fd, opt) < 0) {
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
       } else if (opt->desc->func == OFUNC_TERMIOS_VALUE) {
@@ -3821,33 +3849,33 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	     (opt->value.u_uint << opt->desc->arg3)) {
 	    Error2("option %s: invalid value %u",
 		   opt->desc->defname, opt->value.u_uint);
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 	 if (xiotermios_value(fd, opt->desc->major, opt->desc->minor,
 			      (opt->value.u_uint << opt->desc->arg3) & opt->desc->minor) < 0) {
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
       } else if (opt->desc->func == OFUNC_TERMIOS_PATTERN) {
 	 if (xiotermios_value(fd, opt->desc->major,  opt->desc->arg3, opt->desc->minor) < 0) {
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
       } else if (opt->desc->func == OFUNC_TERMIOS_CHAR) {
 	 if (xiotermios_char(fd, opt->desc->major, opt->value.u_byte) < 0) {
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
 #ifdef HAVE_TERMIOS_ISPEED
       } else if (opt->desc->func == OFUNC_TERMIOS_SPEED) {
 	 if (xiotermios_speed(fd, opt->desc->major, opt->value.u_uint) < 0) {
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 #endif /* HAVE_TERMIOS_ISPEED */
 
       } else if (opt->desc->func == OFUNC_TERMIOS_SPEC) {
 	 if (xiotermios_spec(fd, opt->desc->optcode) < 0) {
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 
 #endif /* WITH_TERMIOS */
@@ -3864,14 +3892,30 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	 if (opt->desc->func != OFUNC_EXT && opt->desc->func != OFUNC_SIGNAL) {
 	    Error1("applyopts(): internal error: option \"%s\" does not apply",
 		   opt->desc->defname);
-	    opt->desc = ODESC_ERROR;
-	    ++opt;
-	    continue;
+	    return -1;
 	 }
-	 ++opt;
-	 continue;
+	 return 0;
       }
       opt->desc = ODESC_DONE;
+      return 0;
+}
+
+/* Note: not all options can be applied this way (e.g. OFUNC_SPEC with PH_OPEN)
+   implemented are: OFUNC_FCNTL, OFUNC_SOCKOPT (probably not all types),
+   OFUNC_TERMIOS_FLAG, OFUNC_TERMIOS_PATTERN, and some OFUNC_SPEC */
+int applyopts(int fd, struct opt *opts, enum e_phase phase)
+{
+   struct opt *opt;
+   int rc;
+
+   opt = opts;
+   while (opt && opt->desc != ODESC_END) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  (phase == PH_ALL || phase == opt->desc->phase)) {
+	 rc = applyopt(fd, opt);
+	 if (rc < 0)
+	    opt->desc = ODESC_ERROR;
+      }
       ++opt;
    }
 
@@ -3898,6 +3942,56 @@ int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to) {
    return 0;
 }
 
+/* Apply and consume all options of type FLAG and group.
+   Return 0 when everything went right, or -1 if an error occurred. */
+int applyopts_optgroup(
+	int fd,
+	struct opt *opts,
+	unsigned int from, 	/* -1: from first phase, not in order */
+	unsigned int to, 	/* -1: to last phase, not in order */
+	groups_t groups)
+{
+	struct opt *opt = opts;
+	unsigned int i;
+
+	if (opts == NULL)
+		return 0;
+
+	/* Just apply all opts matching from/to phases, in their stored order */
+	if (from < 0 || to < 0) {
+		if (from < 0)
+			from = 0;
+		if (to < 0)
+			to = UINT_MAX;
+		while (opt->desc != ODESC_END) {
+			if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR)
+				continue;
+			if ((opt->desc->group & groups) == 0)
+				continue;
+			if (opt->desc->phase < from ||
+			    opt->desc->phase > to)
+				continue;
+			applyopt(fd, opt);
+			/* Dont check rc: on error is should not come here */
+
+			++opt;
+		}
+	}
+
+	/* Just apply all opts from, to phase, in their phases order */
+	for (i = from; i <= to; ++i) {
+		while (opt->desc != ODESC_END) {
+			if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+			    (opt->desc->group & groups) && opt->desc->phase == i) {
+				applyopt(fd, opt);
+				/* Dont check rc: on error is should not come here */
+			}
+			++opt;
+		}
+	}
+	return 0;
+}
+
 /* apply and consume all options of type FLAG and group.
    Return 0 if everything went right, or -1 if an error occurred. */
 int applyopts_flags(struct opt *opts, groups_t group, flags_t *result) {
@@ -3906,7 +4000,7 @@ int applyopts_flags(struct opt *opts, groups_t group, flags_t *result) {
    if (!opts)  return 0;
 
    while (opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE &&
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
 	  (opt->desc->group & group)) {
 	 if (opt->desc->func == OFUNC_FLAG) {
 	    if (opt->value.u_bool) {
@@ -3925,7 +4019,6 @@ int applyopts_flags(struct opt *opts, groups_t group, flags_t *result) {
    }
    return 0;
 }
-
 
 
 /* set the FD_CLOEXEC fcntl if the options do not set it to 0 */
@@ -4002,7 +4095,7 @@ int applyopts_offset(struct single *xfd, struct opt *opts) {
    struct opt *opt;
 
    opt = opts; while (opt->desc != ODESC_END) {
-      if ((opt->desc == ODESC_DONE) ||
+      if ((opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR) ||
 	  opt->desc->func != OFUNC_OFFSET)  {
 	 ++opt; continue; }
 
@@ -4022,7 +4115,7 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
    if (!opts)  return 0;
 
    opt = opts; while (opt->desc != ODESC_END) {
-      if ((opt->desc == ODESC_DONE) ||
+      if ((opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR) ||
 	  (opt->desc->phase != phase && phase != PH_ALL)) {
 	 /* option not handled in this function */
 	 ++opt; continue;
@@ -4193,7 +4286,8 @@ int applyopts_signal(struct single *xfd, struct opt *opts) {
    if (!opts)  return 0;
 
    opt = opts; while (opt->desc != ODESC_END) {
-      if (opt->desc == ODESC_DONE || opt->desc->func != OFUNC_SIGNAL) {
+      if (opt->desc == ODESC_DONE || opt->desc == ODESC_ERROR ||
+	  opt->desc->func != OFUNC_SIGNAL) {
 	 ++opt; continue;
       }
 
@@ -4223,10 +4317,13 @@ int _xio_openlate(struct single *fd, struct opt *opts) {
    if ((result = applyopts(fd->fd, opts, PH_LATE2)) < 0) {
       return result;
    }
+   if ((result = applyopts(fd->fd, opts, PH_PASTEXEC)) < 0) {
+      return result;
+   }
 
    if ((numleft = leftopts(opts)) > 0) {
       showleft(opts);
-      Error1("%d option(s) could not be used", numleft);
+      Error1("INTERNAL: %d option(s) remained unused", numleft);
       return -1;
    }
    return 0;
@@ -4240,7 +4337,8 @@ int dropopts(struct opt *opts, unsigned int phase) {
       return 0;
    }
    opt = opts; while (opt && opt->desc != ODESC_END) {
-      if (opt->desc != ODESC_DONE && opt->desc->phase == phase) {
+      if (opt->desc != ODESC_DONE && opt->desc != ODESC_ERROR &&
+	  opt->desc->phase == phase) {
 	 Debug1("ignoring option \"%s\"", opt->desc->defname);
 	 opt->desc = ODESC_DONE;
       }

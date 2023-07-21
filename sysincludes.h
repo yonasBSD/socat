@@ -177,6 +177,9 @@
 #if HAVE_LINUX_EXT2_FS_H
 #include <linux/ext2_fs.h>	/* Linux ext2 filesystem definitions */
 #endif
+#if WITH_NAMESPACES && HAVE_SCHED_H
+#include <sched.h>
+#endif
 #if WITH_READLINE
 #  if HAVE_READLINE_READLINE_H
 #include <readline/readline.h>

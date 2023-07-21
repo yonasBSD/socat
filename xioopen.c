@@ -592,13 +592,37 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    const struct addrdesc *addrdesc;
    int result;
    /* Values to be saved until xioopen() is finished */
-   int do_res;
 #if HAVE_RESOLV_H
+   int do_res;
    struct __res_state save_res;
 #endif /* HAVE_RESOLV_H */
+#if WITH_NAMESPACES
+   char *temp_netns;
+   int save_netfd = -1;
+#endif
+   int rc;
 
    if (applyopts_single(sfd, sfd->opts, PH_OFFSET) < 0)
       return -1;
+
+#if WITH_NAMESPACES
+   if (retropt_string(sfd->opts, OPT_SET_NETNS, &temp_netns) >= 0) {
+      char nspath[PATH_MAX];
+
+      snprintf(nspath, sizeof(nspath)-1, "/proc/"F_pid"/ns/net",
+	       Getpid());
+      save_netfd = Open(nspath, O_RDONLY|O_CLOEXEC, 000);
+      if (save_netfd < 0) {
+	 Error2("open(%s, O_RDONLY|O_CLOEXEC): %s", nspath, strerror(errno));
+	 return -1;
+      }
+
+      rc = xio_set_namespace("netns", temp_netns);
+      free(temp_netns);
+      if (rc < 0)
+	 return -1;
+   }
+#endif /* WITH_NAMESPACES */
 
 #if HAVE_RESOLV_H
    if ((do_res = xio_res_init(sfd, &save_res)) < 0)
@@ -626,6 +650,17 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    if (do_res)
       xio_res_init(sfd, &save_res);
 #endif /* HAVE_RESOLV_H */
+
+#if WITH_NAMESPACES
+   if (save_netfd >= 0) {
+      rc = Setns(save_netfd, CLONE_NEWNET);
+      if (rc < 0) {
+	 Error2("setns(%d, CLONE_NEWNET): %s", save_netfd, strerror(errno));
+	 Close(save_netfd);
+	 return STAT_NORETRY;
+      }
+   }
+#endif /* WITH_NAMESPACES */
 
    return result;
 }

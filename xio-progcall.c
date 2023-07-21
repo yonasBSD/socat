@@ -374,11 +374,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       /* this for parent, was after fork */
       fd->fd = sv[0];
       applyopts(fd->fd, popts, PH_FD);
-      applyopts(fd->fd, popts, PH_LATE);
-      if (applyopts_single(fd, popts, PH_LATE) < 0)  return -1;
    }
-   /*0   if ((optpr = copyopts(*copts, GROUP_PROCESS)) == NULL)
-     return -1;*/
    retropt_bool(*copts, OPT_STDERR, &withstderr);
 
    xiosetchilddied();	/* set SIGCHLD handler */
@@ -390,7 +386,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	 return -1;
       }
    }
-   if (!withfork || pid == 0) {	/* child */
+   if (!withfork || pid == 0) {	/* in single process, or in child */
+      applyopts_optgroup(-1, *copts, PH_PRESOCKET, PH_PRESOCKET, GROUP_PROCESS);
       if (withfork) {
 	 Close(trigger[0]); 	/* in child: not needed here */
 	 /* The child should have default handling for SIGCHLD. */
@@ -593,9 +590,12 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
    if (applyopts_single(fd, popts, PH_LATE) < 0)  return -1;
    applyopts_signal(fd, popts);
+   applyopts(-1, popts, PH_LATE);
+   applyopts(-1, popts, PH_LATE2);
+   applyopts(-1, popts, PH_PASTEXEC);
    if ((numleft = leftopts(popts)) > 0) {
-      Error1("%d option(s) could not be used", numleft);
       showleft(popts);
+      Error1("INTERNAL: %d option(s) remained unused", numleft);
       return STAT_NORETRY;
    }
 

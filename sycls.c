@@ -1744,6 +1744,27 @@ void Unsetenv(const char *name) {
 #endif
 
 
+#if WITH_NAMESPACES
+int Setns(
+	int fd,
+	int nstype)
+{
+	int _errno;
+	int result;
+	Debug2("setns(%d, 0x%x)", fd, nstype);
+	result = setns(fd, nstype);
+	if (result < 0) {
+		_errno = errno;
+		Debug2("setns() -> %d (errno=%d)", result, errno);
+		errno = _errno;
+		return result;
+	}
+	Debug1("setns() -> %d", result);
+	return result;
+}
+#endif /* WITH_NAMESPACES */
+
+
 #if WITH_READLINE
 
 char *Readline(const char *prompt) {

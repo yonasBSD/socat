@@ -121,6 +121,8 @@ enum e_func {
 #  define ENABLE_OFUNC
 #  include "xio-streams.h"	/* push a POSIX STREAMS module */
 #  undef ENABLE_OFUNC
+   OFUNC_SET_NAMESPACE, 	/* set/change Linux namespace */
+   OFUNC_RESET_NAMESPACE,	/* set Linux namespace back to default */
 } ;
 
 /* for simpler handling of option-to-connection-type relations we define
@@ -610,6 +612,7 @@ enum e_optcode {
    OPT_RANGE,		/* restrict client socket address */
    OPT_RAW,		/* termios */
    OPT_READBYTES,
+   OPT_RESET_NETNS, 	/* reset net namespace - not an option, just op! */
    OPT_RES_AAONLY,	/* resolver(3) */
    OPT_RES_DEBUG,	/* resolver(3) */
    OPT_RES_DEFNAMES,	/* resolver(3) */
@@ -641,6 +644,7 @@ enum e_optcode {
    OPT_SETSOCKOPT_STRING,
    OPT_SETUID,
    OPT_SETUID_EARLY,
+   OPT_SET_NETNS, 	/* set net namespace */
    OPT_SHUT_CLOSE,
    OPT_SHUT_DOWN,
    OPT_SHUT_NONE,
@@ -924,6 +928,7 @@ enum e_phase {
    PH_LATE2,		/* FD is ready, dropping privileges */
    PH_PREEXEC,		/* before exec() or system() */
    PH_EXEC,		/* during exec() or system() */
+   PH_PASTEXEC,		/* only reached on addresses that do NOT exec() */
    PH_SPEC		/* specific to situation, not fix */
 } ;
 
@@ -961,8 +966,8 @@ extern int retropt_string(struct opt *opts, int optcode, char **result);
 extern int retropt_timespec(struct opt *opts, int optcode, struct timespec *result);
 extern int retropt_bind(struct opt *opts, int af, int socktype, int ipproto, struct sockaddr *sa, socklen_t *salen, int feats, const int ai_flags[2]);
 extern int applyopts(int fd, struct opt *opts, enum e_phase phase);
-extern int applyopts2(int fd, struct opt *opts, unsigned int from,
-		      unsigned int to);
+extern int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to);
+extern int applyopts_optgroup(int fd, struct opt *opts, unsigned int from, unsigned int to, groups_t groups);
 extern int applyopts_flags(struct opt *opts, groups_t group, flags_t *result);
 extern int applyopts_cloexec(int fd, struct opt *opts);
 extern int applyopts_early(const char *path, struct opt *opts);

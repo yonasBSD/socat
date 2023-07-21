@@ -610,6 +610,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_VSOCK\n", fd);
 #endif
+#ifdef WITH_NAMESPACES
+   fprintf(fd, "  #define WITH_NAMESPACES %d\n", WITH_NAMESPACES);
+#else
+   fputs("  #undef WITH_NAMESPACES\n", fd);
+#endif
 #ifdef WITH_PROXY
    fprintf(fd, "  #define WITH_PROXY %d\n", WITH_PROXY);
 #else

@@ -13,6 +13,7 @@
 #include "error.h"
 #include "sycls.h"
 #include "sysutils.h"
+#include "sched.h"
 #include "filan.h"
 
 #include <sys/resource.h>
@@ -161,6 +162,16 @@ int procan(FILE *outfile) {
 #ifdef PIPE_BUF
       fprintf(outfile, "PIPE_BUF                  = %-24d\n", PIPE_BUF);
 #endif
+   }
+
+   /* Name spaces */
+   {
+      char path[PATH_MAX];
+      char link[PATH_MAX];
+      snprintf(path, sizeof(path)-1, "/proc/"F_pid"/ns/net", getpid());
+      if (readlink(path, link, sizeof(link)-1) >= 0) {
+	 fprintf(outfile, "Network namespace: %s", link);
+      }
    }
 
    /* file descriptors */

@@ -34,6 +34,7 @@
 #include "xio-proxy.h"
 #include "xio-vsock.h"
 #endif /* _WITH_SOCKET */
+#include "xio-namespaces.h"
 #include "xio-progcall.h"
 #include "xio-exec.h"
 #include "xio-system.h"

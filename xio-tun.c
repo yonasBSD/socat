@@ -79,6 +79,7 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
 
    /*========================= the tunnel interface =========================*/
    Notice("creating tunnel network interface");
+   applyopts_optgroup(-1, opts, PH_PRESOCKET, PH_PRESOCKET, GROUP_PROCESS);
    if ((result = _xioopen_open(tundevice, rw, opts)) < 0)
       return result;
    xfd->stream.fd = result;

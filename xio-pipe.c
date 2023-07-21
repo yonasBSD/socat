@@ -66,8 +66,8 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
    }
 
    if ((numleft = leftopts(opts)) > 0) {
-      Error1("%d option(s) could not be used", numleft);
       showleft(opts);
+      Error1("INTERNAL: %d option(s) remained unused", numleft);
    }
    Notice("writing to and reading from unnamed pipe");
    return 0;

@@ -50,8 +50,8 @@ static int xioopen_system(int argc, const char *argv[], struct opt *opts,
       }
 
       if ((numleft = leftopts(opts)) > 0) {
-	 Error1("%d option(s) could not be used", numleft);
 	 showleft(opts);
+	 Error1("INTERNAL: %d option(s) remained unused", numleft);
 	 return STAT_NORETRY;
       }
 

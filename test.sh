@@ -1671,7 +1671,7 @@ NAME=SYSTEMPIPES
 case "$TESTS" in
 *%$N%*|*%functions%*|*%system%*|*%pipes%*|*%$NAME%*)
 TEST="$NAME: simple echo via system() of cat with pipes"
-testecho "$N" "$TEST" "" "sYSTEM:$CAT,pipes" "$opts"
+testecho "$N" "$TEST" "" "SYSTEM:$CAT,pipes" "$opts"
 esac
 N=$((N+1))
 
@@ -16328,6 +16328,214 @@ else
     $PRINTF "$FAILED\n"
     echo "$CMD"
     cat "${te}" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
+# Test the netns (net namespace) feature
+NAME=NETNS
+case "$TESTS" in
+*%$N%*|*%functions%*|*%root%*|*%namespace%*|*%netns%*|*%socket%*|*%$NAME%*)
+ns=socat-$$-$N
+TEST="$NAME: option netns (net namespace $ns)"
+# Start a simple echo server with option netns on localhost of a net namespace;
+# use a client process with option netns to send data to the net namespace
+# net server and check the reply.
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Must be root${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! $(type ip >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}ip program not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats IP4 TCP LISTEN NAMESPACES); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO TCP-LISTEN TCP EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions netns) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport tcp4 	# or whatever proto, or drop this line
+CMD0="$TRACE $SOCAT $opts --experimental TCP4-LISTEN:$PORT,netns=$ns EXEC:'od -c'"
+CMD1="$TRACE $SOCAT $opts --experimental - TCP4:127.0.0.1:$PORT,netns=$ns"
+printf "test $F_n $TEST... " $N
+ip netns del $ns 2>/dev/null 	# make sure it does not exist
+ip netns add $ns
+ip netns exec $ns  ip -4 addr add dev lo 127.0.0.1/8
+ip netns exec $ns  ip link set lo up
+eval "$CMD0" >/dev/null 2>"${te}0" &
+pid0=$!
+relsleep 1 	# if no matching wait*port function
+echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+rc1=$?
+kill $pid0 2>/dev/null; wait
+ip netns del $ns
+if [ $rc1 -ne 0 ]; then
+    $PRINTF "$FAILED (client failed)\n"
+    echo "ip netns del $ns"
+    echo "ip netns add $ns"
+    echo "ip netns exec $ns  ip -4 addr add dev lo 127.0.0.1/8"
+    echo "ip netns exec $ns  ip link set lo up"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "ip netns del $ns"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif echo "$da" |od -c |diff - ${tf}1 >"$tdiff"; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then
+	echo "ip netns del $ns"
+	echo "ip netns add $ns"
+	echo "ip netns exec $ns  ip -4 addr add dev lo 127.0.0.1/8"
+	echo "ip netns exec $ns  ip link set lo up"
+    fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "ip netns del $ns"; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED (bad output)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    diff:
+    cat "$tdiff"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the netns (net namespace) feature with EXEC and reset
+NAME=NETNS_EXEC
+case "$TESTS" in
+*%$N%*|*%functions%*|*%root%*|*%namespace%*|*%netns%*|*%socket%*|*%$NAME%*)
+ns=socat-$$-test$N
+TEST="$NAME: option netns with EXEC (net namespace $ns)"
+# Start a simple server with option netns on localhost of a net namespace that
+# stores data it receives;
+# use a middle process that EXECs a socat client that connects to the server on
+# the net namespace; then it listens on default namespace.
+# With a third command line connect and send data to the middle process.
+# When the data received by the server is correct the test succeeded.
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Must be root${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! $(type ip >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}ip program not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats IP4 ABSTRACT_UNIXSOCKET UDP LISTEN NAMESPACES STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs ABSTRACT-RECV ABSTRACT-SENDTO CREATE EXEC UDP4-RECV STDIO UDP4); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $a not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions netns) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport udp4
+CMD0="$TRACE $SOCAT $opts --experimental -u -T 1 ABSTRACT-RECV:test$N,netns=$ns CREAT:${tf}0"
+CMD1="$TRACE $SOCAT $opts --experimental -U -T 1 EXEC:\"$SOCAT STDIO ABSTRACT-SENDTO\:test$N\",netns=$ns UDP4-RECV:$PORT"
+CMD2="$TRACE $SOCAT $opts -u STDIO UDP4:127.0.0.1:$PORT"
+printf "test $F_n $TEST... " $N
+ip netns del $ns 2>/dev/null 	# make sure it does not exist
+ip netns add $ns
+#ip netns exec $ns  ip -4 addr add dev lo 127.0.0.1/8
+#ip netns exec $ns  ip link set lo up
+eval "$CMD0" >/dev/null 2>"${te}0" &
+pid0=$!
+relsleep 1 	# if no matching wait*port function
+eval "$CMD1" 2>${te}1 &
+pid1=$!
+relsleep 1
+echo "$da" |$CMD2 >"${tf}2" 2>"${te}2"
+rc1=$?
+kill $pid0 $pid1 2>/dev/null; wait
+ip netns del $ns
+if [ $rc1 -ne 0 ]; then
+    $PRINTF "$FAILED (client failed)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif echo "$da" |diff - ${tf}0 >"$tdiff" 2>/dev/null; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED (bad output)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo diff:
+    cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
     namesFAIL="$namesFAIL $NAME"

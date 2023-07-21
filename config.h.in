@@ -285,6 +285,9 @@
 /* Define if you have the <linux/vm_sockets.h> header file.  */
 #undef HAVE_LINUX_VM_SOCKETS_H
 
+/* Define if you have the <sched.h> header file.  */
+#undef HAVE_SCHED_H
+
 /* Define if you have the <linux/if_packet.h> header file.  */
 #undef HAVE_LINUX_IF_PACKET_H
 
@@ -438,6 +441,9 @@
 
 /* define if your struct ip has ip_hl; otherwise assume ip_vhl */
 #undef HAVE_STRUCT_IP_IP_HL
+
+/* Define if you have the setns function */
+#undef HAVE_SETNS
 
 /* Define if you have the setenv function */
 #undef HAVE_SETENV
@@ -700,6 +706,7 @@
 #undef WITH_SOCKS4
 #undef WITH_SOCKS4A
 #undef WITH_VSOCK
+#undef WITH_NAMESPACES
 #undef WITH_PROXY
 #undef WITH_EXEC
 #undef WITH_SYSTEM

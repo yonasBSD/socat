@@ -404,6 +404,30 @@ if test "$WITH_VSOCK"; then
    AC_DEFINE(WITH_VSOCK)
 fi
 
+AC_ARG_ENABLE(namespaces, [  --disable-namespaces    disable Linux namespaces support],
+	      [case "$enableval" in
+	       no) TRY_NAMESPACES= ;;
+	       *) TRY_NAMESPACES=1 ;;
+	       esac],
+	       [TRY_NAMESPACES=1 ])
+if test "TRY_NAMESPACES"; then
+  AC_TRY_LINK([#include <sched.h>],
+  [int x=setns(0,0);],
+  [],
+  [TRY_NAMESPACES=failed])
+fi
+AC_MSG_CHECKING(whether to include Linux namespaces support)
+if test "$TRY_NAMESPACES" = 1; then
+   AC_MSG_RESULT(YES)
+   AC_DEFINE(WITH_NAMESPACES)
+   AC_DEFINE(HAVE_SCHED_H)
+   AC_DEFINE(HAVE_SETNS)
+elif test "$TRY_NAMESPACES" = yes; then
+   AC_MSG_RESULT(NO (failed))
+else
+   AC_MSG_RESULT(NO)
+fi
+
 AC_MSG_CHECKING(whether to include listen support)
 AC_ARG_ENABLE(listen, [  --disable-listen        disable listen support],
 	      [case "$enableval" in

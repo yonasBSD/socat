@@ -2024,6 +2024,7 @@ xiosocket(struct opt *opts, int pf, int socktype, int proto, int msglevel) {
 
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    retropt_int(opts, OPT_SO_PROTOTYPE, &proto);
+   applyopts(-1, opts, PH_PRESOCKET);
    result = Socket(pf, socktype, proto);
    if (result < 0) {
       int _errno = errno;

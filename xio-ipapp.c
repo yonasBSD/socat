@@ -46,7 +46,8 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 
    xfd->howtoend = END_SHUTDOWN;
 
-   if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
+   if (applyopts_single(xfd, opts, PH_INIT) < 0)
+      return -1;
    applyopts(-1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_FORK, &dofork);

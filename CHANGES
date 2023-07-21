@@ -107,6 +107,10 @@ Features:
 	DNS resolver Options (res-*) are now set for the complete open phase of
 	the address, not per getaddrinfo() invocation.
 
+	Added the netns option that tries to open an address in the given
+	network namespace.
+	Tests: NETNS NETNS_EXEC
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

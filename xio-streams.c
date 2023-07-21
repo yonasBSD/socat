@@ -53,7 +53,7 @@ void dummy(void) {
 	 if (Ioctl(fd, I_PUSH, opt->value.u_string) < 0) {
 	    Warn3("ioctl(%d, I_PUSH, \"%s\"): %s",
 		  fd, opt->value.u_string, strerror(errno));
-	    opt->desc = ODESC_ERROR; ++opt; continue;
+	    return -1;
 	 }
 #endif
 #if 0

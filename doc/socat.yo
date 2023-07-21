@@ -341,7 +341,8 @@ label(ADDRESS_EXEC)dit(bf(tt(EXEC:<command-line>)))
    link(pipes)(OPTION_PIPES),
    link(login)(OPTION_LOGIN),
    link(sigint)(OPTION_SIGINT),
-   link(sigquit)(OPTION_SIGQUIT)nl()
+   link(sigquit)(OPTION_SIGQUIT),
+   link(netns)(OPTION_NETNS)nl()
    See also: link(SYSTEM)(ADDRESS_SYSTEM)
 label(ADDRESS_FD)dit(bf(tt(FD:<fdnum>)))
    Uses the file descriptor link(<fdnum>)(TYPE_FDNUM). It must already exist as
@@ -999,7 +1000,8 @@ label(ADDRESS_SYSTEM)dit(bf(tt(SYSTEM:<shell-command>)))
    link(setsid)(OPTION_SETSID),
    link(pipes)(OPTION_PIPES),
    link(sigint)(OPTION_SIGINT),
-   link(sigquit)(OPTION_SIGQUIT)nl()
+   link(sigquit)(OPTION_SIGQUIT),
+   link(netns)(OPTION_NETNS)nl()
    See also: link(EXEC)(ADDRESS_EXEC)
 label(ADDRESS_TCP_CONNECT)dit(bf(tt(TCP:<host>:<port>)))
    Connects to <port> [link(TCP service)(TYPE_TCP_SERVICE)] on
@@ -1008,17 +1010,18 @@ label(ADDRESS_TCP_CONNECT)dit(bf(tt(TCP:<host>:<port>)))
    link(pf)(OPTION_PROTOCOL_FAMILY).nl() 
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(TCP)(GROUP_TCP),link(RETRY)(GROUP_RETRY) nl()
    Useful options:
+   link(connect-timeout)(OPTION_CONNECT_TIMEOUT),
+   link(retry)(OPTION_RETRY),
+   link(sourceport)(OPTION_SOURCEPORT),
+   link(netns)(OPTION_NETNS),
    link(crnl)(OPTION_CRNL),
    link(bind)(OPTION_BIND),
    link(pf)(OPTION_PROTOCOL_FAMILY),
-   link(connect-timeout)(OPTION_CONNECT_TIMEOUT),
    link(tos)(OPTION_TOS),
    link(mtudiscover)(OPTION_MTUDISCOVER),
    link(mss)(OPTION_MSS),
    link(nodelay)(OPTION_TCP_NODELAY),
    link(nonblock)(OPTION_NONBLOCK),
-   link(sourceport)(OPTION_SOURCEPORT),
-   link(retry)(OPTION_RETRY),
    link(readbytes)(OPTION_READBYTES)nl()
    See also:
    link(TCP4)(ADDRESS_TCP4_CONNECT),
@@ -1090,7 +1093,8 @@ label(ADDRESS_TUN)dit(bf(tt(TUN[:<if-addr>/<bits>])))
    link(tun-device)(OPTION_TUN_DEVICE),
    link(tun-name)(OPTION_TUN_NAME),
    link(tun-type)(OPTION_TUN_TYPE),
-   link(iff-no-pi)(OPTION_IFF_NO_PI) nl()
+   link(iff-no-pi)(OPTION_IFF_NO_PI),
+   link(netns)(OPTION_NETNS)nl()
    See also:
    link(ip-recv)(ADDRESS_IP_RECV)
 label(ADDRESS_UDP_CONNECT)dit(bf(tt(UDP:<host>:<port>)))
@@ -1429,7 +1433,9 @@ dit(bf(tt(ABSTRACT-CLIENT:<string>)))
    unixdomain() address space. To achieve this the socket address strings are
    prefixed with "\0" internally. This feature is available (only?) on Linux.
    Option groups are the same as with the related UNIX addresses, except that
-   the ABSTRACT addresses are not member of the NAMED group.
+   the ABSTRACT addresses are not member of the NAMED group.nl()
+   Useful options:
+   link(netns)(OPTION_NETNS)
 enddit()
 
 
@@ -1878,6 +1884,12 @@ label(OPTION_SETPGID)dit(bf(tt(setpgid=<pid_t>)))
    process group. 
 label(OPTION_SETSID)dit(bf(tt(setsid)))
    Makes the process the leader of a new session (link(example)(EXAMPLE_OPTION_SETSID)).
+label(OPTION_NETNS)dit(bf(tt(netns=<net-namespace-name>)))
+   Before opening the address it tries to switch to the named network namespace.
+   After opening the address it switches back to the previous namespace.
+   (link(Example with TCP forwarder)(EXAMPLE_OPTION_NETNS),
+   link(example with virtual network connection)(EXAMPLE_TUN_NETNS).nl()
+   Only on Linux; requires root; use option tt(--experimental).nl()
 enddit()
 
 startdit()enddit()nl()
@@ -3607,6 +3619,43 @@ An application that expects a serial line or modem
 can be configured to use file($HOME/dev/vmodem0); its traffic will be directed
 to a modemserver via ssh where another socat instance links it to
 file(/dev/ttyS0).
+
+
+label(EXAMPLE_OPTION_NETNS)
+mancommand(\.LP)
+mancommand(\.nf)
+mancommand(\fBsudo socat --experimental \\)
+mancommand(\.RS)
+mancommand(\fBTCP4-LISTEN:8000,reuseaddr,fork,netns=namespace1 \\ 
+	 TCP4-CONNECT:server2:8000\fP)
+mancommand(\.RE)
+mancommand(\.fi)
+
+htmlcommand(<hr><div class="shell">sudo socat --experimental &#x5C;
+    TCP4-LISTEN:8000,reuseaddr,fork,netns=namespace1 &#x5C;
+    TCP4-CONNECT:server2:8000</div>)
+
+creates a listener in the given network namespace that accepts TCP connections
+on port 8000 and forwards them to server2.
+
+
+label(EXAMPLE_TUN_NETNS)
+mancommand(\.LP)
+mancommand(\.nf)
+mancommand(\fBsudo socat --experimental \\)
+mancommand(\.RS)
+mancommand(\fBTUN:192.168.2.1/24,up \\ 
+	 TUN:192.168.2.2/24,up,netns=namespace2\fP)
+mancommand(\.RE)
+mancommand(\.fi)
+
+htmlcommand(<hr><div class="shell">sudo socat --experimental &#x5C;
+    TUN:192.168.2.1/24,up &#x5C;
+    TUN:192.168.2.2/24,up,netns=namespace2</div>)
+
+creates two virtual network interfaces, one in default namespace, the other one
+in namespace2, and forwards packets between them, acting as a virtual
+network connection.
 
 
 label(EXAMPLE_PROXY_CONNECT)
