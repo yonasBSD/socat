@@ -249,6 +249,7 @@ typedef struct single {
 #if _WITH_IP4 || _WITH_IP6
 	 struct para_ip ip;
 #endif /* _WITH_IP4 || _WITH_IP6 */
+	 /* Copy in openssl part up to here ! */
 #if HAVE_STRUCT_TPACKET_AUXDATA
 	 struct {
 	    int     packet_auxdata;
@@ -256,6 +257,7 @@ typedef struct single {
 #endif
 #if HAVE_STRUCT_TPACKET_AUXDATA
 	 struct tpacket_auxdata ancill_data_packet_auxdata;
+	 bool retrieve_vlan;
 #endif
 #if WITH_UNIX
 	 struct {

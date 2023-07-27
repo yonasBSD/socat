@@ -3984,17 +3984,6 @@ int applyopt_spec(
 #endif /* WITH_IP6 && defined(HAVE_STRUCT_IPV6_MREQ) */
 #endif /* _WITH_SOCKET */
 
-#if _WITH_INTERFACE
-	case OPT_RETRIEVE_VLAN:
-		if (!xioparms.experimental) {
-			Warn1("option %s is experimental", opt->desc->defname);
-		}
-		if (_interface_setsockopt_auxdata(fd, 1) < 0) {
-			return -1;
-		}
-		break;
-#endif /* _WITH_INTERFACE */
-
 	default: Error1("applyopt_spec(opt:%s): INTERNAL option not implemented",
 			opt->desc->defname);
 		return -1;

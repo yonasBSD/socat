@@ -174,6 +174,8 @@ static int xioopen_tun(
    applyopts_single(sfd, opts, PH_FD);
 
    _xiointerface_apply_iff(sockfd, ifr.ifr_name, sfd->para.interface.iff_opts);
+   if (_interface_retrieve_vlan(&xfd->stream, opts) < 0)
+      return STAT_NORETRY;
 
    applyopts(sfd, -1, opts, PH_FD);
    applyopts_cloexec(sfd->fd, opts);

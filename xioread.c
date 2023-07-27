@@ -235,7 +235,8 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	 Debug3("xioread(FD=%d, ...): auxdata: flag=%d, vlan-id=%d",
 		pipe->fd, pipe->para.socket.ancill_flag.packet_auxdata,
 		pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci);
-	 if (pipe->para.socket.ancill_flag.packet_auxdata &&
+	 if (pipe->para.socket.retrieve_vlan &&
+	     pipe->para.socket.ancill_flag.packet_auxdata &&
 	     pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci != 0) {
 	    int offs = 12; 	/* packet type id in Ethernet header */
 	    Debug1("xioread(%d, ...): restoring VLAN id from auxdata->tp_vlan_tci",

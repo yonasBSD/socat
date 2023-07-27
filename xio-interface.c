@@ -110,6 +110,8 @@ int _xioopen_interface(const char *ifname,
    strncpy(sfd->para.interface.name, ifname, IFNAMSIZ);
    _xiointerface_get_iff(sfd->fd, ifname, &sfd->para.interface.save_iff);
    _xiointerface_apply_iff(sfd->fd, ifname, sfd->para.interface.iff_opts);
+   if (_interface_retrieve_vlan(sfd, opts) < 0)
+      return STAT_NORETRY;
 
 #ifdef PACKET_IGNORE_OUTGOING
    /* Raw socket might also provide packets that are outbound - we are not
@@ -123,6 +125,25 @@ int _xioopen_interface(const char *ifname,
    return 0;
 }
 
+
+int _interface_retrieve_vlan(struct single *sfd, struct opt *opts) {
+#if HAVE_STRUCT_TPACKET_AUXDATA
+   if (retropt_bool(opts, OPT_RETRIEVE_VLAN,
+		    &sfd->para.socket.retrieve_vlan)
+       == 0) {
+      if (!xioparms.experimental) {
+	 Warn1("option %s is experimental", opts->desc->defname);
+      }
+   }
+   if (sfd->para.socket.retrieve_vlan) {
+      if (_interface_setsockopt_auxdata(sfd->fd, 1) < 0) {
+	 return -1;
+      }
+   }
+#endif /* HAVE_STRUCT_TPACKET_AUXDATA */
+   return 0;
+}
+
 int _interface_setsockopt_auxdata(int fd, int auxdata) {
 #ifdef PACKET_AUXDATA
    /* Linux strips VLAN tag off incoming packets and makes it available per
@@ -130,6 +151,7 @@ int _interface_setsockopt_auxdata(int fd, int auxdata) {
       VLAN tag to be restored by Socat in the received packet */
    if (auxdata) {
       int rc;
+      Info1("setsockopt(fd=%d, level=SOL_PACKET, optname=PACKET_AUXDATA)", fd);
       rc = Setsockopt(fd, SOL_PACKET, PACKET_AUXDATA, &auxdata, sizeof(auxdata));
       if (rc < 0) {
 	 Error3("setsockopt(%d, SOL_PACKET, PACKET_AUXDATA, , {%d}): %s",

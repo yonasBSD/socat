@@ -29,6 +29,7 @@ extern const struct optdesc opt_retrieve_vlan;
 
 extern int xiolog_ancillary_packet(struct single *sfd, struct cmsghdr *cmsg, int *num, char *typbuff, int typlen, char *nambuff, int namlen, char *envbuff, int envlen, char *valbuff, int vallen);
 
+extern int _interface_retrieve_vlan(struct single *fd, struct opt *opts);
 extern int _xiointerface_get_iff(int sockfd, const char *name, short *save_iff);
 extern int _xiointerface_set_iff(int sockfd, const char *name, 	short new_iff);
 extern int _xiointerface_apply_iff(int sockfd, const char *name, short iff_opts[2]);
