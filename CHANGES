@@ -189,6 +189,12 @@ Corrections:
 	detect byte order in procan
 	Test: EXEC_SIGINT
 
+	OpenSSL cipherlist option did not override global openssl.cnf settings.
+	Now SSL_CTX_set_cipher_list() is called before
+	SSL_CTX_use_certificate_chain_file().
+	Thanks to Hiroshi Sakurai for reporting the problem and suggesting this
+	solution.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 

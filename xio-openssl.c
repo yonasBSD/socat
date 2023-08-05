@@ -1393,6 +1393,21 @@ cont_out:
 #endif
    }
 
+   /* set pre openssl-connect options */
+   /* SSL_CIPHERS */
+   if (ci_str != NULL) {
+      if (sycSSL_CTX_set_cipher_list(ctx, ci_str) <= 0) {
+	 if (ERR_peek_error() == 0)
+	    Error1("SSL_set_cipher_list(, \"%s\") failed", ci_str);
+	 while (err = ERR_get_error()) {
+	    Error2("SSL_set_cipher_list(, \"%s\"): %s",
+		   ci_str, ERR_error_string(err, NULL));
+	 }
+	 /*Error("SSL_new()");*/
+	 return STAT_RETRYLATER;
+      }
+   }
+
    if (opt_cert) {
       BIO *bio;
       DH *dh;
@@ -1435,21 +1450,6 @@ cont_out:
 	       Error2("SSL_CTX_set_tmp_dh(%p, %p): error", ctx, dh);
 	    }
 	 }
-      }
-   }
-
-   /* set pre openssl-connect options */
-   /* SSL_CIPHERS */
-   if (ci_str != NULL) {
-      if (sycSSL_CTX_set_cipher_list(ctx, ci_str) <= 0) {
-	 if (ERR_peek_error() == 0)
-	    Error1("SSL_set_cipher_list(, \"%s\") failed", ci_str);
-	 while (err = ERR_get_error()) {
-	    Error2("SSL_set_cipher_list(, \"%s\"): %s",
-		   ci_str, ERR_error_string(err, NULL));
-	 }
-	 /*Error("SSL_new()");*/
-	 return STAT_RETRYLATER;
       }
    }
 
