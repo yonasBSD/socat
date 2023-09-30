@@ -61,6 +61,7 @@ struct opt;
 #define XIOREAD_RECV_ONESHOT	0x0008	/* give EOF after first packet */
 #define XIOREAD_RECV_SKIPIP	0x0010	/* recv, skip IPv4 header */
 #define XIOREAD_RECV_FROM	0x0020	/* remember peer for replying */
+#define XIOREAD_RECV_NOCHECK	0x0040	/* do not check peer */
 
 /* combinations */
 #define XIODATA_MASK		(XIODATA_READMASK|XIODATA_WRITEMASK)
@@ -211,6 +212,7 @@ typedef struct single {
    union {
       struct {
 	 int fdout;		/* use fd for output */
+	 int socktype;
       } bipipe;
 #if _WITH_SOCKET
       struct {
@@ -242,8 +244,8 @@ typedef struct single {
       } socket;
 #endif /* _WITH_SOCKET */
       struct {
-	 pid_t pid;		/* child PID, with EXEC: */
 	 int fdout;		/* use fd for output if two pipes */
+	 pid_t pid;		/* child PID, with EXEC: */
 	 struct timeval sitout_eio;
       } exec;
 #if WITH_READLINE

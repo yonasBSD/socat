@@ -682,13 +682,22 @@ label(ADDRESS_NAMED_PIPE)dit(bf(tt(PIPE:<filename>)))
    See also: link(unnamed pipe)(ADDRESS_UNNAMED_PIPE)
 label(ADDRESS_UNNAMED_PIPE)dit(bf(tt(PIPE)))
    Creates an unnamed pipe and uses it for reading and writing. It works as an
-   echo, because everything written 
-   to it appeares immediately as read data.nl()
+   echo, because everything written to it appeares immediately as read
+   data.nl()
    Note: When socat tries to write more bytes than the pipe can queue (Linux
    2.4: 2048 bytes), socat might block. Consider, e.g., using
    option code(-b 2048) nl()
    Option groups: link(FD)(GROUP_FD) nl()
-   See also: link(named pipe)(ADDRESS_NAMED_PIPE)
+   See also: link(named pipe)(ADDRESS_NAMED_PIPE), link(SOCKETPAIR)(ADDRESS_SOCKETPAIR)
+label(ADDRESS_SOCKETPAIR)dit(bf(tt(SOCKETPAIR)))
+   Creates a socketpair and uses it for reading and writing. It works as an
+   echo, because everything written to it appeares immediately as read
+   data. The default socket type is datagram, so it keeps packet boundaries.
+   nl()
+   Option groups: link(FD)(GROUP_FD) nl()
+   Useful options:
+   link(socktype)(OPTION_SO_TYPE)nl()
+   See also: link(unnamed pipe)(ADDRESS_UNNAMED_PIPE)
 label(ADDRESS_PROXY_CONNECT)dit(bf(tt(PROXY:<proxy>:<hostname>:<port>)))
    Connects to an HTTP proxy server on port 8080 using TCP/IP  version 4 or 6
    depending on address specification, name resolution, or option

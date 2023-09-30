@@ -13,6 +13,12 @@ Features:
 	The number of warnings has been reduced, e.g.removing a non existing
 	file does in most cases no longer log a warning.
 
+	Added address type internal SOCKETPAIR. This is similar to the unnamed
+	PIPE address (only for internal echoing) but it provides datagram mode
+	(the default) and thus keeps packet boundaries.
+	Tests: SOCKETPAIR_STREAM SOCKETPAIR_DATAGRAM SOCKETPAIR_SEQPACKET
+	SOCKETPAIR_BOUNDARIES
+
 	New option -S <mask> controls catching and logging of signals that are
 	not internally used by Socat.
 	Tests: SIGTERM_NOLOG SIG31_LOG

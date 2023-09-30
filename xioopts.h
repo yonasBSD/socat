@@ -152,7 +152,6 @@ enum e_func {
 #define GROUP_FILE GROUP_REG
 #define GROUP_SOCKET	0x00000020
 #define GROUP_READLINE	0x00000040
-
 #define GROUP_NAMED	0x00000100	/* file system entry */
 #define GROUP_OPEN	0x00000200	/* flags for open() */
 #define GROUP_EXEC	0x00000400	/* program or script execution */

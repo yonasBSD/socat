@@ -134,7 +134,27 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 
 #if _WITH_SOCKET
    case XIOREAD_RECV:
-     if (pipe->dtype & XIOREAD_RECV_FROM) {
+     if (pipe->dtype & XIOREAD_RECV_NOCHECK) {
+	/* No need to check peer address */
+      do {
+	 bytes =
+	    Recv(pipe->fd, buff, bufsiz, 0);
+      } while (bytes < 0 && errno == EINTR);
+      if (bytes < 0) {
+	 _errno = errno;
+	 Error3("recvfrom(%d, %p, "F_Zu", 0", pipe->fd, buff, bufsiz);
+	 errno = _errno;
+	 return -1;
+      }
+      Notice1("received packet with "F_Zu" bytes", bytes);
+      if (bytes == 0) {
+	 if (!pipe->para.socket.null_eof) {
+	    errno = EAGAIN; return -1;
+	 }
+	 return bytes;
+      }
+
+     } else if (pipe->dtype & XIOREAD_RECV_FROM) {
       /* Receiving packets in addresses of RECVFROM types, the sender address
 	   has already been determined in OPEN phase. */
       Debug1("%s(): XIOREAD_RECV and XIOREAD_RECV_FROM (peer checks already done)",
@@ -375,7 +395,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
       return -1;
 #endif /* !(WITH_RAWIP || WITH_UDP || WITH_UNIX) */
 
-     } else /* ~XIOREAD_RECV_FROM */ {
+     } else /* ~(XIOREAD_RECV_FROM|XIOREAD_RECV_FROM) */ {
 	/* Receiving packets without planning to answer to the sender, but we
 	   might need sender info for some checks, thus we use recvfrom() */
       struct msghdr msgh = {0};

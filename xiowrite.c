@@ -114,7 +114,11 @@ ssize_t xiowrite(xiofile_t *file, const void *buff, size_t bytes) {
 #endif /* _WITH_SOCKET */
 
    case XIOWRITE_PIPE:
-      writt = Write(pipe->para.bipipe.fdout, buff, bytes);
+      if (pipe->para.bipipe.socktype == SOCK_STREAM) {
+	 writt = Write(pipe->para.bipipe.fdout, buff, bytes);
+      } else {
+	 writt = Send(pipe->para.bipipe.fdout, buff, bytes, 0);
+      }
       _errno = errno;
       if (writt < 0) {
 	 Error4("write(%d, %p, "F_Zu"): %s",

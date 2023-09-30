@@ -193,6 +193,9 @@ const struct addrname addressnames[] = {
    { "SOCKET-RECVFROM",		&xioaddr_socket_recvfrom },
    { "SOCKET-SENDTO",		&xioaddr_socket_sendto },
 #endif
+#if WITH_SOCKETPAIR
+   { "SOCKETPAIR",		&xioaddr_socketpair },
+#endif
 #if WITH_SOCKS4
    { "SOCKS",			&xioaddr_socks4_connect },
    { "SOCKS4",			&xioaddr_socks4_connect },

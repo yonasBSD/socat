@@ -16546,6 +16546,108 @@ esac
 N=$((N+1))
 
 
+NAME=SOCKETPAIR_STREAM
+case "$TESTS" in
+*%$N%*|*%functions%*|*%stdio%*|*%socketpair%*|*%$NAME%*)
+TEST="$NAME: stdio and internal socketpair with stream"
+testecho "$N" "$TEST" "STDIO" "SOCKETPAIR" "$opts"
+esac
+N=$((N+1))
+
+NAME=SOCKETPAIR_DATAGRAM
+case "$TESTS" in
+*%$N%*|*%functions%*|*%stdio%*|*%socketpair%*|*%$NAME%*)
+TEST="$NAME: stdio and internal socketpair with datagram"
+testecho "$N" "$TEST" "STDIO" "SOCKETPAIR,socktype=2" "$opts"
+esac
+N=$((N+1))
+
+NAME=SOCKETPAIR_SEQPACKET
+case "$TESTS" in
+*%$N%*|*%functions%*|*%stdio%*|*%socketpair%*|*%$NAME%*)
+TEST="$NAME: stdio and internal socketpair with seqpacket"
+testecho "$N" "$TEST" "STDIO" "SOCKETPAIR,socktype=$SOCK_SEQPACKET" "$opts"
+esac
+N=$((N+1))
+
+# Test if SOCKETPAIR address with SOCK_DGRAM keeps packet boundaries
+NAME=SOCKETPAIR_BOUNDARIES
+case "$TESTS" in
+*%$N%*|*%functions%*|*%socketpair%*|*%udp%*|*%udp4%*|*%ip4%*|*%dgram%*|*%$NAME%*)
+TEST="$NAME: Internal socketpair keeps packet boundaries"
+# Start a UDP4-DATAGRAM process that echoes data with datagram SOCKETPAIR;
+# a client sends two packets with 24 and ~18 bytes using a UDP4-DATAGRAM. The
+# client truncates packets to size 24, so when a large merged packet comes from
+# server some data will be lost. If the original data is received, the test
+# succeeded.
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO IP4 UDP SOCKETPAIR); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - STDIO UDP4-DATAGRAM SOCKETPAIR); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions bind socktype ) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+ts1p=$PORT; PORT=$((PORT+1))
+ts2p=$PORT; PORT=$((PORT+1))
+da="test$N $(date) $RANDOM"
+CMD1="$TRACE $SOCAT $opts -T 0.2 UDP4-DATAGRAM:$LOCALHOST:$ts2p,bind=$LOCALHOST:$ts1p SOCKETPAIR,socktype=$SOCK_DGRAM"
+CMD2="$TRACE $SOCAT $opts -b 24 -t 0.2 -T 0.3 - UDP4-DATAGRAM:$LOCALHOST:$ts1p,bind=$LOCALHOST:$ts2p"
+printf "test $F_n $TEST... " $N
+export SOCAT_TRANSFER_WAIT=0.2
+$CMD1 2>"${te}1" &
+pid1="$!"
+unset SOCAT_TRANSFER_WAIT
+waitudp4port $ts1p 1
+{ echo -n "${da:0:20}"; usleep 100000; echo "${da:20}"; } |$CMD2 >>"$tf" 2>>"${te}2"
+rc2="$?"
+kill "$pid1" 2>/dev/null; wait;
+if [ "$rc2" -ne 0 ]; then
+    $PRINTF "$FAILED (rc2=$rc2): $TRACE $SOCAT:\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo diff:
+    cat "$tdiff"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################

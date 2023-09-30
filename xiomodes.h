@@ -15,6 +15,7 @@
 #include "xio-creat.h"
 #include "xio-gopen.h"
 #include "xio-pipe.h"
+#include "xio-socketpair.h"
 #if _WITH_SOCKET
 #include "xio-socket.h"
 #include "xio-listen.h"

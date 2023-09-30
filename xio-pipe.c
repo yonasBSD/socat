@@ -9,6 +9,8 @@
 
 #include "xio-named.h"
 
+#include "xio-pipe.h"
+
 
 #if WITH_PIPE
 
@@ -40,6 +42,7 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
    sock->stream.dtype             = XIODATA_PIPE;
    sock->stream.fd                = filedes[0];
    sock->stream.para.bipipe.fdout = filedes[1];
+   sock->stream.para.bipipe.socktype = SOCK_STREAM; 	/* due to socketpair reuse */
    applyopts_cloexec(sock->stream.fd,                opts);
    applyopts_cloexec(sock->stream.para.bipipe.fdout, opts);
 

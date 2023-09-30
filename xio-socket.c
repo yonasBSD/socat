@@ -202,7 +202,6 @@ const struct optdesc opt_siocspgrp   = { "siocspgrp", NULL, OPT_SIOCSPGRP,   GRO
 const struct optdesc opt_bind        = { "bind",      NULL, OPT_BIND,        GROUP_SOCKET, PH_BIND, TYPE_STRING,OFUNC_SPEC };
 const struct optdesc opt_connect_timeout = { "connect-timeout", NULL, OPT_CONNECT_TIMEOUT, GROUP_SOCKET, PH_PASTSOCKET, TYPE_TIMEVAL, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.connect_timeout) };
 const struct optdesc opt_protocol_family = { "protocol-family", "pf", OPT_PROTOCOL_FAMILY, GROUP_SOCKET, PH_PRESOCKET,  TYPE_STRING,  OFUNC_SPEC };
-const struct optdesc opt_protocol        = { "protocol",        NULL, OPT_PROTOCOL,        GROUP_SOCKET, PH_PRESOCKET,  TYPE_STRING,  OFUNC_SPEC };
 
 /* generic setsockopt() options */
 const struct optdesc opt_setsockopt        = { "setsockopt",        "sockopt",        OPT_SETSOCKOPT_BIN,        GROUP_SOCKET,PH_CONNECTED, TYPE_INT_INT_BIN,     OFUNC_SOCKOPT_GENERIC, 0, 0 };

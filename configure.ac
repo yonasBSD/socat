@@ -219,6 +219,14 @@ AC_ARG_ENABLE(pipe, [  --disable-pipe          disable pipe support],
 	       esac],
 	       [AC_DEFINE(WITH_PIPE) AC_MSG_RESULT(yes)])
 
+AC_MSG_CHECKING(whether to include explicit socketpair support)
+AC_ARG_ENABLE(socketpair, [  --disable-socketpair    disable socketpair support],
+	      [case "$enableval" in
+	       no) AC_MSG_RESULT(no);;
+	       *) AC_DEFINE(WITH_SOCKETPAIR) AC_MSG_RESULT(yes);;
+	       esac],
+	       [AC_DEFINE(WITH_SOCKETPAIR) AC_MSG_RESULT(yes)])
+
 AC_MSG_CHECKING(whether to include explicit termios support)
 AC_ARG_ENABLE(termios, [  --disable-termios       disable termios support],
 	      [case "$enableval" in

@@ -540,6 +540,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_PIPE\n", fd);
 #endif
+#ifdef WITH_SOCKETPAIR
+   fprintf(fd, "  #define WITH_SOCKETPAIR %d\n", WITH_SOCKETPAIR);
+#else
+   fputs("  #undef WITH_SOCKETPAIR\n", fd);
+#endif
 #ifdef WITH_UNIX
    fprintf(fd, "  #define WITH_UNIX %d\n", WITH_UNIX);
 #else
