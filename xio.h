@@ -102,6 +102,7 @@ typedef struct {
    char default_ip;	/* default prot.fam for IP based listen ('4' or '6') */
    char preferred_ip;	/* preferred prot.fam. for name resolution ('0' for
 			   unspecified, '4', or '6') */
+   bool experimental;	/* enable some features */
 } xioopts_t;
 
 /* pack the description of a lock file */

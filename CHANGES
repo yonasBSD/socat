@@ -1,5 +1,9 @@
 ﻿
-####################### V 1.7.4.5:
+Features:
+	Added the --experimental option that enables use of features that might
+	change in the future.
+
+####################### V 1.7.4.5 (not released):
 
 Corrections:
 	On connect() failure and in some other situations Socat tries to get

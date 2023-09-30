@@ -264,8 +264,9 @@ int main(int argc, const char *argv[]) {
 	    }
 	 }
 	 break;
-      case 'W': if (socat_opts.lock.lockfile)
+      case 'W': if (socat_opts.lock.lockfile) {
 	    Error("only one -L and -W option allowed");
+	 }
 	 if (arg1[0][2]) {
 	    socat_opts.lock.lockfile = *arg1+2;
 	 } else {
@@ -291,6 +292,13 @@ int main(int argc, const char *argv[]) {
 	 xioopts.preferred_ip = arg1[0][1];
 	 break;
 #endif /* WITH_IP4 || WITH_IP6 */
+      case '-':
+	 if (!strcmp("experimental", &arg1[0][2])) {
+	    xioopts.experimental = true;
+	 } else {
+	    Error1("unknown option \"%s\"; use option \"-h\" for help", arg1[0]);
+	 }
+	 break;
       case '\0':
       case ',':
       case ':':
@@ -389,6 +397,7 @@ void socat_usage(FILE *fd) {
 #if WITH_FILAN
    fputs("      -D     analyze file descriptors before loop\n", fd);
 #endif
+   fputs("      --experimental enable experimental features\n", fd);
    fputs("      -ly[facility]  log to syslog, using facility (default is daemon)\n", fd);
    fputs("      -lf<logfile>   log to file\n", fd);
    fputs("      -ls            log to stderr (default if no other log)\n", fd);

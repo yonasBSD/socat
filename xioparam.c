@@ -20,7 +20,8 @@ xioopts_t xioopts = {
    '\0',	/* logopt */
    NULL,	/* syslogfac */
    '4',		/* default_ip */
-   '4'		/* preferred_ip */
+   '4',		/* preferred_ip */
+   false 	/* experimental */
 } ;
 
 

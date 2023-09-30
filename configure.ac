@@ -472,8 +472,8 @@ if test -n "$WITH_READLINE"; then
   CFLAGS_ORIG=$CFLAGS
   LIBS_ORIG=$LIBS
   sc_usable_readline_found=
-  
-  for D in "" "/usr/local" "/opt/local" "/sw" "/opt/freeware" "/usr/sfw"; do    
+
+  for D in "" "/usr/local" "/opt/local" "/sw" "/opt/freeware" "/usr/sfw"; do
     if test -n "$D" ; then
       CPPFLAGS="$CPPFLAGS -I$D/include"
       CFLAGS="$CFLAGS -L$D/lib"
@@ -482,12 +482,12 @@ if test -n "$WITH_READLINE"; then
       DLOC="in default location"
     fi
     AC_MSG_CHECKING(for usable readline $DLOC)
-    
+
     # Some systems require -lcurses, some require -lncurses.
     # Mac OS X 10.4 (and others) ships with libedit masquerading as readline,
     # but it doesn't work well with socat. It can be recognized by the absence
     # of append_history.
-    
+
     for L in "" "-lcurses" "-lncurses"; do
       LIBS="$LIBS_ORIG -lreadline $L"
       AC_TRY_LINK(
@@ -499,7 +499,7 @@ if test -n "$WITH_READLINE"; then
         [ sc_usable_readline_found=1
           break ])
     done
-    
+
     if test -n "$sc_usable_readline_found"; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_READLINE_READLINE_H,1)
@@ -514,7 +514,7 @@ if test -n "$WITH_READLINE"; then
       LIBS=$LIBS_ORIG
     fi
   done
-  
+
   if test -z "$sc_usable_readline_found"; then
     AC_MSG_WARN([no suitable version of readline found; perhaps you need to install a newer version])
   fi
@@ -1161,7 +1161,7 @@ if test "$ac_cv___extensions__" = yes; then
  AC_MSG_RESULT($ac_cv__posix_pthread_semantics)
 fi
 
- 
+
 # struct timespec
 AC_MSG_CHECKING(for struct timespec)
 AC_CACHE_VAL(sc_cv_struct_timespec,
@@ -1540,7 +1540,7 @@ if test -n "$WITH_OPENSSL_METHOD" -o -z "$ac_cv_have_tls_client_method" -o -z "$
 dnl Search for SSLv2_client_method, SSLv2_server_method
 AC_CHECK_FUNC(SSLv2_client_method, AC_DEFINE(HAVE_SSLv2_client_method), AC_CHECK_LIB(crypt, SSLv2_client_method, [LIBS=-lcrypt $LIBS]))
 AC_CHECK_FUNC(SSLv2_server_method, AC_DEFINE(HAVE_SSLv2_server_method), AC_CHECK_LIB(crypt, SSLv2_server_method, [LIBS=-lcrypt $LIBS]))
-dnl 
+dnl
 AC_CHECK_FUNC(SSLv3_client_method, AC_DEFINE(HAVE_SSLv3_client_method), AC_CHECK_LIB(crypt, SSLv3_client_method, [LIBS=-lcrypt $LIBS]))
 AC_CHECK_FUNC(SSLv3_server_method, AC_DEFINE(HAVE_SSLv3_server_method), AC_CHECK_LIB(crypt, SSLv3_server_method, [LIBS=-lcrypt $LIBS]))
 AC_CHECK_FUNC(SSLv23_client_method, AC_DEFINE(HAVE_SSLv23_client_method), AC_CHECK_LIB(crypt, SSLv23_client_method, [LIBS=-lcrypt $LIBS]))
@@ -1675,7 +1675,7 @@ dnl the matching type.
 dnl If this method does not seem to work we run test programs that print the
 dnl length and signedness of the type.
 
-dnl do we have a -Werror option? 
+dnl do we have a -Werror option?
 dnl Does the test code compile with -Werror when types fit?
 CHANCE_TO_TYPECHECK=1
 CFLAGS1="$CFLAGS"; CFLAGS="$ERRONWARN $(echo "$CFLAGS1" | sed -e 's@-Wall@@g')"
@@ -2089,7 +2089,7 @@ if test -n "$WITH_LIBWRAP"; then
   fi
   AC_MSG_RESULT($sc_cv_have_hosts_allow_table)
 fi # test -n "$WITH_LIBWRAP"
-  
+
 
 if test "$GCC" = yes; then
    CFLAGS="$CFLAGS"

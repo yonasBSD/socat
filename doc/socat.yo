@@ -118,6 +118,9 @@ dit(bf(tt(-d -d -d -d))) Prints fatal, error, warning, notice, info, and debug
    messages. 
 dit(bf(tt(-D)))
    Logs information about file descriptors before starting the transfer phase.
+dit(bf(tt(--experimental)))
+   New features that are not well tested or are subject to change in the future
+   must me explicitely enabled using this option.
 dit(bf(tt(-ly[<facility>])))
    Writes messages to syslog instead of stderr; severity as defined with -d
    option. With optional link(<facility>)(TYPE_FACILITY), the syslog type can
