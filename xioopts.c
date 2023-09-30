@@ -2780,7 +2780,7 @@ groups_t _groupbits(mode_t mode) {
       result = GROUP_SOCKET|GROUP_SOCK_UNIX; break;
 #endif
    }
-   Debug2("_groupbits(%d) -> %d", mode, result);
+   Debug2("_groupbits("F_mode") -> "F_groups_t, mode, result);
    return result;
 }
 

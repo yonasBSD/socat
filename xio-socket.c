@@ -51,7 +51,7 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
 			    int dummy1, int socktype, int dummy3);
 static
 int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
-			int xioflags, xiofile_t *xfd, groups_t groups, 
+			int xioflags, xiofile_t *xfd, groups_t groups,
 			int dummy1, int dummy2, int dummy3);
 
 static

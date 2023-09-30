@@ -12,6 +12,8 @@ Features:
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility
 
+	Rearranged option group bits to only require 32 bits on older systems.
+
 ####################### V 1.7.4.5 (not released):
 
 Corrections:

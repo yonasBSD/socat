@@ -176,10 +176,19 @@ enum e_func {
 #define GROUP_PROCESS	0x10000000	/* a process related option */
 #define GROUP_APPL	0x20000000	/* option handled by data loop */
 #define GROUP_HTTP	0x40000000	/* any HTTP client */
-#define GROUP_IP_SCTP	0x80000000U
 
-#define GROUP_ANY	(GROUP_PROCESS|GROUP_APPL)
+/* Keep condition consistent with xio.h:groups_t! */
+#if WITH_SCTP
+/* The following groups are not expected on systems without uint64_t */
+#define GROUP_IP_SCTP	0x0100000000U
+#define GROUP_ALL	0x03ffffffffU
+#else
+#define GROUP_IP_SCTP	0
 #define GROUP_ALL	0xffffffffU
+#endif
+
+#define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP)	/* true: indicates one of UDP, TCP, SCTP */
+#define GROUP_ANY	(GROUP_PROCESS|GROUP_APPL)
 
 
 /* no IP multicasts, no error queue yet */

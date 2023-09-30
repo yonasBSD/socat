@@ -586,7 +586,7 @@ static int xioopen_unix_client(int argc, const char *argv[], struct opt *opts, i
    OPT_PROTOCOL_FAMILY, OPT_UNIX_TIGHTSOCKLEN, OPT_UNLINK_CLOSE, OPT_BIND,
    OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_CLOEXEC, OPT_USER, OPT_GROUP, ?OPT_FORK,
 */
-int 
+int
 _xioopen_unix_client(xiosingle_t *xfd, int xioflags, groups_t groups,
 		     int abstract, struct opt *opts, const char *name) {
    const struct opt *namedopt;

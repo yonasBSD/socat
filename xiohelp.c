@@ -48,9 +48,9 @@ static const char *addressgroupnames[] = {
 	"TERMIOS",	"RANGE",	"PTY",		"PARENT",
 	"UNIX",		"IP4",		"IP6",		"INTERFACE",
 	"UDP",		"TCP",		"SOCKS4",	"OPENSSL",
-	"PROCESS",	"APPL",		"HTTP",		"SCTP"
+	"PROCESS",	"APPL",		"HTTP",		"undef",
+	"SCTP"
 } ;
-
 
 /* keep consistent with xioopts.h:enum ephase ! */
 static char *optionphasenames[] = {

@@ -89,8 +89,14 @@ enum xiotag {
 			   streams */
 } ;
 
+/* Keep condition consistent with xioopts.h:GROUP_*! */
+#if WITH_SCTP
+typedef uint64_t groups_t;
+#define F_groups_t F_uint64_x
+#else
 typedef uint32_t groups_t;
 #define F_groups_t F_uint32_x
+#endif
 
 /* global XIO options/parameters */
 typedef struct {
