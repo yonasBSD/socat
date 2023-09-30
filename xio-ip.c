@@ -475,11 +475,15 @@ int xiogetaddrinfo(const char *node, const char *service,
    Returns STAT_OK on success
    Returns STAT_WARNING if a buffer was too short and data truncated.
  */
-int xiolog_ancillary_ip(struct cmsghdr *cmsg, int *num,
-			char *typbuff, int typlen,
-			char *nambuff, int namlen,
-			char *envbuff, int envlen,
-			char *valbuff, int vallen) {
+int xiolog_ancillary_ip(
+	struct single *sfd,
+	struct cmsghdr *cmsg,
+	int *num,
+	char *typbuff, int typlen,
+	char *nambuff, int namlen,
+	char *envbuff, int envlen,
+	char *valbuff, int vallen)
+{
    int cmsgctr = 0;
    const char *cmsgtype, *cmsgname = NULL, *cmsgenvn = NULL;
    size_t msglen;

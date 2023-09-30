@@ -57,6 +57,15 @@ Features:
 	messages in LISTEN and CONNECT type sub processes.
 	Test: CHILDREN_SHUTUP
 
+	New option retrieve-vlan for supporting VLANs in INTERFACE addresses:
+	Linux normally keeps VLAN tags in outgoing raw packets, but appears to
+	strip them from incoming packets and makes them available in
+	PACKET_AUXDATA ancillary messages only.
+	Up do version 1.7.4.5 Socat did not handle this situation, so the VLAN
+	tags where effectively stripped off incoming packets.
+	With this option Socat restores the VLAN tag.
+	Feature inspired by Zhao Dong.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

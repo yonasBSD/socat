@@ -25,11 +25,13 @@ extern const struct optdesc opt_iff_multicast;
 extern const struct optdesc opt_iff_portsel;
 extern const struct optdesc opt_iff_automedia;
 /*extern const struct optdesc opt_iff_dynamic;*/
+extern const struct optdesc opt_retrieve_vlan;
 
 extern int xiolog_ancillary_packet(struct single *sfd, struct cmsghdr *cmsg, int *num, char *typbuff, int typlen, char *nambuff, int namlen, char *envbuff, int envlen, char *valbuff, int vallen);
 
 extern int _xiointerface_get_iff(int sockfd, const char *name, short *save_iff);
 extern int _xiointerface_set_iff(int sockfd, const char *name, 	short new_iff);
 extern int _xiointerface_apply_iff(int sockfd, const char *name, short iff_opts[2]);
+extern int _interface_setsockopt_auxdata(int fd, int auxdata);
 
 #endif /* !defined(__xio_interface_h_included) */

@@ -206,6 +206,7 @@ typedef struct single {
    int (*sigchild)(struct single *);	/* callback after sigchild */
    int escape;			/* escape character; -1 for no escape */
    bool actescape;		/* escape character found in input data */
+   int 	shutup; 		/* children-shutup option */
    union {
       struct {
 	 int fdout;		/* use fd for output */
@@ -224,8 +225,14 @@ typedef struct single {
 #if _WITH_IP4 || _WITH_IP6
 	 struct para_ip ip;
 #endif /* _WITH_IP4 || _WITH_IP6 */
-	 int 		 shutup;
-	 /* up to here, keep consistent copy in openssl part !!! */
+#if HAVE_STRUCT_TPACKET_AUXDATA
+	 struct {
+	    int     packet_auxdata;
+	 } ancill_flag;
+#endif
+#if HAVE_STRUCT_TPACKET_AUXDATA
+	 struct tpacket_auxdata ancill_data_packet_auxdata;
+#endif
 #if WITH_UNIX
 	 struct {
 	    bool     tight;
@@ -265,7 +272,6 @@ typedef struct single {
 #if _WITH_IP4 || _WITH_IP6
 	 struct para_ip ip;
 #endif /* _WITH_IP4 || _WITH_IP6 */
-	 int 		 shutup;
 	 /* end of the para.socket structure copy */
 	 SSL_CTX* ctx; 	/* for freeing on close */
 	 SSL *ssl;

@@ -62,7 +62,7 @@ int _xioopen_socket_sendto(const char *pfname, const char *type,
 			   groups_t groups);
 
 static int
-xiolog_ancillary_socket(struct cmsghdr *cmsg, int *num,
+xiolog_ancillary_socket(struct single *sfd, struct cmsghdr *cmsg, int *num,
 			char *typbuff, int typlen,
 			char *nambuff, int namlen,
 			char *envbuff, int envlen,
@@ -713,7 +713,7 @@ int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
 #endif /* WITH_GENERICSOCKET */
 
 /* EINTR not handled specially */
-int xiogetpacketinfo(int fd)
+int xiogetpacketinfo(struct single *sfd, int fd)
 {
 #if defined(MSG_ERRQUEUE)
    int _errno = errno;
@@ -748,7 +748,7 @@ int xiogetpacketinfo(int fd)
 	      sockaddr_info(&pa->soa, palen, peername, sizeof(peername))/*,
 									  sockaddr_info(&la->soa, sockname, sizeof(sockname))*/);
 
-      xiodopacketinfo(&msgh, true, true);
+      xiodopacketinfo(sfd, &msgh, true, true);
    }
    errno = _errno;
 #endif /* defined(MSG_ERRQUEUE) */
@@ -898,7 +898,7 @@ int _xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 	 return STAT_RETRYLATER;
       } else {
 	 /* try to find details about error, especially from ICMP */
-	 xiogetpacketinfo(xfd->fd);
+	 xiogetpacketinfo(xfd, xfd->fd);
 
 	 /* continue mainstream */
 	 Msg4(level, "connect(%d, %s, "F_Zd"): %s",
@@ -994,7 +994,7 @@ int xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 				   so Notice is too weak */
 	 }
 
-	 while ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
+	 while ((pid = xio_fork(false, level, xfd->shutup)) < 0) {
 	    --xfd->retry;
 	    if (xfd->forever || xfd->retry) {
 	       dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
@@ -1079,7 +1079,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
       applyopts_named(us->un.sun_path, opts, PH_LATE);
    }
 #endif
-   /*applyopts(xfd->fd, opts, PH_LATE);*/
+   /*0 applyopts(xfd->fd, opts, PH_LATE); */
 
    /* xfd->dtype = DATA_RECVFROM; *//* no, the caller must set this (ev _SKIPIP) */
    Notice1("successfully prepared local socket %s",
@@ -1260,7 +1260,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 	      sockaddr_info(&pa->soa, palen, peername, sizeof(peername))/*,
 							     sockaddr_info(&la->soa, sockname, sizeof(sockname))*/);
 
-      xiodopacketinfo(&msgh, true, true);
+      xiodopacketinfo(xfd, &msgh, true, true);
 
       if (xiocheckpeer(xfd, pa, la) < 0) {
 	 /* drop packet */
@@ -1289,7 +1289,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 	    Error1("socketpair(PF_UNIX, SOCK_STREAM, 0, ...): %s", strerror(errno));
 	 }
 
-	 if ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
+	 if ((pid = xio_fork(false, level, xfd->shutup)) < 0) {
 	    Close(trigger[0]);
 	    Close(trigger[1]);
 	    Close(xfd->fd);
@@ -1461,7 +1461,12 @@ int xiogetancillary(int fd, struct msghdr *msgh, int flags) {
    and logs the relevant information (E_DEBUG, E_INFO).
    calls protocol/layer specific functions for handling the messages
    creates appropriate environment vars if withenv is set */
-int xiodopacketinfo(struct msghdr *msgh, bool withlog, bool withenv) {
+int xiodopacketinfo(
+	struct single *sfd,
+	struct msghdr *msgh,
+	bool withlog,
+	bool withenv)
+{
 #if defined(HAVE_STRUCT_CMSGHDR) && defined(CMSG_DATA)
    struct cmsghdr *cmsg;
 
@@ -1490,14 +1495,14 @@ int xiodopacketinfo(struct msghdr *msgh, bool withlog, bool withenv) {
 	 dependent */
       switch (cmsg->cmsg_level) {
       case SOL_SOCKET:
-	 xiolog_ancillary_socket(cmsg, &num, typbuff, sizeof(typbuff)-1,
+	 xiolog_ancillary_socket(sfd, cmsg, &num, typbuff, sizeof(typbuff)-1,
 				 nambuff, sizeof(nambuff)-1,
 				 envbuff, sizeof(envbuff)-1,
 				 valbuff, sizeof(valbuff)-1);
 	 break;
 #if WITH_IP4 || WITH_IP6
       case SOL_IP:
-	 xiolog_ancillary_ip(cmsg, &num, typbuff, sizeof(typbuff)-1,
+	 xiolog_ancillary_ip(sfd, cmsg, &num, typbuff, sizeof(typbuff)-1,
 			     nambuff, sizeof(nambuff)-1,
 			     envbuff, sizeof(envbuff)-1,
 			     valbuff, sizeof(valbuff)-1);
@@ -1505,12 +1510,20 @@ int xiodopacketinfo(struct msghdr *msgh, bool withlog, bool withenv) {
 #endif /* WITH_IP4 || WITH_IP6 */
 #if WITH_IP6
       case SOL_IPV6:
-	 xiolog_ancillary_ip6(cmsg, &num, typbuff, sizeof(typbuff)-1,
+	 xiolog_ancillary_ip6(sfd, cmsg, &num, typbuff, sizeof(typbuff)-1,
 			      nambuff, sizeof(nambuff)-1,
 			      envbuff, sizeof(envbuff)-1,
 			      valbuff, sizeof(valbuff)-1);
 	 break;
 #endif /* WITH_IP6 */
+#if HAVE_STRUCT_CMSGHDR && HAVE_STRUCT_TPACKET_AUXDATA
+      case SOL_PACKET:
+	 xiolog_ancillary_packet(sfd, cmsg, &num, typbuff, sizeof(typbuff)-1,
+			      nambuff, sizeof(nambuff)-1,
+			      envbuff, sizeof(envbuff)-1,
+			      valbuff, sizeof(valbuff)-1);
+	 break;
+#endif /* HAVE_STRUCT_CMSGHDR && HAVE_STRUCT_TPACKET_AUXDATA */
       default:
 	 num = 1;
 	 snprintf(typbuff, sizeof(typbuff)-1, "LEVEL%u", cmsg->cmsg_level);
@@ -1680,11 +1693,15 @@ int xiocheckpeer(xiosingle_t *xfd,
    returns STAT_OK or other STAT_*
  */
 static int
-xiolog_ancillary_socket(struct cmsghdr *cmsg, int *num,
-			char *typbuff, int typlen,
-			char *nambuff, int namlen,
-			char *envbuff, int envlen,
-			char *valbuff, int vallen) {
+xiolog_ancillary_socket(
+	struct single *sfd,
+	struct cmsghdr *cmsg,
+	int *num,
+	char *typbuff, int typlen,
+	char *nambuff, int namlen,
+	char *envbuff, int envlen,
+	char *valbuff, int vallen)
+{
    const char *cmsgtype, *cmsgname, *cmsgenvn;
    size_t msglen;
    struct timeval *tv;

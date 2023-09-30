@@ -3004,9 +3004,20 @@ startdit()enddit()nl()
 
 label(GROUP_INTERFACE)em(bf(INTERFACE option group))
 
-Options that control Linux INTERFACE addresses.
+These options may be applied to addresses link(INTERFACE)(ADDRESS_INTERFACE) and
+link(TUN)(ADDRESS_TUN). These address types and options are currently only
+implemented on Linux operating system.
 
-startdit()
+Note regarding VLANs: On incoming packets the Linux kernel strips off the VLAN
+tag before passing the data to the user space program on raw sockets. Special
+measures are required to get the VLAN information, see NOEXPAND(packet(7)) PACKET_AUXDATA,
+and to optionally insert the tag into the packet again, use option
+link(retrieve-vlan)(OPTION_RETRIEVE_VLAN) when you need this.
+
+label(OPTION_RETRIEVE_VLAN)dit(bf(tt(retrieve-vlan)))
+   On packets incoming on raw sockets, retrieve the VLAN information and insert
+   it into the packets for further processing (Linux)
+
 label(OPTION_IFF_UP)dit(bf(tt(iff-up)))
    Sets the TUN network interface status UP. Strongly recommended.
 label(OPTION_IFF_BROADCAST)dit(bf(tt(iff-broadcast)))

@@ -20,7 +20,7 @@
 const struct optdesc opt_backlog = { "backlog",   NULL, OPT_BACKLOG,     GROUP_LISTEN, PH_LISTEN, TYPE_INT,    OFUNC_SPEC };
 const struct optdesc opt_fork    = { "fork",      NULL, OPT_FORK,        GROUP_CHILD,   PH_PASTACCEPT, TYPE_BOOL,  OFUNC_SPEC };
 const struct optdesc opt_max_children = { "max-children", NULL, OPT_MAX_CHILDREN, GROUP_CHILD,   PH_PASTACCEPT, TYPE_INT,  OFUNC_SPEC };
-const struct optdesc opt_children_shutup = { "children-shutup", "child-shutup", OPT_CHILDREN_SHUTUP, GROUP_CHILD, PH_PASTACCEPT, TYPE_INT, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.shutup) };
+const struct optdesc opt_children_shutup = { "children-shutup", "child-shutup", OPT_CHILDREN_SHUTUP, GROUP_CHILD, PH_PASTACCEPT, TYPE_INT, OFUNC_OFFSET, XIO_OFFSETOF(shutup) };
 /**/
 #if (WITH_UDP || WITH_TCP)
 const struct optdesc opt_range   = { "range",     NULL, OPT_RANGE,       GROUP_RANGE,  PH_ACCEPT, TYPE_STRING, OFUNC_SPEC };
@@ -346,7 +346,7 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
 
 	 if ((pid =
 	      xio_fork(false, level==E_ERROR?level:E_WARN,
-		       xfd->para.socket.shutup))
+		       xfd->shutup))
 	     < 0) {
 	    Close(xfd->fd);
 	    Sigprocmask(SIG_UNBLOCK, &mask_sigchld, NULL);

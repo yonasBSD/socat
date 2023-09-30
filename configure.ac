@@ -1477,6 +1477,29 @@ if test $sc_cv_struct_in6_pktinfo = yes; then
 fi
 AC_MSG_RESULT($sc_cv_struct_in6_pktinfo)
 
+dnl check for struct tpacket_auxdata
+AC_MSG_CHECKING(for struct tpacket_auxdata)
+AC_CACHE_VAL(sc_cv_struct_tpacket_auxdata,
+[AC_TRY_COMPILE([#include "sysincludes.h"],
+[struct tpacket_auxdata s;],
+[sc_cv_struct_tpacket_auxdata=yes],
+[sc_cv_struct_tpacket_auxdata=no])])
+if test $sc_cv_struct_tpacket_auxdata = yes; then
+   AC_DEFINE(HAVE_STRUCT_TPACKET_AUXDATA)
+fi
+AC_MSG_RESULT($sc_cv_struct_tpacket_auxdata)
+
+AC_MSG_CHECKING(for tp_vlan_tpid in struct tpacket_auxdata)
+AC_CACHE_VAL(sc_cv_struct_tpacket_auxdata_tp_vlan_tpid,
+[AC_TRY_COMPILE([#include "sysincludes.h"],
+[struct tpacket_auxdata s; s.tp_vlan_tpid=0],
+[sc_cv_struct_tpacket_auxdata_tp_vlan_tpid=yes],
+[sc_cv_struct_tpacket_auxdata_tp_vlan_tpid=no])])
+if test $sc_cv_struct_tpacket_auxdata_tp_vlan_tpid = yes; then
+   AC_DEFINE(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TPID)
+fi
+AC_MSG_RESULT($sc_cv_struct_tpacket_auxdata)
+
 dnl check for ip_hl in struct ip
 AC_MSG_CHECKING(for struct ip.ip_hl)
 AC_CACHE_VAL(sc_cv_struct_ip_ip_hl,

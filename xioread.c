@@ -198,6 +198,28 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
       }
 #endif /* defined(PF_PACKET) && !defined(PACKET_IGNORE_OUTGOING) && defined(PACKET_OUTGOING) */
 
+#if defined(PF_PACKET) && HAVE_STRUCT_TPACKET_AUXDATA
+      if (from.soa.sa_family == PF_PACKET) {
+	 Debug3("xioread(FD=%d, ...): auxdata: flag=%d, vlan-id=%d",
+		pipe->fd, pipe->para.socket.ancill_flag.packet_auxdata,
+		pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci);
+	 if (pipe->para.socket.ancill_flag.packet_auxdata &&
+	     pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci != 0) {
+	    int offs = 12; 	/* packet type id in Ethernet header */
+	    Debug1("xioread(%d, ...): restoring VLAN id from auxdata->tp_vlan_tci",
+		   pipe->fd);
+	    if (bytes+4 > bufsiz) {
+	       Error("buffer too small to restore VLAN id");
+	    }
+	    memmove((char *)buff+offs+4, (char *)buff+offs, bytes-offs);
+	    ((unsigned short *)((char *)buff+offs))[0] = htons(ETH_P_8021Q);
+	    ((unsigned short *)((char *)buff+offs))[1] =
+	       htons(pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci);
+	    bytes += 4;
+	 }
+      }
+#endif /* defined(PF_PACKET && HAVE_STRUCT_TPACKET_AUXDATA */
+
       Notice2("received packet with "F_Zu" bytes from %s",
 	      bytes,
 	      sockaddr_info(&from.soa, fromlen, infobuff, sizeof(infobuff)));
@@ -384,7 +406,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	     errno == EINTR) ;
       if (rc < 0)  return -1;
 
-      xiodopacketinfo(&msgh, true, false);
+      xiodopacketinfo(pipe, &msgh, true, false);
       if (xiocheckpeer(pipe, &from, &pipe->para.socket.la) < 0) {
 	 Recvfrom(pipe->fd, buff, bufsiz, 0, &from.soa, &fromlen);  /* drop */
 	 errno = EAGAIN;  return -1;
@@ -419,6 +441,29 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	 Debug2("%s(fd=%d): packet is not outgoing - process it", __func__, pipe->fd);
       }
 #endif /* defined(PF_PACKET) && !defined(PACKET_IGNORE_OUTGOING) && defined(PACKET_OUTGOING) */
+
+#if defined(PF_PACKET) && HAVE_STRUCT_TPACKET_AUXDATA
+      if (from.soa.sa_family == PF_PACKET) {
+	 Debug3("xioread(%d, ...): auxdata: flag=%d, vlan-id=%d",
+		pipe->fd, pipe->para.socket.ancill_flag.packet_auxdata,
+		pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci);
+	 if (pipe->para.socket.ancill_flag.packet_auxdata &&
+	     pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci &&
+	     pipe->para.socket.ancill_data_packet_auxdata.tp_net >= 2) {
+	    Debug2("xioread(%d, ...): restoring VLAN id %d", pipe->fd, pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci);
+	    int offs = pipe->para.socket.ancill_data_packet_auxdata.tp_net - 2;
+	    if (bytes+4 > bufsiz) {
+	       Error("buffer too small to restore VLAN id");
+	    }
+	    Debug3("xioread(): memmove(%p, %p, "F_Zu")", (char *)buff+offs+4, (char *)buff+offs, bytes-offs);
+	    memmove((char *)buff+offs+4, (char *)buff+offs, bytes-offs);
+	    ((unsigned short *)((char *)buff+offs))[0] = htons(ETH_P_8021Q);
+	    ((unsigned short *)((char *)buff+offs))[1] =
+	       htons(pipe->para.socket.ancill_data_packet_auxdata.tp_vlan_tci);
+	    bytes += 4;
+	 }
+      }
+#endif /* defined(PF_PACKET) &&& HAVE_STRUCT_TPACKET_AUXDATA */
 
       Notice2("received packet with "F_Zu" bytes from %s",
 	      bytes,

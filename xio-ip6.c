@@ -252,11 +252,15 @@ int xiocheckrange_ip6(struct sockaddr_in6 *pa, struct xiorange *range) {
    the respective len parameters specify the available space in the buffers
    returns STAT_OK on success
  */
-int xiolog_ancillary_ip6(struct cmsghdr *cmsg, int *num,
-			 char *typbuff, int typlen,
-			 char *nambuff, int namlen,
-			 char *envbuff, int envlen,
-			 char *valbuff, int vallen) {
+int xiolog_ancillary_ip6(
+	struct single *xfd,
+	struct cmsghdr *cmsg,
+	int *num,
+	char *typbuff, int typlen,
+	char *nambuff, int namlen,
+	char *envbuff, int envlen,
+	char *valbuff, int vallen)
+{
    char scratch1[42];	/* can hold an IPv6 address in ASCII */
    char scratch2[32];
    size_t msglen;

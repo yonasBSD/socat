@@ -1398,6 +1398,9 @@ const struct optname optionnames[] = {
 #ifdef IP_RETOPTS
 	IF_IP     ("retopts",	&opt_ip_retopts)
 #endif
+#if WITH_INTERFACE && defined(PACKET_AUXDATA)
+	IF_SOCKET ("retrieve-vlan", 		&opt_retrieve_vlan)
+#endif
 	IF_RETRY  ("retry",	&opt_retry)
 	IF_SOCKET ("reuseaddr",	&opt_so_reuseaddr)
 #ifdef SO_REUSEPORT	/* AIX 4.3.3 */
@@ -3709,6 +3712,17 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       }
 	    }
 	    break;
+
+#if _WITH_INTERFACE
+	 case OPT_RETRIEVE_VLAN:
+	    if (!xioparms.experimental) {
+	       Warn("option retrieve-vlan is experimental");
+	    }
+	    if (_interface_setsockopt_auxdata(fd, 1) < 0) {
+	       return -1;
+	    }
+	    break;
+#endif /* _WITH_INTERFACE */
 
 	 default: Error1("applyopts(): option \"%s\" not implemented",
 			 opt->desc->defname);

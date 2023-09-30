@@ -430,6 +430,12 @@
 /* define if you have struct in6_pktinfo */
 #undef HAVE_STRUCT_IN6_PKTINFO
 
+/* define if you have struct tpacket_auxdata */
+#undef HAVE_STRUCT_TPACKET_AUXDATA
+
+/* define if you have struct tpacket_auxdata and it has tp_vlan_tpid */
+#undef HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TPID
+
 /* define if your struct ip has ip_hl; otherwise assume ip_vhl */
 #undef HAVE_STRUCT_IP_IP_HL
 

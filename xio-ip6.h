@@ -40,11 +40,7 @@ extern int xiorange_ip6andmask(struct xiorange *range);
 extern
 int xiocheckrange_ip6(struct sockaddr_in6 *pa, struct xiorange *range);
 extern
-int xiolog_ancillary_ip6(struct cmsghdr *cmsg, int *num,
-			 char *typbuff, int typlen,
-			 char *nambuff, int namlen,
-			 char *envbuff, int envlen,
-			 char *valbuff, int vallen);
+int xiolog_ancillary_ip6(struct single *sfd, struct cmsghdr *cmsg, int *num, char *typbuff, int typlen, char *nambuff, int namlen, char *envbuff, int envlen, char *valbuff, int vallen);
 extern int
 xiosetsockaddrenv_ip6(int idx, char *namebuff, size_t namelen,
 		      char *valuebuff, size_t valuelen,

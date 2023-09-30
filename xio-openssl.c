@@ -409,7 +409,7 @@ static int
 	 if (xfd->forever || xfd->retry) {
 	    level = E_WARN;
 	 }
-	 while ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
+	 while ((pid = xio_fork(false, level, xfd->shutup)) < 0) {
 	    if (xfd->forever || --xfd->retry) {
 	       Nanosleep(&xfd->intervall, NULL); continue;
 	    }

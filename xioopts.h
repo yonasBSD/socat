@@ -614,6 +614,7 @@ enum e_optcode {
    OPT_RES_RECURSE,	/* resolver(3) */
    OPT_RES_STAYOPEN,	/* resolver(3) */
    OPT_RES_USEVC,	/* resolver(3) */
+   OPT_RETRIEVE_VLAN, 	/* Linux: get VLAN info on raw sockets per auxdata */
    OPT_RETRY,
    OPT_SANE,		/* termios */
    OPT_SCTP_MAXSEG,

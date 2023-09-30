@@ -43,12 +43,7 @@ extern int xiogetaddrinfo(const char *node, const char *service,
 			  int family, int socktype, int protocol,
 			  union sockaddr_union *sa, socklen_t *socklen,
 			  unsigned long res_opts0, unsigned long res_opts1);
-extern
-int xiolog_ancillary_ip(struct cmsghdr *cmsg, int *num,
-			char *typbuff, int typlen,
-			char *nambuff, int namlen,
-			char *envbuff, int envlen,
-			char *valbuff, int vallen);
+extern int xiolog_ancillary_ip(struct single *sfd, struct cmsghdr *cmsg, int *num, char *typbuff, int typlen, char *nambuff, int namlen, char *envbuff, int envlen, char *valbuff, int vallen);
 extern int xiotype_ip_add_membership(char *token, const struct optname *ent, struct opt *opt);
 extern int xioapply_ip_add_membership(xiosingle_t *xfd, struct opt *opt);
 extern int xiotype_ip_add_source_membership(char* token, const struct optname *ent, struct opt *opt);

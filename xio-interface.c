@@ -10,6 +10,7 @@
 
 #include "xioopen.h"
 #include "xio-socket.h"
+#include "xio-ascii.h"
 
 #include "xio-interface.h"
 
@@ -45,6 +46,9 @@ const struct optdesc opt_iff_portsel     = { "iff-portsel",     "portsel",     O
 const struct optdesc opt_iff_automedia   = { "iff-automedia",   "automedia",   OPT_IFF_AUTOMEDIA,   GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.interface.iff_opts), XIO_SIZEOF(para.interface.iff_opts), IFF_AUTOMEDIA };
 #endif
 /*const struct optdesc opt_iff_dynamic   = { "iff-dynamic",     "dynamic",     OPT_IFF_DYNAMIC,     GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.interface.iff_opts), XIO_SIZEOF(short), IFF_DYNAMIC };*/
+#ifdef PACKET_AUXDATA
+const struct optdesc opt_retrieve_vlan   = { "retrieve-vlan",   NULL,          OPT_RETRIEVE_VLAN,   GROUP_INTERFACE, PH_LATE, TYPE_INT,      OFUNC_SPEC };
+#endif
 #if LATER
 const struct optdesc opt_route           = { "route",           NULL,          OPT_ROUTE,           GROUP_INTERFACE, PH_INIT, TYPE_STRING,   OFUNC_SPEC };
 #endif
@@ -119,6 +123,23 @@ int _xioopen_interface(const char *ifname,
    }
 #endif /*defined(PACKET_IGNORE_OUTGOING) */
 
+   return 0;
+}
+
+int _interface_setsockopt_auxdata(int fd, int auxdata) {
+#ifdef PACKET_AUXDATA
+   /* Linux strips VLAN tag off incoming packets and makes it available per
+      ancillary data as auxdata. Apply option packet-auxdata if you want the
+      VLAN tag to be restored by Socat in the received packet */
+   if (auxdata) {
+      int rc;
+      rc = Setsockopt(fd, SOL_PACKET, PACKET_AUXDATA, &auxdata, sizeof(auxdata));
+      if (rc < 0) {
+	 Error3("setsockopt(%d, SOL_PACKET, PACKET_AUXDATA, , {%d}): %s",
+		fd, auxdata, strerror(errno));
+      }
+   }
+#endif /* defined(PACKET_AUXDATA) */
    return 0;
 }
 
@@ -227,5 +248,70 @@ int _xiointerface_apply_iff(
    Debug2("\"%s\": resulting flags: 0x%hx", ifr.ifr_name, ifr.ifr_flags);
    return 0;
 }
+
+
+#if HAVE_STRUCT_CMSGHDR && HAVE_STRUCT_TPACKET_AUXDATA
+/* Converts the ancillary message in *cmsg into a form useable for further
+   processing. Knows the specifics of common message types.
+   On PACKET_AUXDATA it stored the ancillary data in the XFD.
+   For other types:
+   returns the number of resulting syntax elements in *num,
+   returns a sequence of \0 terminated type strings in *typbuff,
+   returns a sequence of \0 terminated name strings in *nambuff,
+   returns a sequence of \0 terminated value strings in *valbuff,
+   the respective len parameters specify the available space in the buffers
+   returns STAT_OK or other STAT_*
+ */
+int
+xiolog_ancillary_packet(struct single *sfd,
+			struct cmsghdr *cmsg, int *num,
+			char *typbuff, int typlen,
+			char *nambuff, int namlen,
+			char *envbuff, int envlen,
+			char *valbuff, int vallen) {
+#if LATER
+   const char *cmsgtype, *cmsgname, *cmsgenvn;
+   size_t msglen;
+#endif
+   struct tpacket_auxdata *auxp;
+   int rc = STAT_OK;
+
+   *num = 0;
+
+#if defined(CMSG_DATA)
+
+#if LATER
+   msglen = cmsg->cmsg_len-((char *)CMSG_DATA(cmsg)-(char *)cmsg);
+#endif
+   switch (cmsg->cmsg_type) {
+#if HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TPID
+   case PACKET_AUXDATA:
+#if LATER
+      cmsgname = "packet_auxdata";
+      cmsgtype = "auxdata";
+      cmsgenvn = "AUXDATA";
+#endif
+      auxp = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
+      Info8("%s(): Ancillary message: PACKET_AUXDATA: status="F_uint32_t", len="F_uint32_t", snaplen="F_uint32_t", mac="F_uint16_t", net="F_uint16_t", vlan_tci="F_uint16_t", vlan_tpid="F_uint16_t"", __func__, auxp->tp_status, auxp->tp_len, auxp->tp_snaplen, auxp->tp_mac, auxp->tp_net, auxp->tp_vlan_tci, auxp->tp_vlan_tpid);
+      sfd->para.socket.ancill_data_packet_auxdata = *auxp;
+      sfd->para.socket.ancill_flag.packet_auxdata = 1;
+      snprintf(typbuff, typlen, "PACKET.%u", cmsg->cmsg_type);
+      nambuff[0] = '\0'; strncat(nambuff, "vlan", namlen-1);
+      snprintf(strchr(valbuff, '\0')-1/*def \n*/, vallen-strlen(valbuff)+1, ", %d", auxp->tp_vlan_tci);
+      break;
+#endif /* HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TPID */
+   default:	/* binary data */
+      Warn1("xiolog_ancillary_packet(): INTERNAL: cmsg_type=%d not handled", cmsg->cmsg_type);
+      return rc;
+   }
+   return rc;
+
+#else /* !defined(CMSG_DATA) */
+
+   return STAT_NORETRY;
+
+#endif /* !defined(CMSG_DATA) */
+}
+#endif /* HAVE_STRUCT_CMSGHDR && HAVE_STRUCT_TPACKET_AUXDATA */
 
 #endif /* _WITH_INTERFACE */
