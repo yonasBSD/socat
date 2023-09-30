@@ -33,6 +33,10 @@ const struct addrname addressnames[] = {
    { "ABSTRACT-RECVFROM",	&xioaddr_abstract_recvfrom },
    { "ABSTRACT-SENDTO",		&xioaddr_abstract_sendto },
 #endif /* defined(WITH_UNIX) && defined(WITH_ABSTRACT_UNIXSOCKET) */
+#if WITH_LISTEN
+   { "ACCEPT", 			&xioaddr_accept_fd },
+   { "ACCEPT-FD", 		&xioaddr_accept_fd },
+#endif
 #if WITH_CREAT
    { "CREAT",			&xioaddr_creat },
    { "CREATE",			&xioaddr_creat },

@@ -6168,8 +6168,11 @@ if ! diff "$tref" "$tf" >"$tdiff"; then
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
     cat "${te}0" >&2
-    echo "$CMD1"
+    echo "$CMD1 &"
     cat "${te}1" >&2
+    echo "$CMD1"
+    cat "${te}2" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
@@ -6178,6 +6181,8 @@ else
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
 fi # !(rc -ne 0)
 wait
@@ -16648,6 +16653,70 @@ PORT=$((PORT+1))
 N=$((N+1))
 
 
+# Test the ACCEPT-FD address
+NAME=ACCEPT_FD
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%systemd%*|*%accept%*|*%$NAME%*)
+TEST="$NAME: ACCEPT-FD address"
+# Start Socat with address ACCEPT-FD via systemd-socket-activate for echoing
+# data.
+# Connect with a client; the test succeeds when the client gets its data back.
+if ! eval $NUMCOND; then :;
+elif ! $(type systemd-socket-activate >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}systemd-socket-activate not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats IP4 TCP LISTEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs ACCEPT-FD PIPE STDIO TCP4); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport tcp4
+CMD0="systemd-socket-activate -l $PORT --inetd $TRACE $SOCAT $opts ACCEPT-FD:0 PIPE"
+CMD1="$TRACE $SOCAT $opts - TCP4:$LOCALHOST:$PORT"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+waittcp4port $PORT 1
+echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+rc1=$?
+kill $pid0 2>/dev/null; wait
+if echo "$da" |diff "${tf}1" - >$tdiff; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    cat $tdiff >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -16840,7 +16909,7 @@ wait<something>port $PORT 1
 echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
-if [ !!! ]; then
+if echo "$da" |diff "${tf}1" - >$tdiff !!!; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi

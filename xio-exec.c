@@ -35,7 +35,7 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
    int duptostderr;
 
    if (argc != 2) {
-      Error3("\"%s:%s\": wrong number of parameters (%d instead of 1)", argv[0], argv[1], argc-1);
+      Error2("\"%s\": wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
    retropt_bool(opts, OPT_DASH, &dash);

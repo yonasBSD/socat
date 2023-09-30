@@ -1847,7 +1847,7 @@ int xioparsenetwork(
      char *addrname;
      const char *maskname;
      if ((maskname = strchr(rangename, ':')) == NULL) {
-	Error1("syntax error in range \"%s\": use <addr>:<mask>", rangename);
+	Error1("syntax error in range \"%s\" of unspecified address family: use <addr>:<mask>", rangename);
 	return STAT_NORETRY;
      }
      ++maskname;	/* skip ':' */

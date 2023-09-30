@@ -27,7 +27,6 @@ const struct optdesc opt_range   = { "range",     NULL, OPT_RANGE,       GROUP_R
 #endif
 const struct optdesc opt_accept_timeout = { "accept-timeout", "listen-timeout", OPT_ACCEPT_TIMEOUT, GROUP_LISTEN, PH_LISTEN, TYPE_TIMEVAL, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.accept_timeout) };
 
-
 /*
    applies and consumes the following option:
    PH_INIT, PH_PASTSOCKET, PH_PREBIND, PH_BIND, PH_PASTBIND, PH_EARLY,
@@ -106,44 +105,10 @@ int
  */
 int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, socklen_t uslen,
 		 struct opt *opts, int pf, int socktype, int proto, int level) {
-   struct sockaddr sa;
-   socklen_t salen;
    int backlog = 5;	/* why? 1 seems to cause problems under some load */
-   char *rangename;
-   bool dofork = false;
-   int maxchildren = 0;
    char infobuff[256];
-   char lisname[256];
-   union sockaddr_union _peername;
-   union sockaddr_union _sockname;
-   union sockaddr_union *pa = &_peername;	/* peer address */
-   union sockaddr_union *la = &_sockname;	/* local address */
-   socklen_t pas = sizeof(_peername);	/* peer address size */
-   socklen_t las = sizeof(_sockname);	/* local address size */
-   int result;
-
-   retropt_bool(opts, OPT_FORK, &dofork);
-
-   if (dofork) {
-      if (!(xioflags & XIO_MAYFORK)) {
-	 Error("option fork not allowed here");
-	 return STAT_NORETRY;
-      }
-      xfd->flags |= XIO_DOESFORK;
-   }
-
-   retropt_int(opts, OPT_MAX_CHILDREN, &maxchildren);
-
-   if (! dofork && maxchildren) {
-       Error("option max-children not allowed without option fork");
-       return STAT_NORETRY;
-   }
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
-
-   if (dofork) {
-      xiosetchilddied();	/* set SIGCHLD handler */
-   }
 
    if ((xfd->fd = xiosocket(opts, pf?pf:us->sa_family, socktype, proto, level)) < 0) {
       return STAT_RETRYLATER;
@@ -175,13 +140,6 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       }
    }
 #endif
-   /* under some circumstances (e.g., TCP listen on port 0) bind() fills empty
-      fields that we want to know. */
-   salen = sizeof(sa);
-   if (Getsockname(xfd->fd, us, &uslen) < 0) {
-      Warn4("getsockname(%d, %p, {%d}): %s",
-	    xfd->fd, &us, uslen, strerror(errno));
-   }
 
    applyopts(xfd->fd, opts, PH_PASTBIND);
 #if WITH_UNIX
@@ -196,6 +154,70 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       }
    }
 #endif /* WITH_UNIX */
+
+   applyopts(xfd->fd, opts, PH_PRELISTEN);
+   retropt_int(opts, OPT_BACKLOG, &backlog);
+   applyopts(xfd->fd, opts, PH_LISTEN);
+   if (Listen(xfd->fd, backlog) < 0) {
+      Error3("listen(%d, %d): %s", xfd->fd, backlog, strerror(errno));
+      return STAT_RETRYLATER;
+   }
+   return _xioopen_accept_fd(xfd, xioflags, us, uslen, opts, pf, proto,level);
+}
+
+int _xioopen_accept_fd(
+	struct single *xfd,
+	int xioflags,
+	struct sockaddr *us,
+	socklen_t uslen,
+	struct opt *opts,
+	int pf,
+	int proto,
+	int level)
+{
+   struct sockaddr sa;
+   socklen_t salen;
+   char *rangename;
+   bool dofork = false;
+   int maxchildren = 0;
+   char infobuff[256];
+   char lisname[256];
+   union sockaddr_union _peername;
+   union sockaddr_union _sockname;
+   union sockaddr_union *pa = &_peername;	/* peer address */
+   union sockaddr_union *la = &_sockname;	/* local address */
+   socklen_t pas = sizeof(_peername);	/* peer address size */
+   socklen_t las = sizeof(_sockname);	/* local address size */
+   int result;
+
+   retropt_bool(opts, OPT_FORK, &dofork);
+
+   if (dofork) {
+      if (!(xioflags & XIO_MAYFORK)) {
+	 Error("option fork not allowed here");
+	 return STAT_NORETRY;
+      }
+      xfd->flags |= XIO_DOESFORK;
+   }
+
+   retropt_int(opts, OPT_MAX_CHILDREN, &maxchildren);
+
+   if (! dofork && maxchildren) {
+       Error("option max-children not allowed without option fork");
+       return STAT_NORETRY;
+   }
+
+   if (dofork) {
+      xiosetchilddied();	/* set SIGCHLD handler */
+   }
+
+   /* Under some circumstances (e.g., TCP listen on port 0) bind() fills empty
+      fields that we want to know. */
+   salen = sizeof(sa);
+   if (Getsockname(xfd->fd, us, &uslen) < 0) {
+      Warn4("getsockname(%d, %p, {%d}): %s",
+	    xfd->fd, &us, uslen, strerror(errno));
+   }
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
@@ -220,14 +242,6 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
    }
    retropt_bool(opts, OPT_LOWPORT, &xfd->para.socket.ip.lowport);
 #endif /* WITH_TCP || WITH_UDP */
-
-   applyopts(xfd->fd, opts, PH_PRELISTEN);
-   retropt_int(opts, OPT_BACKLOG, &backlog);
-   applyopts(xfd->fd, opts, PH_LISTEN);
-   if (Listen(xfd->fd, backlog) < 0) {
-      Error3("listen(%d, %d): %s", xfd->fd, backlog, strerror(errno));
-      return STAT_RETRYLATER;
-   }
 
    if (xioparms.logopt == 'm') {
       Info("starting accept loop, switching to syslog");

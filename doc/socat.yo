@@ -945,6 +945,18 @@ label(ADDRESS_SOCKET_SENDTO)dit(bf(tt(SOCKET-SENDTO:<domain>:<type>:<protocol>:<
    link(SOCKET-DATAGRAM)(ADDRESS_SOCKET_DATAGRAM),
    link(SOCKET-RECV)(ADDRESS_SOCKET_RECV)
    link(SOCKET-RECVFROM)(ADDRESS_SOCKET_RECVFROM)
+label(ADDRESS_ACCEPT_FD)dit(bf(tt(ACCEPT-FD:<fdnum>)))
+   Expects a listening socket in <fdnum> and accepts one or (with option
+   link(fork)(OPTION_FORK)) more connections. This address type is useful under
+   systemd control with "inetd mode".nl()
+   Example: (link(example)(EXAMPLE_ADDRESS_ACCEPT_FD))
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET)link(TCP)(GROUP_TCP),link(CHILD)(GROUP_CHILD),link(RETRY)(GROUP_RETRY) nl()
+   Useful options:
+   link(fork)(OPTION_FORK)),
+   link(range)(OPTION_RANGE),
+   link(sourceport)(OPTION_SOURCEPORT),
+   link(lowport)(OPTION_LOWPORT),
+   link(tcpwrap)(OPTION_TCPWRAPPERS),
 label(ADDRESS_SOCKS4)dit(bf(tt(SOCKS4:<socks-server>:<host>:<port>)))
    Connects via <socks-server> [link(IP address)(TYPE_IP_ADDRESS)]
    to <host> [link(IPv4 address)(TYPE_IPV4_ADDRESS)]
@@ -4139,6 +4151,23 @@ socat - &#x5C;
 
 sends an SSDP (Simple Service Discovery Protocol) query to the local network
 and collects and outputs the answers received.
+
+
+label(EXAMPLE_ADDRESS_ACCEPT_FD)
+mancommand(\.LP)
+mancommand(\.nf)
+mancommand(\fBsystemd-socket-activate -l 1077 --inetd socat ACCEPT:0,fork PIPE\fP)
+mancommand(\.RE)
+mancommand(\.fi)
+
+htmlcommand(<hr><div class="shell">systemd-socket-activate -l 1077 --inetd socat ACCEPT:0,fork PIPE</div>)
+
+tt(systemd-socket-activate) is a program for testing tt(systemd) socket
+activation of daemons. With tt(--inetd) it waits for a connection on the
+specified port. It does not accept the connection but passes the listening file
+descriptor as FDs 0 and 1. Socat() accepts the waiting connection and starts
+data transfer.
+
 
 dit(bf(tt()))
 

@@ -117,6 +117,11 @@ Features:
 	network namespace.
 	Tests: NETNS NETNS_EXEC
 
+	New address ACCEPT-FD (ACCEPT) expects a listening file descriptor
+	passed from parent, and accepts one or more connections for data
+	transfer. This can be used with "inetd mode" of systemd.
+	Test: ACCEPT_FD
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

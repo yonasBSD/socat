@@ -20,5 +20,6 @@ int
 int _xioopen_listen(struct single *fd, int xioflags,
 		    struct sockaddr *us, socklen_t uslen,
 		 struct opt *opts, int pf, int socktype, int proto, int level);
+extern int _xioopen_accept_fd(struct single *xfd, int xioflags, struct sockaddr *us, socklen_t uslen, struct opt *opts, int pf, int proto, int level);
 
 #endif /* !defined(__xio_listen_h_included) */

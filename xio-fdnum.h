@@ -6,6 +6,7 @@
 #define __xio_fdnum_h_included 1
 
 extern const struct addrdesc xioaddr_fd;
+extern const struct addrdesc xioaddr_accept_fd;
 
 extern int xioopen_fd(struct opt *opts, int rw, xiosingle_t *xfd, int numfd, int dummy2, int dummy3);
 
