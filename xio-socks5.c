@@ -55,7 +55,7 @@ static int xioopen_socks5(int argc, const char *argv[], struct opt *opts,
 
 const struct addrdesc xioaddr_socks5_connect = { "SOCKS5-CONNECT", 1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_CONNECT, 0, 0 HELP(":<socks-server>:<socks-port>:<target-host>:<target-port>") };
 
-const struct addrdesc xioaddr_socks5_listen    = { "SOCKS5-LISTEN",    1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_BIND,    0, 0 HELP(":<socks-server>:<socks-port>:<listen-host>:<listen-port>") };
+const struct addrdesc xioaddr_socks5_listen  = { "SOCKS5-LISTEN",  1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_BIND,    0, 0 HELP(":<socks-server>:<socks-port>:<listen-host>:<listen-port>") };
 
 static const char * _xioopen_socks5_strerror(uint8_t r)
 {

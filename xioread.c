@@ -9,6 +9,7 @@
 
 #include "xio-termios.h"
 #include "xio-socket.h"
+#include "xio-posixmq.h"
 #include "xio-readline.h"
 #include "xio-openssl.h"
 
@@ -114,6 +115,17 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
    }
    return bytes;
    break;
+
+#if WITH_POSIXMQ
+   case XIOREAD_POSIXMQ:
+      if ((bytes = xioread_posixmq(pipe, buff, bufsiz)) < 0) {
+	 return -1;
+      }
+      if (pipe->dtype & XIOREAD_RECV_ONESHOT) {
+	 pipe->eof = 2;
+      }
+      break;
+#endif /* WITH_POSIXMQ */
 
 #if WITH_READLINE
    case XIOREAD_READLINE:

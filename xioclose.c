@@ -11,6 +11,7 @@
 
 #include "xio-termios.h"
 #include "xio-interface.h"
+#include "xio-posixmq.h"
 
 
 /* close the xio fd; must be valid and "simple" (not dual) */
@@ -51,6 +52,11 @@ int xioclose1(struct single *pipe) {
       }
    }
 #endif /* WITH_TERMIOS */
+#if WITH_POSIXMQ
+   if ((pipe->dtype & XIODATA_MASK) == XIODATA_POSIXMQ) {
+      xioclose_posixmq(pipe);
+   }
+#endif /* WITH_POSIXMQ */
    if (pipe->fd >= 0) {
       switch (pipe->howtoend) {
       case END_KILL: case END_SHUTDOWN_KILL: case END_CLOSE_KILL:

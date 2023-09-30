@@ -150,6 +150,13 @@ const struct addrname addressnames[] = {
 #if WITH_PIPE
    { "PIPE",			&xioaddr_pipe },
 #endif
+#if WITH_POSIXMQ
+   { "POSIXMQ-BIDIRECTIONAL", 	&xioaddr_posixmq_bidir },
+   { "POSIXMQ-READ", 		&xioaddr_posixmq_read },
+   { "POSIXMQ-RECEIVE", 	&xioaddr_posixmq_receive },
+   { "POSIXMQ-RECV", 		&xioaddr_posixmq_receive },
+   { "POSIXMQ-SEND", 		&xioaddr_posixmq_send },
+#endif
 #if WITH_PROXY
    { "PROXY",			&xioaddr_proxy_connect },
    { "PROXY-CONNECT",		&xioaddr_proxy_connect },

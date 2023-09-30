@@ -180,6 +180,9 @@
 #if WITH_NAMESPACES && HAVE_SCHED_H
 #include <sched.h>
 #endif
+#if WITH_POSIXMQ
+#include <mqueue.h> 		/* POSIX MQ */
+#endif
 #if WITH_READLINE
 #  if HAVE_READLINE_READLINE_H
 #include <readline/readline.h>

@@ -45,15 +45,17 @@ struct opt;
 #define XIOREAD_STREAM		0x1000	/* read() (default) */
 #define XIOREAD_RECV		0x2000	/* recvfrom() */
 #define XIOREAD_PTY		0x4000	/* handle EIO */
-#define XIOREAD_READLINE	0x5000	/* ... */
-#define XIOREAD_OPENSSL		0x6000	/* SSL_read() */
+#define XIOREAD_POSIXMQ		0x5000	/* POSIX MQ */
+#define XIOREAD_READLINE	0x6000	/* ... */
+#define XIOREAD_OPENSSL		0x7000	/* SSL_read() */
 #define XIODATA_WRITEMASK	0x0f00	/* mask for basic r/w method */
 #define XIOWRITE_STREAM		0x0100	/* write() (default) */
 #define XIOWRITE_SENDTO		0x0200	/* sendto() */
 #define XIOWRITE_PIPE		0x0300	/* write() to alternate (pipe) Fd */
 #define XIOWRITE_2PIPE		0x0400	/* write() to alternate (2pipe) Fd */
-#define XIOWRITE_READLINE	0x0500	/* check for prompt */
-#define XIOWRITE_OPENSSL	0x0600	/* SSL_write() */
+#define XIOWRITE_POSIXMQ	0x0500  /* POSIX MQ */
+#define XIOWRITE_READLINE	0x0600	/* check for prompt */
+#define XIOWRITE_OPENSSL	0x0700	/* SSL_write() */
 /* modifiers to XIODATA_READ_RECV */
 #define XIOREAD_RECV_CHECKPORT	0x0001	/* recv, check peer port */
 #define XIOREAD_RECV_CHECKADDR	0x0002	/* recv, check peer address */
@@ -74,6 +76,7 @@ struct opt;
 #define XIODATA_RECV_SKIPIP	(XIODATA_RECV|XIOREAD_RECV_SKIPIP)
 #define XIODATA_PIPE		(XIOREAD_STREAM|XIOWRITE_PIPE)
 #define XIODATA_2PIPE		(XIOREAD_STREAM|XIOWRITE_2PIPE)
+#define XIODATA_POSIXMQ		(XIOREAD_POSIXMQ|XIOWRITE_POSIXMQ)
 #define XIODATA_PTY		(XIOREAD_PTY|XIOWRITE_STREAM)
 #define XIODATA_READLINE	(XIOREAD_READLINE|XIOWRITE_STREAM)
 #define XIODATA_OPENSSL		(XIOREAD_OPENSSL|XIOWRITE_OPENSSL)
@@ -169,7 +172,7 @@ typedef struct single {
    size_t actbytes;	/* so many bytes still to be read (when readbytes!=0)*/
    xiolock_t lock;	/* parameters of lockfile */
    bool      havelock;	/* we are happy owner of the above lock */
-   int 		triggerfd; 	/* close this FD in child process to signal parent */
+   int       triggerfd; 	/* close this FD in child process to notify parent */
    bool	     cool_write;	/* downlevel EPIPE, ECONNRESET to notice */
    /* until here, keep consistent with bipipe.dual ! */
    int argc;		/* number of fields in argv */
@@ -243,6 +246,12 @@ typedef struct single {
 #endif /* WITH_UNIX */
       } socket;
 #endif /* _WITH_SOCKET */
+#if WITH_POSIXMQ
+      struct {
+	 const char *name;
+	 unsigned int prio; 		/* POSIX message queue */
+      } posixmq;
+#endif /* WITH_POSIXMQ */
       struct {
 	 int fdout;		/* use fd for output if two pipes */
 	 pid_t pid;		/* child PID, with EXEC: */

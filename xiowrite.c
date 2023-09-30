@@ -8,6 +8,7 @@
 #include "xiosysincludes.h"
 #include "xioopen.h"
 
+#include "xio-posixmq.h"
 #include "xio-readline.h"
 #include "xio-openssl.h"
 
@@ -138,6 +139,14 @@ ssize_t xiowrite(xiofile_t *file, const void *buff, size_t bytes) {
 	 return -1;
       }
       break;
+
+#if WITH_POSIXMQ
+   case XIOWRITE_POSIXMQ:
+      if ((writt = xiowrite_posixmq(pipe, buff, bytes)) < 0) {
+	 return -1;
+      }
+      break;
+#endif /* WITH_POSIXMQ */
 
 #if WITH_OPENSSL
    case XIOWRITE_OPENSSL:

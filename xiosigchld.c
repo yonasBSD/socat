@@ -112,6 +112,10 @@ void childdied(int signum) {
 	 return;
       }
    /*! indent */
+   if (num_child) {
+      num_child--;
+      Info1("number of children decreased to %d", num_child);
+   }
    /* check if it was a registered child process */
    i = 0;
    while (i < XIO_MAXSOCK) {

@@ -991,6 +991,9 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("min-version",	&opt_openssl_min_proto_version)
 #endif
 	IF_ANY    ("mode",	&opt_perm)
+#if WITH_POSIXMQ
+	IF_ANY	  ("mq-prio",	&opt_posixmq_priority)
+#endif
 #ifdef TCP_MAXSEG
 	IF_TCP    ("mss",	&opt_tcp_maxseg)
 	IF_TCP    ("mss-late",	&opt_tcp_maxseg_late)
@@ -1294,6 +1297,9 @@ const struct optname optionnames[] = {
 	/*IF_IPAPP("port",	&opt_port)*/
 #ifdef IFF_PORTSEL
 	IF_INTERFACE("portsel",	&opt_iff_portsel)
+#endif
+#if WITH_POSIXMQ
+	IF_ANY	  ("posixmq-priority",	&opt_posixmq_priority)
 #endif
 #if HAVE_RESOLV_H && WITH_RES_PRIMARY
 	IF_IP     ("primary",	&opt_res_primary)

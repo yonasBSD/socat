@@ -600,6 +600,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_LISTEN\n", fd);
 #endif
+#ifdef WITH_POSIXMQ
+   fprintf(fd, "  #define WITH_POSIXMQ %d\n", WITH_POSIXMQ);
+#else
+   fputs("  #undef WITH_POSIXMQ\n", fd);
+#endif
 #ifdef WITH_SOCKS4
    fprintf(fd, "  #define WITH_SOCKS4 %d\n", WITH_SOCKS4);
 #else

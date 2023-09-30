@@ -16348,7 +16348,7 @@ N=$((N+1))
 NAME=NETNS
 case "$TESTS" in
 *%$N%*|*%functions%*|*%root%*|*%namespace%*|*%netns%*|*%socket%*|*%$NAME%*)
-ns=socat-$$-$N
+ns=socat-$$-test$N
 TEST="$NAME: option netns (net namespace $ns)"
 # Start a simple echo server with option netns on localhost of a net namespace;
 # use a client process with option netns to send data to the net namespace
@@ -16718,6 +16718,344 @@ esac
 N=$((N+1))
 
 
+
+# Test the POSIX MQ feature with continuous READ and priorization on Linux
+NAME=LINUX_POSIXMQ_READ_PRIO
+case "$TESTS" in
+*%$N%*|*%functions%*|*%socket%*|*%posixmq%*|*%$NAME%*)
+TEST="$NAME: POSIX-MQ (Linux) with prio"
+# Run a client/sender that creates a POSIX-MQ and sends a normal message and
+# then a client/sender with a higher priority message.
+# Run a passive/listening/receiving/reading process and check if it receives
+# both messages and in the prioritized order
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats POSIXMQ STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs POSIXMQ-SEND POSIXMQ-READ STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions mq-prio unlink-early unlink-close) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+tq=/test$N
+CMD0a="$TRACE $SOCAT --experimental $opts -u STDIO POSIXMQ-SEND:$tq,mq-prio=0,unlink-early"
+CMD0b="$TRACE $SOCAT --experimental $opts -u STDIO POSIXMQ-SEND:$tq,mq-prio=1"
+CMD1="$TRACE $SOCAT --experimental $opts -u POSIXMQ-READ:$tq,unlink-close STDIO"
+printf "test $F_n $TEST... " $N
+echo "$da 0" |$CMD0a 2>"${te}0a"
+rc0a=$?
+echo "$da 1" |$CMD0b 2>"${te}0b"
+rc0b=$?
+$CMD1 >"${tf}1" 2>"${te}1" &
+pid1=$!
+relsleep 1
+kill $pid1; wait
+if [ $rc0a -ne 0 -o $rc0b -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0a"
+    cat "${te}0a" >&2
+    echo "$CMD0b"
+    cat "${te}0b" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif $ECHO "$da 1\n$da 0" |diff - ${tf}1 >${tdiff}1; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0a"; fi
+    if [ "$DEBUG" ];   then cat "${te}0a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD0b"; fi
+    if [ "$DEBUG" ];   then cat "${te}0b" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0a"
+    cat "${te}0a" >&2
+    echo "$CMD0b"
+    cat "${te}0b" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "difference:" >&2
+    cat ${tdiff}1 >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the POSIX MQ feature with RECV,fork on Linux
+NAME=LINUX_POSIXMQ_RECV_FORK
+case "$TESTS" in
+*%$N%*|*%functions%*|*%fork%*|*%socket%*|*%posixmq%*|*%$NAME%*)
+TEST="$NAME: POSIX-MQ (Linux) RECV with fork"
+# Start a POSIX-MQ receiver with fork that creates a POSIX-MQ and stores its
+# output.
+# Run two clients/senders each with a message.
+# Check if both messages are stored.
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats POSIXMQ STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs POSIXMQ-SEND POSIXMQ-RECEIVE STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions fork unlink-early unlink-close) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+tq=/test$N
+CMD0="$TRACE $SOCAT --experimental $opts -u POSIXMQ-RECV:$tq,unlink-early,fork STDIO"
+CMD1a="$TRACE $SOCAT --experimental $opts -u STDIO POSIXMQ-SEND:$tq"
+CMD1b="$TRACE $SOCAT --experimental $opts -u STDIO POSIXMQ-SEND:$tq,unlink-close"
+printf "test $F_n $TEST... " $N
+$CMD0 2>"${te}0" >"${tf}0" &
+pid0=$!
+relsleep 1
+echo "$da 0" |$CMD1a >/dev/null 2>"${te}1a"
+rc1a=$?
+echo "$da 1" |$CMD1b >/dev/null 2>"${te}1b"
+rc1b=$?
+relsleep 1
+kill $pid0; wait
+if [ $rc1a -ne 0 -o $rc1b -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    echo "$CMD1a"
+    cat "${te}1a" >&2
+    echo "$CMD1b"
+    cat "${te}1b" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif $ECHO "$da 0\n$da 1" |diff - ${tf}0 >${tdiff}0; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1a"; fi
+    if [ "$DEBUG" ];   then cat "${te}1a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1b"; fi
+    if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    echo "$CMD1a"
+    cat "${te}1a" >&2
+    echo "$CMD1b"
+    cat "${te}1b" >&2
+    echo "difference:" >&2
+    cat ${tdiff}0 >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the POSIX MQ feature with RECV,fork,max-children on Linux
+NAME=LINUX_POSIXMQ_RECV_MAXCHILDREN
+case "$TESTS" in
+*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%socket%*|*%posixmq%*|*%$NAME%*)
+TEST="$NAME: POSIX-MQ (Linux) RECV with fork,max-children"
+# Start a POSIX-MQ receiver with fork that creates a POSIX-MQ and stores its
+# output via sub processes that sleeps after writing.
+# Run a client/sender that sends message 1;
+# run a client/sender that sends message 3, has to wait;
+# write message 2 directly into output file;
+# Check if the messages are stored in order of their numbers
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats POSIXMQ STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs POSIXMQ-SEND POSIXMQ-RECEIVE STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions fork max-children unlink-early unlink-close) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+tq=/test$N
+CMD0="$TRACE $SOCAT --experimental $opts -u POSIXMQ-RECV:$tq,unlink-early,fork,max-children=1 SYSTEM:\"cat\ >>${tf}0;\ sleep\ 1\""
+CMD1a="$TRACE $SOCAT --experimental $opts -u STDIO POSIXMQ-SEND:$tq"
+CMD1b="$TRACE $SOCAT --experimental $opts -u STDIO POSIXMQ-SEND:$tq,unlink-close"
+printf "test $F_n $TEST... " $N
+eval $CMD0 2>"${te}0" >"${tf}0" &
+pid0=$!
+relsleep 1
+echo "$da 1" |$CMD1a >/dev/null 2>"${te}1a"
+rc1a=$?
+echo "$da 3" |$CMD1b >/dev/null 2>"${te}1b"
+rc1b=$?
+psleep 0.5
+echo "$da 2" >>"${tf}0"
+sleep 1 	# as in SYSTEM
+kill $(childpids $pid0) $pid0; wait
+if [ $rc1a -ne 0 -o $rc1b -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    echo "$CMD1a"
+    cat "${te}1a" >&2
+    echo "$CMD1b"
+    cat "${te}1b" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif $ECHO "$da 1\n$da 2\n$da 3" |diff - ${tf}0 >${tdiff}0; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1a"; fi
+    if [ "$DEBUG" ];   then cat "${te}1a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1b"; fi
+    if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    echo "$CMD1a"
+    cat "${te}1a" >&2
+    echo "$CMD1b"
+    cat "${te}1b" >&2
+    echo "difference:" >&2
+    cat ${tdiff}0 >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the POSIX MQ feature with SEND,fork,max-children on Linux
+NAME=LINUX_POSIXMQ_SEND_MAXCHILDREN
+case "$TESTS" in
+*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%socket%*|*%posixmq%*|*%$NAME%*)
+TEST="$NAME: POSIX-MQ (Linux) SEND with fork,max-children"
+# Start a POSIX-MQ receiver that creates a POSIX-MQ and transfers data from
+# there to an output file
+# Run a POSIX-MQ sender that two times forks and invokes a data generator
+# for messages 1 and 3 in a shell process with some trailing sleep.
+# Afterwards write message 2 directly into output file; message 3 should be
+# delayed due to max-children option
+# Check if the messages are stored in order of their numbers.
+# The data generator is implemented as a receiver from an MQ with "1", "3"
+if ! eval $NUMCOND; then :;
+elif [ "$UNAME" != Linux ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats POSIXMQ STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs POSIXMQ-SEND POSIXMQ-READ STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions fork max-children mq-prio unlink-early unlink-close) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+#elif ! runsposixmq >/dev/null; then
+#    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+#    numCANT=$((numCANT+1))
+#    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+tq=/test$N
+CMD0="$TRACE $SOCAT --experimental $opts -u POSIXMQ-READ:$tq,unlink-early STDIO"
+CMD1="$TRACE $SOCAT --experimental $opts -U POSIXMQ-SEND:$tq,fork,max-children=1,interval=0.1 SYSTEM:\"./socat\ --experimental\ -u\ POSIXMQ-RECV\:$tq-data\ -;\ sleep\ 1\""
+printf "test $F_n $TEST... " $N
+# create data for the generator
+echo "$da 1" |$SOCAT -u --experimental - POSIXMQ-SEND:$tq-data,unlink-early
+echo "$da 3" |$SOCAT -u --experimental - POSIXMQ-SEND:$tq-data
+eval $CMD0 2>"${te}0" >>"${tf}0" &
+pid0=$!
+relsleep 1
+eval $CMD1 2>"${te}1" &
+pid1=$!
+psleep 0.5
+echo "$da 2" >>"${tf}0"
+sleep 1 	# as in SYSTEM
+kill $pid0 $(childpids $pid0) $pid1 $(childpids $pid1)
+wait
+$SOCAT -u --experimental /dev/null POSIXMQ-SEND:$tq-data,unlink-close
+if $ECHO "$da 1\n$da 2\n$da 3" |diff - ${tf}0 >${tdiff}0; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "difference:" >&2
+    cat ${tdiff}0 >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -16906,14 +17244,14 @@ wait<something>port $PORT 1
 echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
-if echo "$da" |diff "${tf}1" - >$tdiff !!!; then
+if echo "$da" |diff "${tf}1" - >$tdiff; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
-elif [ !!! ]; then
+elif [ !?!?! ]; then
     # The test could not run meaningfully
     $PRINTF "$CANT\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi

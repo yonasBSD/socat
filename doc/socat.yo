@@ -121,7 +121,7 @@ dit(bf(tt(-d -d -d -d | -dddd | -d4))) Prints fatal, error, warning, notice, inf
    messages. 
 dit(bf(tt(-D)))
    Logs information about file descriptors before starting the transfer phase.
-dit(bf(tt(--experimental)))
+label(option_experimental)dit(bf(tt(--experimental)))
    New features that are not well tested or are subject to change in the future
    must me explicitely enabled using this option.
 dit(bf(tt(-ly[<facility>])))
@@ -700,6 +700,53 @@ label(ADDRESS_SOCKETPAIR)dit(bf(tt(SOCKETPAIR)))
    Useful options:
    link(socktype)(OPTION_SO_TYPE)nl()
    See also: link(unnamed pipe)(ADDRESS_UNNAMED_PIPE)
+
+label(ADDRESS_POSIXMQ_READ)dit(bf(tt(POSIXMQ-READ:/<mqueue>)))
+   Opens the specified POSIX message queue and reads messages (packets). It
+   keeps the boundaries.nl()
+   This is a read-only address, see options link(-u)(option_u) and
+   link(-U)(option_U) and link(dual addresses)(ADDRESS_DUAL).nl()
+   Socat() provides this address type only on Linux because POSIX MQ is based
+   on UNIX filedescriptors there.nl()
+   This feature is new in version 1.7.5.0 and might change in the future,
+   therefore it is link(experimental)(option_experimental).nl()
+   Useful options:
+   link(posixmq-priority)(OPTION_POSIXMQ_PRIORITY),
+   link(unlink-early)(OPTION_UNLINK_EARLY),
+   link(unlink-close)(OPTION_UNLINK_CLOSE)
+
+label(ADDRESS_POSIXMQ_RECEIVE)dit(bf(tt(POSIXMQ-RECEIVE:/<mqueue>)))
+dit(bf(tt(POSIXMQ-RECV:/<mqueue>)))
+   Opens the specified POSIX message queue and reads one message (packet).nl()
+   This is a read-only address. See link(POSIXMQ-READ)(ADDRESS_POSIXMQ_READ)
+   for more info.nl()
+   Example: link(POSIX MQ recv with fork)(EXAMPLE_POSIXMQ_RECV_FORK)nl()
+   This feature is link(experimental)(option_experimental).nl()
+   Useful options:
+   link(posixmq-priority)(OPTION_POSIXMQ_PRIORITY),
+   link(fork)(OPTION_FORK),
+   link(max-children)(OPTION_MAX_CHILDREN),
+   link(unlink-early)(OPTION_UNLINK_EARLY),
+   link(unlink-close)(OPTION_UNLINK_CLOSE)
+
+label(ADDRESS_POSIXMQ_SEND)dit(bf(tt(POSIXMQ-SEND:/<mqueue>)))
+   Opens the specified POSIX message queue and writes messages (packets).nl()
+   This is a write-only address. See link(POSIXMQ-READ)(ADDRESS_POSIXMQ_READ)
+   for more info.nl()
+   (link(Example)(EXAMPLE_POSIXMQ_SEND))nl()
+   This feature is link(experimental)(option_experimental).nl()
+   Useful options:
+   link(posixmq-priority)(OPTION_POSIXMQ_PRIORITY),
+   link(fork)(OPTION_FORK),
+   link(max-children)(OPTION_MAX_CHILDREN),
+   link(unlink-early)(OPTION_UNLINK_EARLY),
+   link(unlink-close)(OPTION_UNLINK_CLOSE)
+
+label(ADDRESS_POSIXMQ_BIDIRECTIONAL)dit(bf(tt(POSIXMQ-BIDIRECTIONAL:/mqueue)))
+   Opens the specified POSIX message queue and writes and reads messages
+   (packet). This is probably rarely useful but has been implemented for
+   functional completeness.
+
 label(ADDRESS_PROXY_CONNECT)dit(bf(tt(PROXY:<proxy>:<hostname>:<port>)))
    Connects to an HTTP proxy server on port 8080 using TCP/IP  version 4 or 6
    depending on address specification, name resolution, or option
@@ -1913,8 +1960,8 @@ label(GROUP_PROCESS)em(bf(PROCESS option group))
 Options of this group change the process properties instead of just affecting
 one data channel.
 For EXEC and SYSTEM addresses and for LISTEN and CONNECT type addresses with
-option FORK, 
-these options apply to the child processes instead of the main socat process.
+option link(fork)(OPTION_FORK),
+these options apply to the child processes instead of the main socat() process.
 startdit()
 label(OPTION_CHROOT)dit(bf(tt(chroot=<directory>)))
    Performs a code(chroot()) operation to link(<directory>)(TYPE_DIRECTORY)
@@ -3187,6 +3234,16 @@ enddit()
 
 startdit()enddit()nl()
 
+label(GROUP_POSIXMQ)em(bf(POSIX-MQ option group))
+
+Options that may be applied to POSIX-MQ addresses.
+
+startdit()
+label(OPTION_POSIXMQ_PRIORITY)dit(bf(tt(posixmq-priority (mq-prio))))
+   Sets the priority of messages (packets) written to the queue, or the minimal
+   priority of packet read from the queue.
+enddit()
+
 
 label(VALUES)
 manpagesection(DATA VALUES)
@@ -4135,6 +4192,45 @@ be able to work on a synchronous line that is represented by a network device.
 socat creates a PTY to make pppd happy, binds to the network
 link(interface)(ADDRESS_INTERFACE) tt(hdlc0), and can transfer data between
 both devices. Use pppd on device tt(/var/run/ppp) then.
+
+
+label(EXAMPLE_POSIXMQ_SEND)
+mancommand(\.LP)
+mancommand(\.nf)
+mancommand(\fBsocat --experimental -u \\)
+mancommand(\.RS)
+mancommand(\fBSTDIO \\ 
+	POSIXMQ-SEND:/queue1,unlink-early,mq-prio=10\fP)
+mancommand(\.RE)
+mancommand(\.fi)
+
+htmlcommand(<hr><div class="shell">socat --experimental -u &#x5C;
+    STDIO &#x5C;
+    POSIXMQ-SEND:/queue1,unlink-early,mq-prio=10</div>)
+
+Writes packets read from stdio (i.e., lines of input when run interactively)
+into POSIX message queue, with priority 10.
+
+
+label(EXAMPLE_POSIXMQ_RECV_FORK)
+
+mancommand(\.LP)
+mancommand(\.nf)
+mancommand(\fBsocat --experimental -u \\)
+mancommand(\.RS)
+mancommand(\fBPOSIXMQ-RECV:/queue1,fork,max-children=3 \\ 
+	SYSTEM:"robot.sh"\fP)
+
+mancommand(\.RE)
+mancommand(\.fi)
+
+htmlcommand(<hr><div class="shell">socat --experimental -u &#x5C;
+    POSIXMQ-RECV:/queue1,fork,max-children=3 &#x5C;
+    SYSTEM:"robot.sh"</div>)
+
+Receives messages (packets) from POSIX message queue and, for each messages,
+forks a sub process that reads and processes the message. At most 3 sub
+processes are allowed at the same time.
 
 
 label(EXAMPLE_HTTPECHO)

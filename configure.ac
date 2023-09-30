@@ -444,6 +444,23 @@ AC_ARG_ENABLE(listen, [  --disable-listen        disable listen support],
 	       esac],
 	       [AC_DEFINE(WITH_LISTEN) AC_MSG_RESULT(yes)])
 
+AC_MSG_CHECKING(whether to include POSIX MQ support)
+AC_ARG_ENABLE(posixmq, [  --disable-posixmq       disable POSIX MQ support],
+	      [case "$enableval" in
+	       no) AC_MSG_RESULT(no)
+	       WITH_POSIXMQ= ;;
+	       *) WITH_POSIXMQ=1; AC_MSG_RESULT(yes);;
+	       esac],
+	       [WITH_POSIXMQ=1; AC_MSG_RESULT(yes)])
+if test "$WITH_POSIXMQ"; then
+    case "`uname`" in
+    Linux) AC_DEFINE(WITH_POSIXMQ)
+	   LIBS="$LIBS -lrt" ;;
+    *) AC_MSG_WARN([POSIX MQ currently implemented for Linux only])
+       WITH_POSIXMQ= ;;
+    esac
+fi
+
 AC_MSG_CHECKING(whether to include socks4 support)
 AC_ARG_ENABLE(socks4, [  --disable-socks4        disable socks4 support],
 	      [case "$enableval" in

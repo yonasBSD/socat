@@ -256,6 +256,7 @@ pid_t xio_fork(bool subchild,
    }
 
    num_child++;
+   Info1("number of children increased to %d", num_child);
    /* parent process */
    Notice1("forked off child process "F_pid, pid);
    /* gdb recommends to have env controlled sleep after fork */
