@@ -814,11 +814,11 @@ childprocess () {
     return 0
 }
 
-# return a list of child process pids
+# return a list of child process pids [killchild]
 childpids () {
     case "$UNAME" in
     AIX)     l="$(ps -fade |grep "^........ ...... $(printf %6u $1)" |awk '{print($2);}')" ;;
-    FreeBSD) l="$(ps -fl   |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$(printf %5u $1)" |awk '{print($2);}')" ;;
+    FreeBSD) l="$(ps -fl   |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$1[ ]" |awk '{print($2);}')" ;;
     HP-UX)   l="$(ps -fade |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
 #    Linux)   l="$(ps -fade |grep "^........ ..... $(printf %5u $1)" |awk '{print($2);}')" ;;
     Linux)   l="$(ps -fade |grep "^[^[:space:]][^[:space:]]*[[:space:]][[:space:]]*[^[:space:]][^[:space:]]*[[:space:]][[:space:]]*$1 " |awk '{print($2);}')" ;;
@@ -4466,7 +4466,7 @@ elif ! feat=$(testfeats readline pty); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-SAVETERM="$TERM"; TERM=	# 'cause konsole might print controls even in raw
+SAVETERM="$TERM"; TERM=	# 'cause console might print controls even in raw
 SAVEMICS=$MICROS
 #MICROS=2000000
 ts="$td/test$N.sh"
@@ -4478,7 +4478,7 @@ tr="$td/test$N.ref"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 # the feature that we really want to test is in the readline.sh script:
-CMD="$TRACE $SOCAT $opts -t1 open:$tpi,nonblock!!open:$tpo exec:\"./readline.sh -nh ./readline-test.sh\",pty,ctty,setsid,raw,echo=0,isig"
+CMD="$TRACE $SOCAT -lpwrapper $opts -t1 open:$tpi,nonblock!!open:$tpo exec:\"./readline.sh -nh ./readline-test.sh\",pty,ctty,setsid,raw,echo=0,isig"
 #echo "$CMD" >"$ts"
 #chmod a+x "$ts"
 printf "test $F_n $TEST... " $N
@@ -4487,6 +4487,7 @@ mkfifo "$tpi"
 touch "$tpo"
 #
 # during development of this test, the following command line succeeded:
+# ECHO="echo -e" SOCAT=./socat
 # (sleep 1; $ECHO "user\n\c"; sleep 1; $ECHO "password\c"; sleep 1; $ECHO "\n\c"; sleep 1; $ECHO "test 1\n\c"; sleep 1; $ECHO "\003\c"; sleep 1; $ECHO "test 2\n\c"; sleep 1; $ECHO "exit\n\c"; sleep 1) |$TRACE $SOCAT -d -d -d -d -lf/tmp/$USER/debug1 -v -x - exec:'./readline.sh ./readline-test.sh',pty,ctty,setsid,raw,echo=0,isig
 #
 # the following cat, in case of socat failure, reads the pipe to prevent below writer from hanging
@@ -4530,14 +4531,16 @@ EOF
 wait
 if ! tr "$($ECHO '\r \c')" "% " <$tpo |sed 's/%$//g' |sed 's/.*%//g' |diff "$tr" - >"$tdiff" 2>&1; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD"
-    cat "$te"
-    cat "$tdiff"
+    echo "$CMD" 2>&1
+    cat "$te" 2>&1
+    echo diff:  2>&1
+    cat "$tdiff" 2>&1
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
    $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat $te; fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null	# necc on OpenBSD
@@ -5978,7 +5981,7 @@ to="$td/test$N.out"
 te="$td/test$N.err"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
-# the feature that we really want to test is in the readline.sh script:
+#
 CMD="$TRACE $SOCAT $opts -u open:$ti,readbytes=100 -"
 printf "test $F_n $TEST... " $N
 rm -f "$tf" "$ti" "$to"
@@ -17066,21 +17069,21 @@ esac
 N=$((N+1))
 
 
-# Test the sigint option
-NAME=EXEC_SIGINT
+# Test the sigint option with SHELL address
+NAME=SHELL_SIGINT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%socket%*|*%exec%*|*%sigint%*|*%$NAME%*)
-TEST="$NAME: sigint option with EXEC"
+*%$N%*|*%functions%*|*%socket%*|*%shell%*|*%progcall%*|*%sigint%*|*%$NAME%*)
+TEST="$NAME: sigint option with SHELL"
 # Run Socat with an EXEC address invoking Socat, with option sigint
 # Send the parent a SIGINT; when the child gets SIGINT too (vs.SIGTERM)
 # the test succeeded
 if ! eval $NUMCOND; then :;
 # Remove unneeded checks, adapt lists of the remaining ones
-elif ! F=$(testfeats STDIO EXEC PIPE); then
+elif ! F=$(testfeats STDIO SHELL PIPE); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! A=$(testaddrs STDIO EXEC PIPE); then
+elif ! A=$(testaddrs STDIO SHELL PIPE); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -17093,8 +17096,11 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -T 2 PIPE EXEC:\"$CAT\",pty,setsid,sigint"
+#CMD0="$TRACE $SOCAT $opts -T 2 PIPE EXEC:\"socat\ -d\ -d\ -d\ -d\ -lu\ PIPE\ PIPE\",pty,setsid,sigint"
+#CMD0="$TRACE $SOCAT $opts -T 2 PIPE EXEC:\"$CAT\",pty,setsid,sigint"
+CMD0="$TRACE $SOCAT $opts -T 2 SOCKETPAIR EXEC:\"$CAT\",pty,setsid,sigint"
 printf "test $F_n $TEST... " $N
+eval $CMD0 >/dev/null 2>"${te}0" &
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 sleep 1
@@ -17102,6 +17108,167 @@ kill -INT $pid0
 wait
 if grep -q " W waitpid..: child .* exited with status 130" "${te}0" ||
    grep -q " W waitpid..: child .* exited on signal 2" "${te}0"; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
+# Test the SHELL address with socketpair (default)
+NAME=SHELL_SOCKETPAIR
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%socketpair%*|*%$NAME%*)
+TEST="$NAME: simple echo via SHELL of cat with socketpair"
+# testecho ...
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO SHELL); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SHELL); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    testecho "$N" "$TEST" "" "SHELL:$CAT" "$opts" "$val_t"
+fi
+esac
+N=$((N+1))
+
+# Test the SHELL address with pipes
+NAME=SHELL_PIPES
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%pipe%*|*%$NAME%*)
+TEST="$NAME: simple echo via SHELL of cat with pipes"
+# testecho ...
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO SHELL SOCKETPAIR); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SHELL PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    testecho "$N" "$TEST" "" "SHELL:$CAT,pipes" "$opts" "$val_t"
+fi
+esac
+N=$((N+1))
+
+# Test the SHELL address with pty
+NAME=SHELL_PTY
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%pty%*|*%$NAME%*)
+TEST="$NAME: simple echo via SHELL of cat with pty"
+# testecho ...
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO SHELL PTY); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SHELL PTY); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    testecho "$N" "$TEST" "" "SHELL:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts" "$val_t"
+fi
+esac
+N=$((N+1))
+
+# Test the SHELL address halfclose with socketpair
+NAME=SHELL_SOCKETPAIR_FLUSH
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%socketpair%*|*%halfclose%*|*%$NAME%*)
+TEST="$NAME: call  od -c  via SHELL using socketpair"
+# testecho ...
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO SHELL); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SHELL); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    testod "$N" "$TEST" "" "SHELL:$OD_C" "$opts" "$val_t"
+fi
+esac
+N=$((N+1))
+
+# Test SHELL address halfclose with pipes
+NAME=SHELL_PIPES
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%pipe%*|*%halfclose%*|*%$NAME%*)
+TEST="$NAME: call  od -c  via SHELL using pipes"
+# testecho ...
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO SHELL SOCKETPAIR); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SHELL PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    testod "$N" "$TEST" "" "SHELL:$OD_C,pipes" "$opts" "$val_t"
+fi
+esac
+N=$((N+1))
+
+
+# Test the sigint option with SYSTEM address
+NAME=SYSTEM_SIGINT
+case "$TESTS" in
+*%$N%*|*%functions%*|*%socket%*|*%progcall%*|*%system%*|*%sigint%*|*%$NAME%*)
+TEST="$NAME: sigint option with SYSTEM"
+# Run Socat with a SYSTEM address invoking Socat, with option sigint
+# Send the parent a SIGINT; when the child gets SIGINT too (vs.SIGTERM)
+# the test succeeded
+# setsid is required so the initial SIGINT is not delivered to the sub process.
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! F=$(testfeats STDIO SYSTEM PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SYSTEM PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions setsid sigint) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+#CMD0="$TRACE $SOCAT $opts PIPE SHELL:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
+CMD0="$TRACE $SOCAT $opts SOCKETPAIR SHELL:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
+printf "test $F_n $TEST... " $N
+eval $CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+sleep 1
+kill -INT $(childpids $pid0)
+wait
+if grep -q " W waitpid..: child .* exited with status 130" "${te}0"; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
@@ -17308,14 +17475,25 @@ wait<something>port $PORT 1
 echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
-if echo "$da" |diff "${tf}1" - >$tdiff; then
-    $PRINTF "$OK\n"
-    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
-    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
-    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
-    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
-    numOK=$((numOK+1))
-elif [ !?!?! ]; then
+if [ "$rc1" -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif ! echo "$da" |diff "${tf}1" - >$tdiff; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif [ ??? ]; then
     # The test could not run meaningfully
     $PRINTF "$CANT\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -17325,14 +17503,12 @@ elif [ !?!?! ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-    $PRINTF "$FAILED\n"
-    echo "$CMD0 &"
-    cat "${te}0" >&2
-    echo "$CMD1"
-    cat "${te}1" >&2
-    numFAIL=$((numFAIL+1))
-    listFAIL="$listFAIL $N"
-    namesFAIL="$namesFAIL $NAME"
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
 fi
 fi # NUMCOND
  ;;

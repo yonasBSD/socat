@@ -1518,6 +1518,9 @@ const struct optname optionnames[] = {
 	IF_SOCKET ("setsockopt-string",	&opt_setsockopt_string)
 	IF_ANY    ("setuid",	&opt_setuid)
 	IF_ANY    ("setuid-early",	&opt_setuid_early)
+#if WITH_SHELL
+	IF_ANY	  ("shell", 		&opt_shell)
+#endif
 	IF_ANY    ("shut-close",	&opt_shut_close)
 	IF_ANY    ("shut-down",	&opt_shut_down)
 	IF_ANY    ("shut-none",	&opt_shut_none)

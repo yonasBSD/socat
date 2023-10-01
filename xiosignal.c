@@ -55,7 +55,7 @@ void socatsignalpass(int sig) {
 
    _errno = errno;
    diag_in_handler = 1;
-   Notice1("socatsignalpass(%d)", sig);
+   Notice1("socatsignalpass(sig=%d)", sig);
    if ((sigdesc = socat_get_sig_desc(sig)) == NULL) {	/* is async-signal-safe */
       diag_in_handler = 0;
       errno = _errno;
@@ -73,7 +73,8 @@ void socatsignalpass(int sig) {
 	 }
       }
    }
-   Info1("socatsignalpass(): n=%d", n);
+   if (n >= 0)
+      Info1("socatsignalpass(): propagated signal to %d sub processes", n);
   }
 #if !HAVE_SIGACTION
    Signal(sig, socatsignalpass);

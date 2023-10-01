@@ -194,6 +194,9 @@ const struct addrname addressnames[] = {
 #if WITH_GENERICSOCKET
    { "SENDTO",			&xioaddr_socket_sendto },
 #endif
+#if WITH_SHELL
+   { "SHELL",			&xioaddr_shell },
+#endif
 #if WITH_GENERICSOCKET
    { "SOCKET-CONNECT",		&xioaddr_socket_connect },
    { "SOCKET-DATAGRAM",		&xioaddr_socket_datagram },

@@ -644,6 +644,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_SYSTEM\n", fd);
 #endif
+#ifdef WITH_SHELL
+   fprintf(fd, "  #define WITH_SHELL %d\n", WITH_SHELL);
+#else
+   fputs("  #undef WITH_SHELL\n", fd);
+#endif
 #ifdef WITH_EXEC
    fprintf(fd, "  #define WITH_EXEC %d\n", WITH_EXEC);
 #else

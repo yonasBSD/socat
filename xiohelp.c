@@ -43,7 +43,7 @@ static const char *addressgroupnames[] = {
 	"FD",		"FIFO",		"CHR",		"BLK",
 	"REG",		"SOCKET",	"READLINE",	"undef",
 	"NAMED",	"OPEN",		"EXEC",		"FORK",
-	"LISTEN",	"DEVICE",	"CHILD",	"RETRY",
+	"LISTEN",	"SHELL",	"CHILD",	"RETRY",
 	"TERMIOS",	"RANGE",	"PTY",		"PARENT",
 	"UNIX",		"IP4",		"IP6",		"INTERFACE",
 	"UDP",		"TCP",		"SOCKS4",	"OPENSSL",

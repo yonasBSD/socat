@@ -50,7 +50,8 @@ XIOSRCS = xioinitialize.c xiohelp.c xioparam.c xiodiag.c xioopen.c xioopts.c \
 	xio-ip.c xio-ip4.c xio-ip6.c xio-ipapp.c xio-tcp.c \
 	xio-sctp.c xio-rawip.c xio-posixmq.c \
 	xio-socks.c xio-socks5.c xio-proxy.c xio-udp.c \
-	xio-progcall.c xio-exec.c xio-system.c xio-termios.c xio-readline.c \
+	xio-progcall.c xio-exec.c xio-system.c xio-shell.c \
+	xio-termios.c xio-readline.c \
 	xio-pty.c xio-openssl.c xio-streams.c xio-namespaces.c \
 	xio-ascii.c xiolockfile.c xio-tcpwrap.c xio-fs.c xio-tun.c
 XIOOBJS = $(XIOSRCS:.c=.o)
@@ -68,7 +69,7 @@ HFILES = sycls.h sslcls.h error.h dalan.h procan.h filan.h hostan.h sysincludes.
 	xio-ip.h xio-ip4.h xio-ip6.h xio-rawip.h xio-posixmq.h \
 	xio-ipapp.h xio-tcp.h xio-udp.h xio-sctp.h \
 	xio-socks.h xio-socks5.h xio-proxy.h xio-progcall.h xio-exec.h \
-	xio-system.h xio-termios.h xio-readline.h \
+	xio-system.h xio-shell.h xio-termios.h xio-readline.h \
 	xio-pty.h xio-openssl.h xio-streams.h xio-namespaces.h \
 	xio-ascii.h xiolockfile.h xio-tcpwrap.h xio-fs.h xio-tun.h
 

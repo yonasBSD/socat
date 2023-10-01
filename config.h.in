@@ -713,6 +713,7 @@
 #undef WITH_PROXY
 #undef WITH_EXEC
 #undef WITH_SYSTEM
+#undef WITH_SHELL
 #undef WITH_READLINE
 #undef WITH_TUN
 #undef WITH_PTY

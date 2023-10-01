@@ -133,6 +133,8 @@ Features:
 	Tests: LINUX_POSIXMQ_READ_PRIO LINUX_POSIXMQ_RECV_FORK
 	LINUX_POSIXMQ_RECV_MAXCHILDREN LINUX_POSIXMQ_SEND_MAXCHILDREN
 
+	New address SHELL invokes a shell but without the overhead of SYSTEM
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

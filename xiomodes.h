@@ -41,6 +41,7 @@
 #include "xio-progcall.h"
 #include "xio-exec.h"
 #include "xio-system.h"
+#include "xio-shell.h"
 #include "xio-termios.h"
 #include "xio-readline.h"
 #include "xio-pty.h"

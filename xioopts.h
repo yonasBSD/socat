@@ -163,7 +163,7 @@ enum e_func {
 #define GROUP_FORK	0x00000800	/* communication with forked process */
 
 #define GROUP_LISTEN	0x00001000	/* socket in listening mode */
-/*	0x00002000 */
+#define GROUP_SHELL	0x00002000
 #define GROUP_CHILD	0x00004000	/* autonom child process */
 #define GROUP_RETRY	0x00008000	/* when open/connect etc. fails */
 #define GROUP_TERMIOS	0x00010000
@@ -655,6 +655,7 @@ enum e_optcode {
    OPT_SETUID,
    OPT_SETUID_EARLY,
    OPT_SET_NETNS, 	/* set net namespace */
+   OPT_SHELL,
    OPT_SHUT_CLOSE,
    OPT_SHUT_DOWN,
    OPT_SHUT_NONE,

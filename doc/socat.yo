@@ -335,6 +335,7 @@ label(ADDRESS_EXEC)dit(bf(tt(EXEC:<command-line>)))
    link(su)(OPTION_SUBSTUSER),
    link(su-d)(OPTION_SUBSTUSER_DELAYED),
    link(nofork)(OPTION_NOFORK),
+   link(socktype)(OPTION_SO_TYPE),
    link(pty)(OPTION_PTY),
    link(stderr)(OPTION_STDERR),
    link(ctty)(OPTION_CTTY),
@@ -344,7 +345,7 @@ label(ADDRESS_EXEC)dit(bf(tt(EXEC:<command-line>)))
    link(sigint)(OPTION_SIGINT),
    link(sigquit)(OPTION_SIGQUIT),
    link(netns)(OPTION_NETNS)nl()
-   See also: link(SYSTEM)(ADDRESS_SYSTEM)
+   See also: link(SYSTEM)(ADDRESS_SYSTEM),link(SHELL)(ADDRESS_SHELL)
 label(ADDRESS_FD)dit(bf(tt(FD:<fdnum>)))
    Uses the file descriptor link(<fdnum>)(TYPE_FDNUM). It must already exist as
    valid unix() file descriptor.nl()
@@ -785,7 +786,7 @@ label(ADDRESS_PTY)dit(bf(tt(PTY)))
    See also:
    link(UNIX-LISTEN)(ADDRESS_UNIX_LISTEN),
    link(PIPE)(ADDRESS_NAMED_PIPE),
-   link(EXEC)(ADDRESS_EXEC), link(SYSTEM)(ADDRESS_SYSTEM)
+   link(EXEC)(ADDRESS_EXEC), link(SYSTEM)(ADDRESS_SYSTEM), link(SHELL)(ADDRESS_SHELL)
 label(ADDRESS_READLINE)dit(bf(tt(READLINE)))
    Uses GNU readline and history on stdio to allow editing and reusing input
    lines (link(example)(EXAMPLE_ADDRESS_READLINE)). This requires the GNU readline and 
@@ -1087,6 +1088,32 @@ label(ADDRESS_STDOUT)dit(bf(tt(STDOUT)))
    link(-U)(option_U), and link(dual addresses)(ADDRESS_DUAL).nl()
    Option groups: link(FD)(GROUP_FD) (link(TERMIOS)(GROUP_TERMIOS),link(REG)(GROUP_REG),link(SOCKET)(GROUP_SOCKET)) nl()
    See also: link(FD)(ADDRESS_FD)
+label(ADDRESS_SHELL)dit(bf(tt(SHELL:<shell-command>)))
+   Forks a sub process that establishes communication with its parent process
+   and invokes the specified program with the configured shell ($SHELL).
+   Note that <shell-command> [link(string)(TYPE_STRING)] must
+   not contain ',' or "!!", and that shell meta characters may have to be
+   protected.
+   After successful program start, socat() writes data to stdin of the 
+   process and reads from its stdout.nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(EXEC)(GROUP_EXEC),link(FORK)(GROUP_FORK),link(TERMIOS)(GROUP_TERMIOS) nl()
+   Useful options:
+   link(path)(OPTION_PATH),
+   link(fdin)(OPTION_FDIN),
+   link(fdout)(OPTION_FDOUT),
+   link(chroot)(OPTION_CHROOT),
+   link(su)(OPTION_SUBSTUSER),
+   link(su-d)(OPTION_SUBSTUSER_DELAYED),
+   link(nofork)(OPTION_NOFORK),
+   link(socktype)(OPTION_SO_TYPE),
+   link(pty)(OPTION_PTY),
+   link(stderr)(OPTION_STDERR),
+   link(ctty)(OPTION_CTTY),
+   link(setsid)(OPTION_SETSID),
+   link(pipes)(OPTION_PIPES),
+   link(sigint)(OPTION_SIGINT),
+   link(sigquit)(OPTION_SIGQUIT)nl()
+   See also: link(EXEC)(ADDRESS_EXEC), link(SYSTEM)(ADDRESS_SYSTEM)
 label(ADDRESS_SYSTEM)dit(bf(tt(SYSTEM:<shell-command>)))
    Forks a sub process that establishes communication with its parent process
    and invokes the specified program with code(system()). Please note that
@@ -1104,6 +1131,7 @@ label(ADDRESS_SYSTEM)dit(bf(tt(SYSTEM:<shell-command>)))
    link(su)(OPTION_SUBSTUSER),
    link(su-d)(OPTION_SUBSTUSER_DELAYED),
    link(nofork)(OPTION_NOFORK),
+   link(socktype)(OPTION_SO_TYPE),
    link(pty)(OPTION_PTY),
    link(stderr)(OPTION_STDERR),
    link(ctty)(OPTION_CTTY),
@@ -1112,7 +1140,7 @@ label(ADDRESS_SYSTEM)dit(bf(tt(SYSTEM:<shell-command>)))
    link(sigint)(OPTION_SIGINT),
    link(sigquit)(OPTION_SIGQUIT),
    link(netns)(OPTION_NETNS)nl()
-   See also: link(EXEC)(ADDRESS_EXEC)
+   See also: link(EXEC)(ADDRESS_EXEC), link(SHELL)(ADDRESS_SHELL)
 label(ADDRESS_TCP_CONNECT)dit(bf(tt(TCP:<host>:<port>)))
    Connects to <port> [link(TCP service)(TYPE_TCP_SERVICE)] on
    <host> [link(IP address)(TYPE_IP_ADDRESS)] using TCP/IP version 4 or 6
@@ -2163,6 +2191,7 @@ label(OPTION_SO_TYPE)dit(bf(tt(socktype=<type>)))
    [link(int)(TYPE_INT)]. Address resolution is not affected by this option.
    Under Linux, 1 means stream oriented socket, 2 means datagram socket, 3
    means raw socket, and 5 seqpacket (stream keeping packet boundaries).
+   Datagrams are useful when you want to keep packet boundaries.
 label(OPTION_SO_PROTOCOL)dit(bf(tt(protocol)))
    Sets the protocol of the socket, specified as third argument to the
    code(socket()) or code(socketpair()) calls, to <protocol>
@@ -2781,6 +2810,19 @@ label(OPTION_FDOUT)dit(bf(tt(fdout=<fdnum>)))
 label(OPTION_SIGHUP)label(OPTION_SIGINT)label(OPTION_SIGQUIT)dit(bf(tt(sighup)), bf(tt(sigint)), bf(tt(sigquit)))
    Has socat() pass signals of this type to the sub process.
    If no address has this option, socat terminates on these signals.
+enddit()
+
+startdit()enddit()nl()
+
+
+label(GROUP_SHELL)
+
+Options for link(address SHELL)(ADDRESS_SHELL)
+
+label(OPTION_SHELL)dit(bf(tt(shell=<filename>)))
+   Overwrites use the default shell with the named executable, e.g.
+   tt(/bin/dash). Also sets the tt(SHELL) environment variable.
+
 enddit()
 
 startdit()enddit()nl()
@@ -4409,8 +4451,8 @@ temporary versions; can be used in scripts invoked by socat.
 
 dit(bf(SOCAT_PID) (output)) Socat sets this variable to its process id. In case
 of link(fork)(OPTION_FORK) address option, SOCAT_PID gets the child processes
-id. Forking for link(exec)(ADDRESS_EXEC) and link(system)(ADDRESS_SYSTEM) does
-not change SOCAT_PID.
+id. Forking for link(exec)(ADDRESS_EXEC), link(system)(ADDRESS_SYSTEM), and
+link(SHELL)(ADDRESS_SHELL) does not change SOCAT_PID.
 
 dit(bf(SOCAT_PPID) (output)) Socat sets this variable to its process id. In
 case of link(fork)(OPTION_FORK), SOCAT_PPID keeps the pid of the master process.
@@ -4506,8 +4548,8 @@ link(su-d)(OPTION_SUBSTUSER_DELAYED), SHELL is set to the login shell of the
 given user.
 
 dit(bf(PATH) (output))
-Can be set with option link(path)(OPTION_PATH) for link(exec)(ADDRESS_EXEC) and
-link(system)(ADDRESS_SYSTEM) addresses.
+Can be set with option link(path)(OPTION_PATH) for link(exec)(ADDRESS_EXEC),
+link(system)(ADDRESS_SYSTEM), and link(SHELL)(ADDRESS_SHELL) addresses.
 
 dit(bf(HOME) (output))
 With options link(su)(OPTION_SUBSTUSER) and
