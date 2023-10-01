@@ -2397,23 +2397,39 @@ label(OPTOIN_IP_TRANSPARENT)
 dit(bf(tt(ip-transparent)))
    Sets the IP_TRANSPARENT socket option.
    This option might require root privilege.
+enddit()
+
+startdit()enddit()nl()
+
+label(OPTIONS_RESOLVER)em(bf(Resolver options))
+
+These options temporarily change the behaviour of hostname resolution. The
+options of form code(ai-*) affect behaviour of the code(getaddrinfo()) function that
+includes code(/etc/hosts) and NIS based lookups.
+
+The addresses of form code(res-*) only affect DNS lookups, and only when the
+result is not cached in code(nscd). These options might not work on all
+operating systems or libc implementations.
+
+startdit()
 label(OPTION_AI_ADDRCONFIG)
-dit(bf(tt(ai-addrconfig[=0|1]))), dit(bf(tt(addrconfig[=0|1])))
+dit(bf(tt(ai-addrconfig[=0|1]))) dit(bf(tt(addrconfig[=0|1])))
    Sets or unsets the AI_ADDRCONFIG flag to prevent name resolution to address
    families that are not available on the computer (e.g. IPv6). Default value
    is 1 in case the resolver does not get an address family hint from Socat
    address or defaults.
 label(OPTION_AI_PASSIVE)
-dit(bf(tt(ai-passive[=0|1]))), dit(bf(tt(passive[=0|1])))
-   Sets of unsets the AI_ADDRCONFIG flag for code(getaddrinfo()) calls.
+dit(bf(tt(ai-passive[=0|1]))) dit(bf(tt(passive[=0|1])))
+   Sets of unsets the AI_PASSIVE flag for code(getaddrinfo()) calls.
    Default is 1 for LISTEN, RECV, and RECVFROM type addresses, and with
    link(bind)(OPTION_BIND) option. 
 label(OPTION_AI_V4MAPPED)
-dit(bf(tt(ai-v4mapped[=0|1]))), dit(bf(tt(v4mapped[=0|1])))
+dit(bf(tt(ai-v4mapped[=0|1]))) dit(bf(tt(v4mapped[=0|1])))
    Sets or unsets the AI_V4MAPPED flag for code(getaddrinfo()). With socat()
    addresses requiring IPv6 addresses, this resolves IPv4 addresses to the
    approriate IPv6 address [::ffff:*:*]. For IPv6 Socat addresses, the default
    is 1.
+
 label(OPTION_RES_DEBUG)dit(bf(tt(res-debug)))
 label(OPTION_RES_AAONLY)dit(bf(tt(res-aaonly)))
 label(OPTION_RES_USEVC)dit(bf(tt(res-usevc)))
@@ -2437,6 +2453,12 @@ label(OPTION_RES_RETRANS)dit(bf(tt(res-retrans=<int>)))
 label(OPTION_RES_RETRY)dit(bf(tt(res-retry=<int>)))
    Sets the number of retransmits of the DNS resolver (based on an undocumented
    feature).
+label(OPTION_RES_NSADDR)dit(bf(tt(res-nsaddr=<ipaddr>[:<port>])))
+   Tries to overwrite nameserver settings loaded from /etc/resolv.conf by
+   writing the given IPv4 address into the undocumented
+   code(_res:nsaddr_list[0]) field.
+   code(/etc/hosts) is still checked by resolver. Please note that glibc's
+   code(nscd) is always queried first when it is running!
 enddit()
 
 startdit()enddit()nl()
@@ -2707,6 +2729,7 @@ label(OPTION_ACCEPT_TIMEOUT)dit(bf(tt(accept-timeout=<seconds>)))
    End waiting for a connection after <seconds> [link(timeval)(TYPE_TIMEVAL)]
    with error status.
 enddit()
+
 startdit()enddit()nl()
 
 
@@ -2826,6 +2849,7 @@ label(GROUP_SHELL)
 
 Options for link(address SHELL)(ADDRESS_SHELL)
 
+startdit()
 label(OPTION_SHELL)dit(bf(tt(shell=<filename>)))
    Overwrites use the default shell with the named executable, e.g.
    tt(/bin/dash). Also sets the tt(SHELL) environment variable.
@@ -3217,6 +3241,7 @@ measures are required to get the VLAN information, see NOEXPAND(packet(7)) PACKE
 and to optionally insert the tag into the packet again, use option
 link(retrieve-vlan)(OPTION_RETRIEVE_VLAN) when you need this.
 
+startdit()
 label(OPTION_RETRIEVE_VLAN)dit(bf(tt(retrieve-vlan)))
    On packets incoming on raw sockets, retrieve the VLAN information and insert
    it into the packets for further processing (Linux)

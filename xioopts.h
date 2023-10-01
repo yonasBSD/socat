@@ -68,6 +68,7 @@ enum e_types {
    TYPE_INT_INT_GENERIC,	/* 3 params: first and second are int, 3rd is specified by value (dalan syntax) */
 
    TYPE_IP4NAME,	/* IPv4 hostname or address */
+   TYPE_IP4SOCK,	/* IPv4 hostname or address optionally with port */
 #if HAVE_STRUCT_LINGER
    TYPE_LINGER,		/* struct linger */
 #endif /* HAVE_STRUCT_LINGER */
@@ -628,6 +629,7 @@ enum e_optcode {
    OPT_RES_DEFNAMES,	/* resolver(3) */
    OPT_RES_DNSRCH,	/* resolver(3) */
    OPT_RES_IGNTC,	/* resolver(3) */
+   OPT_RES_NSADDR,	/* undocumented */
    OPT_RES_PRIMARY,	/* resolver(3) */
    OPT_RES_RECURSE,	/* resolver(3) */
    OPT_RES_RETRANS,	/* undocumented */

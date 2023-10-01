@@ -2156,6 +2156,12 @@ AC_TRY_COMPILE([#include <resolv.h>],
 [AC_MSG_RESULT(yes);
  AC_DEFINE(HAVE_RES_RETRY, 1)],
  [AC_MSG_RESULT(no)])
+AC_MSG_CHECKING(for _res.nsaddr_list)
+AC_TRY_COMPILE([#include <resolv.h>],
+[_res.nsaddr_list[0].sin_family == 0],
+[AC_MSG_RESULT(yes);
+ AC_DEFINE(HAVE_RES_NSADDR_LIST, 1)],
+ [AC_MSG_RESULT(no)])
 
 
 dnl "tcpd" "tcpwrappers"

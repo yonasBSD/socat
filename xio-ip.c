@@ -116,6 +116,9 @@ const struct optdesc opt_res_retrans  = { "res-retrans",  "retrans",  OPT_RES_RE
 #if HAVE_RES_RETRY
 const struct optdesc opt_res_retry    = { "res-retry",    NULL,       OPT_RES_RETRY,    GROUP_SOCK_IP, PH_OFFSET, TYPE_INT,  OFUNC_OFFSET,       XIO_OFFSETOF(para.socket.ip.res.retry),   XIO_SIZEOF(para.socket.ip.res.retry),   RES_MAXRETRY };
 #endif
+#if HAVE_RES_NSADDR_LIST
+const struct optdesc opt_res_nsaddr   = { "res-nsaddr",   "dns",      OPT_RES_NSADDR,   GROUP_SOCK_IP, PH_OFFSET, TYPE_IP4SOCK, OFUNC_OFFSET,    XIO_OFFSETOF(para.socket.ip.res.nsaddr),  XIO_SIZEOF(para.socket.ip.res.retry),   RES_MAXRETRY };
+#endif
 #endif /* HAVE_RESOLV_H */
 #endif /* WITH_RESOLVE */
 #endif /* WITH_IP4 || WITH_IP6 */
@@ -139,7 +142,9 @@ int xioinit_ip(
 	return 0;
 }
 
+
 #if HAVE_RESOLV_H
+
 int Res_init(void) {
    int result;
    Debug("res_init()");
@@ -147,13 +152,9 @@ int Res_init(void) {
    Debug1("res_init() -> %d", result);
    return result;
 }
+
 #endif /* HAVE_RESOLV_H */
 
-#if HAVE_RESOLV_H
-unsigned long res_opts() {
-   return _res.options;
-}
-#endif /* HAVE_RESOLV_H */
 
 /* the ultimate(?) socat resolver function
  node: the address to be resolved; supported forms:
@@ -1015,7 +1016,18 @@ int xio_res_init(
 	struct __res_state *save_res)
 {
 	if (sfd->para.socket.ip.res.opts[0] ||
-	    sfd->para.socket.ip.res.opts[1]) {
+	    sfd->para.socket.ip.res.opts[1] ||
+#if HAVE_RES_RETRANS
+	    sfd->para.socket.ip.res.retrans >= 0 ||
+#endif
+#if HAVE_RES_RETRY
+	    sfd->para.socket.ip.res.retry >= 0 ||
+#endif
+#if HAVE_RES_NSADDR_LIST
+	    sfd->para.socket.ip.res.nsaddr.sin_family != PF_UNSPEC ||
+#endif
+	    0 	/* for canonical reasons */
+		) {
 		if (!(_res.options & RES_INIT)) {
 			if (Res_init() < 0) {
 				Error("res_init() failed");
@@ -1027,8 +1039,44 @@ int xio_res_init(
 		_res.options &= ~sfd->para.socket.ip.res.opts[1];
 		Debug2("changed _res.options from 0x%lx to 0x%lx",
 		       save_res->options, _res.options);
+
+#if HAVE_RES_RETRANS
+		if (sfd->para.socket.ip.res.retrans >= 0) {
+			_res.retrans = sfd->para.socket.ip.res.retrans;
+			Debug2("changed _res.retrans from 0x%x to 0x%x",
+			       save_res->retrans, _res.retrans);
+		}
+#endif
+#if HAVE_RES_RETRY
+		if (sfd->para.socket.ip.res.retry >= 0) {
+			_res.retry = sfd->para.socket.ip.res.retry;
+			Debug2("changed _res.retry from 0x%x to 0x%x",
+			       save_res->retry, _res.retry);
+		}
+#endif
+#if HAVE_RES_NSADDR_LIST
+		if (sfd->para.socket.ip.res.nsaddr.sin_family == PF_INET) {
+			_res.nscount = 1;
+			_res.nsaddr_list[0] = sfd->para.socket.ip.res.nsaddr;
+			if (_res.nsaddr_list[0].sin_port == htons(0))
+				_res.nsaddr_list[0].sin_port = htons(53);
+			Debug10("changed _res.nsaddr_list[0] from %u.%u.%u.%u:%u to %u.%u.%u.%u:%u",
+				((unsigned char *)&save_res->nsaddr_list[0].sin_addr.s_addr)[0],
+				((unsigned char *)&save_res->nsaddr_list[0].sin_addr.s_addr)[1],
+				((unsigned char *)&save_res->nsaddr_list[0].sin_addr.s_addr)[2],
+				((unsigned char *)&save_res->nsaddr_list[0].sin_addr.s_addr)[3],
+				ntohs(save_res->nsaddr_list[0].sin_port),
+				((unsigned char *)&_res.nsaddr_list[0].sin_addr.s_addr)[0],
+				((unsigned char *)&_res.nsaddr_list[0].sin_addr.s_addr)[1],
+				((unsigned char *)&_res.nsaddr_list[0].sin_addr.s_addr)[2],
+				((unsigned char *)&_res.nsaddr_list[0].sin_addr.s_addr)[3],
+				ntohs(_res.nsaddr_list[0].sin_port));
+		}
+#endif /* HAVE_RES_NSADDR_LIST */
+
 		return 1;
 	}
+
 	return 0;
 }
 

@@ -143,6 +143,10 @@ struct para_ip_res {
 #if HAVE_RES_RETRY
 	int	 retry;
 #endif
+#if HAVE_RES_NSADDR_LIST
+#	undef nsaddr 	/* resolv.h might define this, breaks debugger */
+	struct sockaddr_in nsaddr;
+#endif
 } ;
 #endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
@@ -423,6 +427,7 @@ union integral {
 #endif /* HAVE_STRUCT_TIMESPEC */
 #if WITH_IP4
    struct in_addr  u_ip4addr;
+   struct sockaddr_in  u_ip4sock;
 #endif
 } ;
 

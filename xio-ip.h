@@ -44,6 +44,7 @@ extern const struct optdesc opt_res_stayopen;
 extern const struct optdesc opt_res_dnsrch;
 extern const struct optdesc opt_res_retrans;
 extern const struct optdesc opt_res_retry;
+extern const struct optdesc opt_res_nsaddr;
 
 extern int xioinit_ip(int *pf, char ipv);
 

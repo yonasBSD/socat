@@ -430,6 +430,9 @@ const struct optname optionnames[] = {
 #ifdef VDISCARD
 	IF_TERMIOS("discard",	&opt_vdiscard)
 #endif
+#if HAVE_RES_NSADDR_LIST
+	IF_IP     ("dns",		&opt_res_nsaddr)
+#endif
 #if HAVE_RESOLV_H
 	IF_RESOLVE("dnsrch",		&opt_res_dnsrch)
 #endif /* HAVE_RESOLV_H */
@@ -1020,6 +1023,9 @@ const struct optname optionnames[] = {
 	IF_IP     ("multicast-ttl",	&opt_ip_multicast_ttl)
 	IF_IP     ("multicastloop",	&opt_ip_multicast_loop)
 	IF_IP     ("multicastttl",	&opt_ip_multicast_ttl)
+#if HAVE_RES_NSADDR_LIST
+	IF_IP     ("nameserver",	&opt_res_nsaddr)
+#endif
 #if defined(O_NDELAY) && (!defined(O_NONBLOCK) || O_NDELAY != O_NONBLOCK)
 	IF_ANY    ("ndelay",	&opt_o_ndelay)
 #else
@@ -1085,6 +1091,9 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("nosni",		&opt_openssl_no_sni)
 #endif
 	IF_INTERFACE("notrailers",	&opt_iff_notrailers)
+#if HAVE_RES_NSADDR_LIST
+	IF_IP     ("nsaddr",		&opt_res_nsaddr)
+#endif
 #ifdef O_NSHARE
 	IF_OPEN   ("nshare",	&opt_o_nshare)
 #endif
@@ -1425,6 +1434,9 @@ const struct optname optionnames[] = {
 #  endif
 #  if HAVE_RES_RETRY
 	IF_RESOLVE("res-maxretry",	&opt_res_retry)
+#  endif
+#  if HAVE_RES_NSADDR_LIST
+	IF_IP     ("res-nsaddr",	&opt_res_nsaddr)
 #  endif
 #  if WITH_RES_PRIMARY
 	IF_RESOLVE("res-primary",	&opt_res_primary)
@@ -2630,6 +2642,7 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 #if WITH_IP4
       case TYPE_IP4NAME:
 	 {
+	    /*! On a good day merge this with code in retropt_bind() */
 	    struct sockaddr_in sa;  socklen_t salen = sizeof(sa);
 	    const char *ends[] = { NULL };
 	    const char *nests[] = { "[","]", NULL };
@@ -2657,6 +2670,40 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	       opt->desc = ODESC_ERROR; continue;
 	    }
 	    opt->value.u_ip4addr = sa.sin_addr;
+	 }
+	 break;
+      case TYPE_IP4SOCK:
+	 {
+	    /*! On a good day merge this with code for TYPE_IP4NAME */
+	    struct sockaddr_in sa;  socklen_t salen = sizeof(sa);
+	    const char portsep[] = ":";
+	    const char *ends[] = { portsep, NULL };
+	    const char *nests[] = { "[","]", NULL };
+	    char hostname[512], *hostp = hostname, *portp = NULL;
+	    size_t hostlen = sizeof(hostname)-1;
+
+	    tokp = token;
+	    parsres =
+	    nestlex((const char **)&tokp, &hostp, &hostlen,
+		    ends, NULL, NULL, nests,
+		    true, false, false);
+	    if (parsres < 0) {
+	       Error1("option too long:  \"%s\"", *a);
+	       return -1;
+	    } else if (parsres > 0) {
+	       Error1("syntax error in \"%s\"", *a);
+	       return -1;
+	    }
+	    *hostp++ = '\0';
+	    if (!strncmp(tokp, portsep, strlen(portsep))) {
+	       portp = tokp + strlen(portsep);
+	    }
+	    if (xioresolve(hostname, portp, AF_INET, SOCK_DGRAM, IPPROTO_IP,
+			   (union sockaddr_union *)&sa, &salen, 0)
+		!= STAT_OK) {
+	       opt->desc = ODESC_ERROR; continue;
+	    }
+	    opt->value.u_ip4sock = sa;
 	 }
 	 break;
 #endif /* defined(WITH_IP4) */
@@ -4131,6 +4178,15 @@ static int applyopt_offset(struct single *sfd, struct opt *opt) {
       break;
    case TYPE_CONST:
       *(int *)ptr = opt->desc->minor;
+      break;
+   case TYPE_IP4NAME:
+      memset(ptr, 0, sizeof(struct sockaddr_in));
+      ((struct sockaddr_in *)ptr)->sin_addr   = opt->value.u_ip4addr;
+      ((struct sockaddr_in *)ptr)->sin_family = PF_INET;
+      break;
+   case TYPE_IP4SOCK:
+      memset(ptr, 0, sizeof(struct sockaddr_in));
+      *(struct sockaddr_in *)ptr = opt->value.u_ip4sock;
       break;
    default:
       Error2("applyopt_offset(opt:%s): type %s not implemented",

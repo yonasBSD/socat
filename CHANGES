@@ -140,6 +140,9 @@ Features:
 	number of times to retransmit.
 	Disable them and the old res-* opts with: ./configure --disable-resolve
 
+	Added option res-nsaddr that overrides /etc/resolv.conf nameserver
+	address based on an undocumented resolver feature.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

@@ -17287,6 +17287,80 @@ esac
 N=$((N+1))
 
 
+# Test the res-nsaddr (resolver, dns) option
+NAME=RES_NSADDR
+case "$TESTS" in
+*%$N%*|*%functions%*|*%resolv%*|*%ip4%*|*%tcp4%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test the res-nsaddr option"
+# Start a supplementary Socat instance that will receive the DNS query.
+# Run main Socat process, opening an IPv4 socket with option res-nsaddr
+# directed to the aux process.
+# When the supplementary Socat instance received the query the test succeeded.
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO IP4 UDP TCP); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO TCP4 UDP-RECVFROM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions res-nsaddr) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available on host${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="$(echo test$N $(date) $RANDOM |tr ' :' '-')"
+echo "$da" >"$td/test$N.da"
+newport udp4 	# or whatever proto, or drop this line
+CMD0="$TRACE $SOCAT $opts -u UDP-RECVFROM:$PORT -"
+CMD1="$TRACE $SOCAT $opts - TCP4:$da:0,res-nsaddr=$LOCALHOST:$PORT"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" >"${tf}0" &
+pid0=$!
+waitudp4port $PORT 1
+$CMD1 >"${tf}1" 2>"${te}1"
+rc1=$?
+kill $pid0 2>/dev/null; wait
+if grep "$da" "${tf}0" >/dev/null; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+elif pgrep -u root nscd >/dev/null 2>&1; then
+    $PRINTF "${YELLOW}FAILED (due to nscd?)${NORMAL}\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCAnT="$namesCANT $NAME"
+else
+    $PRINTF "$FAILED (query not received)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -17502,6 +17576,7 @@ elif [ ??? ]; then
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
 else
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi

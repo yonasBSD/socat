@@ -22,7 +22,7 @@ static const char *optiontypenames[] = {
 	"OFF64_T",	"INT:INT",	"INT:INTP",	"INT:BIN",
 	"INT:STRING",	"INT:INT:INT",	"INT:INT:BIN",	"INT:INT:STRING",
 	"INT:INT:GENERIC",
-	"IP4NAME",
+	"IP4NAME",	"IP4SOCK",
 #if HAVE_STRUCT_LINGER
 			"STRUCT-LINGER",
 #endif
