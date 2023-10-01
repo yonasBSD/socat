@@ -612,7 +612,7 @@ int xiotype_ip6_join_source_group(
 	 opt->value3.u_string/*srcaddr*/);
 
    if (!xioparms.experimental) {
-      Warn("option ipv6-join-source-group is experimental");
+      Warn1("option %s is experimental", opt->desc->defname);
    }
 
    return 0;

@@ -309,7 +309,9 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("cert",	&opt_openssl_certificate)
 	IF_OPENSSL("certificate",	&opt_openssl_certificate)
 	IF_TERMIOS("cfmakeraw",		&opt_termios_cfmakeraw)
+#if WITH_LISTEN
 	IF_ANY    ("children-shutup",	&opt_children_shutup)
+#endif
 	IF_ANY    ("chroot",	&opt_chroot)
 	IF_ANY    ("chroot-early",	&opt_chroot_early)
 	/*IF_TERMIOS("cibaud",	&opt_cibaud)*/
@@ -2593,7 +2595,7 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	 break;
 #endif
 
-#if HAVE_STRUCT_GROUP_SOURCE_REQ
+#if WITH_IP6 && HAVE_STRUCT_GROUP_SOURCE_REQ
       case TYPE_GROUP_SOURCE_REQ:
 	 xiotype_ip6_join_source_group(token, ent, opt);
 	 break;
@@ -3831,7 +3833,7 @@ int applyopt(
 #if _WITH_INTERFACE
 	 case OPT_RETRIEVE_VLAN:
 	    if (!xioparms.experimental) {
-	       Warn("option retrieve-vlan is experimental");
+	       Warn1("option %s is experimental", opt->desc->defname);
 	    }
 	    if (_interface_setsockopt_auxdata(fd, 1) < 0) {
 	       return -1;
@@ -3953,8 +3955,8 @@ int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to) {
 int applyopts_optgroup(
 	int fd,
 	struct opt *opts,
-	unsigned int from, 	/* -1: from first phase, not in order */
-	unsigned int to, 	/* -1: to last phase, not in order */
+	int from, 	/* -1: from first phase, not in order */
+	int to, 	/* -1: to last phase, not in order */
 	groups_t groups)
 {
 	struct opt *opt = opts;

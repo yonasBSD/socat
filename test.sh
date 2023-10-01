@@ -71,7 +71,7 @@ while [ "$1" ]; do
 	X-N?*) NUMCOND="test \$N -gt ${1#-N}" ;;
 	X-N)   shift; NUMCOND="test \$N -ge $1" ;;
 	X-C)   rm -f testcert*.conf testcert.dh testcli*.* testsrv*.* ;;
-	X-foreign)	FOREIGN=1 ;; 	# allow access to 3rd party Internet hosts
+	X-foreign|X--foreign)	FOREIGN=1 ;; 	# allow access to 3rd party Internet hosts
 	X-expect-fail|X--expect-fail) OPT_EXPECT_FAIL=1; shift; EXPECT_FAIL="$1" ;;
 	X-*)   echo "Unknown option \"$1\"" >&2
                usage >&2
@@ -134,6 +134,22 @@ fi
 SOCAT_VERSION=$(SOCAT_MAIN_WAIT= $SOCAT -V |head -n 2 |tail -n 1 |sed 's/.* \([0-9][1-9]*\.[0-9][0-9]*\.[0-9][^[:space:]]*\).*/\1/')
 if [ -z "$SOCAT_VERSION" ]; then
     echo "Warning: failed to retrieve Socat version" >&2
+fi
+
+if type ip >/dev/null 2>&1; then
+    if ip -V |grep -q -i -e "^ip utility, iproute2-" -e BusyBox; then
+	IP=$(type -p ip)
+    else
+	unset IP
+    fi
+fi
+
+if type ss >/dev/null 2>&1; then
+    if ss -V |grep -q "^ss utility, iproute2-"; then
+	SS=$(type -p ss)
+    else
+	unset SS
+    fi
 fi
 
 # for some tests we need a network interface
@@ -352,22 +368,6 @@ if [ "$SUDO_USER" ]; then
     SUBSTUSER="$SUDO_USER"
 else
     SUBSTUSER="$(grep -v '^[^:]*:^[^:]*:0:' /etc/passwd |tail -n 1 |cut -d: -f1)"
-fi
-
-if type ip >/dev/null 2>&1; then
-    if ip -V |grep -q "^ip utility, iproute2-"; then
-	IP=$(type -p ip)
-    else
-	unset IP
-    fi
-fi
-
-if type ss >/dev/null 2>&1; then
-    if ss -V |grep -q "^ss utility, iproute2-"; then
-	SS=$(type -p ss)
-    else
-	unset SS
-    fi
 fi
 
 if [ -z "$SS" ]; then
@@ -4458,7 +4458,7 @@ N=$((N+1))
 NAME=READLINE
 #set -vx
 case "$TESTS" in
-*%$N%*|*%functions%*|*%pty%*|*%readline%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%pty%*|*%readline%*|*%sigint%*|*%$NAME%*)
 TEST="$NAME: readline with password and sigint"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats readline pty); then
@@ -8462,23 +8462,27 @@ kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
     echo "$CMD1 &"
+    cat "${te}1" >&2
     echo "$CMD2"
-    cat "${te}1"
-    cat "${te}2"
+    cat "${te}2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
     $PRINTF "$FAILED\n"
-    cat "$tdiff"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo diff: >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-    if [ -n "$VERBOSE" ]; then
-	echo "$CMD1 &"
-	echo "$CMD2"
-    fi
-    if [ -n "$debug" ]; then cat $te; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND
@@ -14751,6 +14755,7 @@ TEST="$NAME: UDP4-SEND with lowport"
 # succeeded.
 # This test does not require root because it just checks log of bind() but does
 # not require success
+# This test fails if WITH_SYCLS is turned off
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
@@ -14766,13 +14771,18 @@ LOWPORT=$(grep '[DE] bind(.*:' $te |sed 's/.*:\([0-9][0-9]*\)[}]*,.*/\1/' |head 
 #type socat >&2
 if  [[ $LOWPORT =~ [0-9][0-9]* ]] && [ "$LOWPORT" -ge 640 -a "$LOWPORT" -le 1023 ]; then
     $PRINTF "$OK\n"
-    if [ "$VERBOSE" ]; then
-	echo "$CMD" >&2
-    fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+elif $SOCAT -V |grep -q "undef WITH_SYCLS"; then
+    $PRINTF "$CANT (no SYCLS)\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
     $PRINTF "$FAILED\n"
-    echo "$CMD" >&2
+    echo "$CMD"
     cat "${te}" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -15785,8 +15795,8 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%exec%*|*%fork%*|*%socket%*|*%unix%*|*%$NAME%*)
 TEST="$NAME: test the children-shutup option"
 # Run a UNIX domain listening server with options fork and children-shutup, and
-# an TCP client to invalid port that will fail.
-# Connect to the server and check if it logs the connect failure as warning.
+# that connects to a closed TCP4 port.
+# Connect to the server and check if it logs the TCP4-CONNECT failure as warning.
 if ! eval $NUMCOND; then :;
 elif ! F=$(testfeats UNIX LISTEN EXEC FILE); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
@@ -15813,7 +15823,7 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 waitunixport $ts 1
-$CMD1 2>"${te}1"
+{ $CMD1 2>"${te}1"; sleep 1; }
 rc1=$?
 kill $pid0 2>/dev/null; wait
 relsleep 1 	# child process might need more time
@@ -17046,6 +17056,60 @@ else
     cat "${te}1" >&2
     echo "difference:" >&2
     cat ${tdiff}0 >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
+# Test the sigint option
+NAME=EXEC_SIGINT
+case "$TESTS" in
+*%$N%*|*%functions%*|*%socket%*|*%exec%*|*%sigint%*|*%$NAME%*)
+TEST="$NAME: sigint option with EXEC"
+# Run Socat with an EXEC address invoking Socat, with option sigint
+# Send the parent a SIGINT; when the child gets SIGINT too (vs.SIGTERM)
+# the test succeeded
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! F=$(testfeats STDIO EXEC PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO EXEC PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions setsid sigint) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts -T 1 PIPE EXEC:cat,setsid,sigint"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+relsleep 2
+kill -INT $pid0
+wait
+if grep -q " W waitpid..: child .* exited with status 130" "${te}0" ||
+   grep -q " W waitpid..: child .* exited on signal 2" "${te}0"; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
     namesFAIL="$namesFAIL $NAME"

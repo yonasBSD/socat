@@ -517,12 +517,18 @@ static int xioopen_socks5(
 	char infobuff[256];
 
 	if (!xioparms.experimental) {
-		Error1("%s: requires option --experimental", argv[0]);
+		Error1("%s: use option --experimental to acknowledge unmature state", argv[0]);
 		return STAT_NORETRY;
 	}
 	if (argc != 5) {
-		Error1("%s: 4 parameters required like :<socks-server>:<socks-port>:<target-server>:<target-port>",
-		       argv[0]);
+#if WITH_HELP
+		Error2("%s: 4 parameters required like %s", argv[0],
+		       socks_command==SOCKS5_COMMAND_CONNECT ?
+		       xioaddr_socks5_connect.syntax :
+		       xioaddr_socks5_listen.syntax);
+#else
+		Error1("%s: 4 parameters required", argv[0]);
+#endif
 		return STAT_NORETRY;
 	}
 

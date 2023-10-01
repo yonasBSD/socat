@@ -399,12 +399,14 @@ int main(int argc, const char *argv[]) {
 	 }
       }
 
+#if WITH_STATS
 #if HAVE_SIGACTION
       act.sa_handler = socat_signal_logstats;
       Sigaction(SIGUSR1, &act, NULL);
 #else
       Signal(SIGUSR1, socat_signal_logstats);
 #endif
+#endif /* WITH_STATS */
    }
    Signal(SIGPIPE, SIG_IGN);
 
@@ -419,9 +421,11 @@ int main(int argc, const char *argv[]) {
    }
 
    Atexit(socat_unlock);
+#if WITH_STATS
    if (socat_opts.statistics) {
       Atexit(socat_print_stats);
    }
+#endif /* WITH_STATS */
 
    result = socat(arg1[0], arg1[1]);
    if (result == EXIT_SUCCESS && engine_result != EXIT_SUCCESS) {

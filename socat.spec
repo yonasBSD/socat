@@ -49,6 +49,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc README CHANGES EXAMPLES SECURITY doc/socat.html FAQ BUGREPORTS
 %doc COPYING COPYING.OpenSSL FILES PORTING DEVELOPMENT
 %{_bindir}/socat1
+%{_bindir}/socat
 %{_bindir}/procan
 %{_bindir}/filan
 %{_mandir}/man1/socat1.1

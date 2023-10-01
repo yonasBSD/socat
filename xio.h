@@ -95,7 +95,7 @@ enum xiotag {
 } ;
 
 /* Keep condition consistent with xioopts.h:GROUP_*! */
-#if WITH_SCTP
+#if WITH_SCTP || WITH_POSIXMQ
 typedef uint64_t groups_t;
 #define F_groups_t F_uint64_x
 #else
@@ -327,7 +327,7 @@ typedef union bipipe {
       enum xiotag tag;
       const struct addrdesc *addr;
       int         flags;
-   } common;
+   } common; 	/* "bipipe.common" */
    struct single  stream;
    struct {
       enum xiotag tag;

@@ -14,7 +14,7 @@
 /* keep consistent with xioopts.h:enum e_types ! */
 static const char *optiontypenames[] = {
 	"CONST",	"BIN",		"BOOL",		"BYTE",
-	"INT",		"LONG",		"STRING",	"PTRDIFF",
+	"INT",		"INT/NULL",	"LONG",		"STRING",	"PTRDIFF",
 	"SHORT",	"SIZE_T",	"SOCKADDR",	"UNSIGNED-INT",
 	"UNSIGNED-LONG","UNSIGNED-SHORT","MODE_T",	"GID_T",
 	"UID_T",	"INT[3]",	"STRUCT-TIMEVAL", "STRUCT-TIMESPEC",
@@ -23,7 +23,6 @@ static const char *optiontypenames[] = {
 	"INT:STRING",	"INT:INT:INT",	"INT:INT:BIN",	"INT:INT:STRING",
 	"INT:INT:GENERIC",
 	"IP4NAME",
-
 #if HAVE_STRUCT_LINGER
 			"STRUCT-LINGER",
 #endif
@@ -49,7 +48,7 @@ static const char *addressgroupnames[] = {
 	"UNIX",		"IP4",		"IP6",		"INTERFACE",
 	"UDP",		"TCP",		"SOCKS4",	"OPENSSL",
 	"PROCESS",	"APPL",		"HTTP",		"undef",
-	"SCTP"
+	"SCTP",		"POSIXMQ"
 } ;
 
 /* keep consistent with xioopts.h:enum ephase ! */
@@ -66,7 +65,8 @@ static char *optionphasenames[] = {
 	"CONNECTED",
 	"PREFORK",	"FORK",		"PASTFORK",
 	"LATE",		"LATE2",
-	"PREEXEC",	"EXEC",		"SPECIFIC",
+	"PREEXEC",	"EXEC",		"PASTEXEC",
+	"SPECIFIC",
 	NULL
 } ;
 

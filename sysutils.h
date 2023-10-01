@@ -30,7 +30,7 @@ union sockaddr_union {
 #if WITH_VSOCK
    struct sockaddr_vm vm;
 #endif /* WITH_IP6 */
-#if WITH_INTERFACE
+#if _WITH_INTERFACE
    struct sockaddr_ll ll;
 #endif
 } ;

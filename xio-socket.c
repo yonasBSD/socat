@@ -1524,7 +1524,7 @@ int xiodopacketinfo(
 			      valbuff, sizeof(valbuff)-1);
 	 break;
 #endif /* WITH_IP6 */
-#if HAVE_STRUCT_CMSGHDR && HAVE_STRUCT_TPACKET_AUXDATA
+#if _WITH_INTERFACE && HAVE_STRUCT_CMSGHDR && HAVE_STRUCT_TPACKET_AUXDATA
       case SOL_PACKET:
 	 xiolog_ancillary_packet(sfd, cmsg, &num, typbuff, sizeof(typbuff)-1,
 			      nambuff, sizeof(nambuff)-1,

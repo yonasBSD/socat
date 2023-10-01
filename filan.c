@@ -412,8 +412,12 @@ int filan_stat(
 	{
 	   char linktarget[PATH_MAX+1];
 	   memset(linktarget, 0, PATH_MAX+1);
-	   Readlink(filename, linktarget, PATH_MAX);
-	   fprintf(outfile, "LINKTARGET=%s", linktarget);
+	   if (Readlink(filename, linktarget, PATH_MAX) < 0) {
+	      Warn3("readlink(\"%s\", linktarget, %d): %s",
+		    filename, PATH_MAX, strerror(errno));
+	   } else {
+	      fprintf(outfile, "LINKTARGET=%s", linktarget);
+	   }
 	}
 	break;
 #endif /* S_IFLNK */

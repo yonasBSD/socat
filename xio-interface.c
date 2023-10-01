@@ -47,7 +47,7 @@ const struct optdesc opt_iff_automedia   = { "iff-automedia",   "automedia",   O
 #endif
 /*const struct optdesc opt_iff_dynamic   = { "iff-dynamic",     "dynamic",     OPT_IFF_DYNAMIC,     GROUP_INTERFACE, PH_OFFSET, TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.interface.iff_opts), XIO_SIZEOF(short), IFF_DYNAMIC };*/
 #ifdef PACKET_AUXDATA
-const struct optdesc opt_retrieve_vlan   = { "retrieve-vlan",   NULL,          OPT_RETRIEVE_VLAN,   GROUP_INTERFACE, PH_LATE, TYPE_INT,      OFUNC_SPEC };
+const struct optdesc opt_retrieve_vlan   = { "retrieve-vlan",   NULL,          OPT_RETRIEVE_VLAN,   GROUP_INTERFACE, PH_LATE, TYPE_CONST,    OFUNC_SPEC };
 #endif
 #if LATER
 const struct optdesc opt_route           = { "route",           NULL,          OPT_ROUTE,           GROUP_INTERFACE, PH_INIT, TYPE_STRING,   OFUNC_SPEC };

@@ -58,6 +58,7 @@ static int xioopen_posixmq(
 
 	if (!xioparms.experimental) {
 		Error1("%s: use option --experimental to acknowledge unmature state", argv[0]);
+		return STAT_NORETRY;
 	}
 	if (argc != 2) {
 		Error2("%s: wrong number of parameters (%d instead of 1)",
@@ -210,9 +211,11 @@ static int xioopen_posixmq(
 				;
 		}
 
+#if WITH_RETRY
 		if (with_intv) {
 			Nanosleep(&sfd->intervall, NULL);
 		}
+#endif
 
 		/* now we are ready to handle signals */
 		Sigprocmask(SIG_UNBLOCK, &mask_sigchld, NULL);

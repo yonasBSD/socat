@@ -72,6 +72,7 @@ int xioshutdown(xiofile_t *sock, int how) {
       return 0;
 #if _WITH_SOCKET
    case XIOSHUT_NULL:
+      writenull = '\0'; 	/* assign something to make gcc happy */
       /* send an empty packet; only useful on datagram sockets? */
       xiowrite(sock, &writenull, 0);
       return 0;

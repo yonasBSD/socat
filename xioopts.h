@@ -24,11 +24,10 @@ enum e_types {
    TYPE_CONST,		/* keyword means a fix value - implies int type */
    TYPE_BIN,		/* raw binary data, length determined by data */
    TYPE_BOOL,		/* value is 0 or 1 (no-value is interpreted as 1) */
-   TYPE_BOOL_NULL,	/* value is 0 or 1 (no-value is interpreted as 1), or just opt= */
    TYPE_BYTE,		/* unsigned char */
 
    TYPE_INT,		/* int */
-   TYPE_INT_NULL,	/* int, or opt= for no action (instead of default) */
+   TYPE_INT_NULL,	/* int, or just opt= for no action (instead of default) */
    TYPE_LONG,		/* long */
    TYPE_STRING,		/* char * */
    TYPE_NAME = TYPE_STRING,
@@ -152,7 +151,6 @@ enum e_func {
 #define GROUP_FILE GROUP_REG
 #define GROUP_SOCKET	0x00000020
 #define GROUP_READLINE	0x00000040
-#define GROUP_POSIXMQ	0x00000080
 
 #define GROUP_NAMED	0x00000100	/* file system entry */
 #define GROUP_OPEN	0x00000200	/* flags for open() */
@@ -186,12 +184,15 @@ enum e_func {
 #define GROUP_HTTP	0x40000000	/* any HTTP client */
 
 /* Keep condition consistent with xio.h:groups_t! */
-#if WITH_SCTP
+#if WITH_SCTP || WITH_POSIXMQ
 /* The following groups are not expected on systems without uint64_t */
+/* The following groups are not expected on systems withous uint64_t */
 #define GROUP_IP_SCTP	0x0100000000U
+#define GROUP_POSIXMQ	0x0200000000U
 #define GROUP_ALL	0x03ffffffffU
 #else
 #define GROUP_IP_SCTP	0
+#define GROUP_POSIXMQ	0
 #define GROUP_ALL	0xffffffffU
 #endif
 
@@ -902,34 +903,44 @@ enum e_phase {
    PH_OFFSET, 		/* automatically applied to xio-fd */
    PH_INIT,		/* retrieving info from original state */
    PH_EARLY,		/* before any other processing */
+
    PH_PREOPEN,		/* before file descriptor is created/opened */
    PH_OPEN,		/* during filesystem entry creation/open */
    PH_PASTOPEN,		/* past filesystem entry creation/open */
+
    PH_PRESOCKET,	/* before socket call */
    PH_SOCKET,		/* for socket call */
    PH_PASTSOCKET,	/* after socket call */
+
    PH_PREBIGEN,		/* before socketpair() pipe() openpty() */
    PH_BIGEN,		/* during socketpair() pipe() openpty() */
    PH_PASTBIGEN,	/* past socketpair() pipe() openpty() */
    PH_FD,		/* soon after FD creation or identification */
+
    PH_PREBIND,		/* before socket bind() */
    PH_BIND,		/* during socket bind() ? */
    PH_PASTBIND,		/* past socket bind() - for client and server sockets! */
+
    PH_PRELISTEN,	/* before socket listen() */
    PH_LISTEN,		/* during socket listen() ? */
    PH_PASTLISTEN,	/* after socket listen() */
+
    PH_PRECONNECT,	/* before socket connect() */
    PH_CONNECT,		/* during socket connect() ? */
    PH_PASTCONNECT,	/* after socket connect() */
+
    PH_PREACCEPT,	/* before socket accept() */
    PH_ACCEPT,		/* during socket accept() ? */
    PH_PASTACCEPT,	/* after socket accept() */
    PH_CONNECTED,	/* for sockets, after connect() or accept() */
+
    PH_PREFORK,		/* before fork() (with both listen and exec!) */
    PH_FORK,		/* during fork() (with both listen and exec!) */
    PH_PASTFORK,		/* after fork() (with both listen and exec!) */
+
    PH_LATE,		/* FD is ready, before start of data loop */
    PH_LATE2,		/* FD is ready, dropping privileges */
+
    PH_PREEXEC,		/* before exec() or system() */
    PH_EXEC,		/* during exec() or system() */
    PH_PASTEXEC,		/* only reached on addresses that do NOT exec() */
@@ -971,7 +982,7 @@ extern int retropt_timespec(struct opt *opts, int optcode, struct timespec *resu
 extern int retropt_bind(struct opt *opts, int af, int socktype, int ipproto, struct sockaddr *sa, socklen_t *salen, int feats, const int ai_flags[2]);
 extern int applyopts(int fd, struct opt *opts, enum e_phase phase);
 extern int applyopts2(int fd, struct opt *opts, unsigned int from, unsigned int to);
-extern int applyopts_optgroup(int fd, struct opt *opts, unsigned int from, unsigned int to, groups_t groups);
+extern int applyopts_optgroup(int fd, struct opt *opts, int from, int to, groups_t groups);
 extern int applyopts_flags(struct opt *opts, groups_t group, flags_t *result);
 extern int applyopts_cloexec(int fd, struct opt *opts);
 extern int applyopts_early(const char *path, struct opt *opts);

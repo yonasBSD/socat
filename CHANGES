@@ -166,6 +166,10 @@ Corrections:
 	by Socat. Now an error is printed when, e.g,, a read-only type address
 	is opened for writing.
 
+	A lot of minor corrections, e.g., catch readline() errors in filan,
+	detect byte order in procan
+	Test: EXEC_SIGINT
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 

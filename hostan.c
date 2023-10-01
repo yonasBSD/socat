@@ -32,6 +32,23 @@ int hostan(FILE *outfile) {
    fprintf(outfile, "sizeof(long long) = %u\n", (unsigned int)sizeof(long long));
 #endif
    fprintf(outfile, "sizeof(size_t)    = %u\n", (unsigned int)sizeof(size_t));
+   {
+      union {
+	 uint16_t s;
+	 uint8_t c[2];
+      } bo;
+      bo.c[0] = 0x05;
+      bo.c[1] = 0xa0;
+      if (bo.s == 0x05a0) {
+	 fprintf(outfile, "host byte order: network (BE \"big endian\", most significast byte first)\n");
+      } else if (bo.s == 0xa005) {
+	 fprintf(outfile, "host byte order: intel (LE \"little endian\", least significast byte first\n");
+      } else {
+	 fprintf(outfile, "host byte order: unknown\n");
+	 fprintf(stderr, "failed to determine host byte order");
+      }
+   }
+
 #include <sys/time.h>	/* select(); OpenBSD: struct timespec */
    fprintf(outfile, "sizeof(struct timespec)      = %u\n", (unsigned int)sizeof(struct timespec));
    fprintf(outfile, "sizeof(struct diag_dgram)      = %u\n", (unsigned int)sizeof(struct diag_dgram));
