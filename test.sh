@@ -6672,22 +6672,30 @@ echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
 rc2=$?
 kill "$pid1" 2>/dev/null; wait
 if [ $rc2 -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   cat "${te}1"
-   echo "$CMD2"
-   cat "${te}2"
+    $PRINTF "$FAILED (rc=$rc2)\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED\n"
-   cat "$tdiff"
+    $PRINTF "$FAILED (diff)\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat $te; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
 fi
 fi # NUMCOND
  ;;
@@ -10525,7 +10533,7 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%tcp%*|*%generic%*|*%listen%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: test the setsockopt option"
 # Set the TCP_MAXSEG (MSS) option with a reasonable value, this should succeed.
-# The try again with TCP_MAXSEG=1, this fails at least on Linux.
+# Then try again with TCP_MAXSEG=1, this fails at least on Linux.
 # Thus:
 # process 0 provides a tcp listening,forking socket
 # process 1 connects to this port using reasonably MSS, data transfer should
@@ -11608,7 +11616,7 @@ NAME=LISTEN_KEEPALIVE
 case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%listen%*|*%keepalive%*|*%socket%*|*%listen%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: keepalive option is applied to connection socket"
-# instance 0 has TCP-LISTEN with option so-keepalive and invokes filan after 
+# Instance 0 has TCP-LISTEN with option so-keepalive and invokes filan after
 # accept(). filan writes its output to the socket. instance 1 connects to 
 # instance 0. The value of the sockets so-keepalive option is checked, it must
 # be 1
@@ -11631,22 +11639,28 @@ kill $pid0 2>/dev/null; wait
 if [ -z "$KEEPALIVE" ]; then
     $PRINTF "$NO_RESULT\n"
     echo "$CMD0 &"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}0"
-    cat "${te}1"
+    cat "${te}1" >&2
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
 elif [ "$KEEPALIVE" = "1" ]; then
     $PRINTF "$OK\n";
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
 else
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (KEEPALIVE=$KEEPALIVE)\n"
     echo "$CMD0 &"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}0"
-    cat "${te}1"
+    cat "${te}1" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 fi
 fi # NUMCOND
  ;;
@@ -17871,7 +17885,7 @@ echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
 if [ "$rc1" -ne 0 ]; then
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (rc=$rc1)\n"
     echo "$CMD0 &"
     cat "${te}0" >&2
     echo "$CMD1"
@@ -17880,11 +17894,13 @@ if [ "$rc1" -ne 0 ]; then
     listFAIL="$listFAIL $N"
     namesFAIL="$namesFAIL $NAME"
 elif ! echo "$da" |diff "${tf}1" - >$tdiff; then
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (diff)\n"
     echo "$CMD0 &"
     cat "${te}0" >&2
     echo "$CMD1"
     cat "${te}1" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
     namesFAIL="$namesFAIL $NAME"

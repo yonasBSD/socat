@@ -1025,7 +1025,11 @@ int
 #if defined(HAVE_OPENSSL_INIT_SSL) && defined(HAVE_OPENSSL_INIT_new)
    {
       uint64_t opts = 0;
+#if defined(OPENSSL_INIT_SETTINGS)
       OPENSSL_INIT_SETTINGS *settings;
+#else
+      void *settings;
+#endif
       settings = OPENSSL_INIT_new();
 #ifdef OPENSSL_INIT_NO_ATEXIT
       opts |= OPENSSL_INIT_NO_ATEXIT;

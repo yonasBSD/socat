@@ -9,7 +9,7 @@
 #if WITH_OPENSSL
 
 #if HAVE_OPENSSL_INIT_SSL
-int sycOPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings);
+int sycOPENSSL_init_ssl(uint64_t opts, const void *settings);
 #endif
 void sycSSL_load_error_strings(void);
 int sycSSL_library_init(void);

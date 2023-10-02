@@ -687,7 +687,9 @@ if test -n "$WITH_OPENSSL"; then
   fi
 fi
 
+# Guarded for OpenBSD
 AC_CHECK_FUNCS(OPENSSL_init_ssl SSL_library_init OPENSSL_INIT_new)
+AC_CHECK_TYPE(OPENSSL_INIT_SETTINGS, AC_DEFINE(HAVE_TYPE_OPENSSL_INIT_SETTINGS),,[#include "openssl.h"])
 
 #; sc_cv_have_SSL_library_init='yes'; AC_DEFINE(HAVE_SSL_library_init)
 #if test -n "$WITH_OPENSSL"; then

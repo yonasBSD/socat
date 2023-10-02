@@ -22,7 +22,8 @@
 #include "sycls.h"
 
 #if HAVE_OPENSSL_INIT_SSL
-int sycOPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings) {
+/* OpenBSD 7.2 does not know OPENSSL_INIT_SETTING */
+int sycOPENSSL_init_ssl(uint64_t opts, const void *settings) {
    int result;
    Debug2("OPENSSL_init_ssl("F_uint64_t", %p)", opts, settings);
    result = OPENSSL_init_ssl(opts, settings);

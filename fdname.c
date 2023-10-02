@@ -236,7 +236,7 @@ int sockname(int fd, FILE *outfile, char style) {
 #endif
    int opttype;
 #ifdef SO_ACCEPTCONN
-   int optacceptconn;
+   int optacceptconn = 0; 	/* OpenBSD does not give value on unix dgram */
 #endif
    int result /*0, i*/;
    char socknamebuff[FDNAME_NAMELEN];
@@ -293,9 +293,9 @@ int sockname(int fd, FILE *outfile, char style) {
       protoentp = getprotobynumber_r(proto, &protoent, buffer, FILAN_GETPROTOBYNUMBER_R_BUFLEN);
       strncpy(protoname, protoentp->p_name, sizeof(protoname));
    }
-#elif HAVE_GETPROTOBYNUMBER_R==3 /* AIX */
+#elif HAVE_GETPROTOBYNUMBER_R==3 /* AIX, OpenBSD */
    {
-      struct protoent_data proto_data;
+      struct protoent_data proto_data = { 0 }; 	/* OpenBSD might SIGSEGV */
       rc = getprotobynumber_r(proto, &protoent, &proto_data);
       if (rc == 0) {
 	 strncpy(protoname, protoent.p_name, sizeof(protoname));
