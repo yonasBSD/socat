@@ -1283,7 +1283,7 @@ waitsctp4port () {
     [ "$timeout" ] || timeout=5
     while [ $timeout -gt 0 ]; do
 	case "$UNAME" in
-	Linux) if false && [ "$SS" ]; then
+	Linux) if [ "$SS" ]; then
 		   l=$($SS -4 -n 2>/dev/null |grep "^sctp.*LISTEN .*:$port\>")
 	       else
 		   l=$(netstat -n -a |grep '^sctp .*[0-9*]:'$port' .* LISTEN')
@@ -7851,7 +7851,8 @@ if ! eval $NUMCOND; then :;
  else
 tf="$td/test$N.stout"
 te="$td/test$N.stderr"
-CMD="$TRACE $SOCAT $opts -d -d /dev/null pty,end-close"
+# -t  must be longer than 0.1 on OpenBSD
+CMD="$TRACE $SOCAT $opts -d -d -t 0.5 /dev/null pty,end-close"
 printf "test $F_n $TEST... " $N
 # AIX reports the pty writeable for select() only when its slave side has been
 # opened, therefore we run this process in background and check its NOTICE
@@ -7860,7 +7861,7 @@ printf "test $F_n $TEST... " $N
 waitfile "${te}"
 psleep 0.1
 PTY=$(grep "N PTY is " $te |sed 's/.*N PTY is //')
-[ -e "$PTY" ] && cat $PTY >/dev/null
+[ -e "$PTY" ] && cat $PTY >/dev/null 2>/dev/null
 rc=$(cat "$td/test$N.rc0")
 if [ "$rc" = 0 ]; then
     $PRINTF "$OK\n"
@@ -17355,6 +17356,171 @@ else
     listFAIL="$listFAIL $N"
     namesFAIL="$namesFAIL $NAME"
 fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
+# Some of the following tests need absolute path of Socat
+case "$SOCAT" in
+    /*) absSOCAT="$SOCAT" ;;
+    *) absSOCAT="$PWD/$SOCAT" ;;
+esac
+
+# Test the chdir option, in particular if chdir with the first address
+# (CREATE) does not affect pwd of second address, i.e. original pwd is
+# recovered
+NAME=CHDIR_ON_CREATE
+case "$TESTS" in
+*%$N%*|*%functions%*|*%creat%*|*%system%*|*%chdir%*|*%$NAME%*)
+TEST="$NAME: restore of pwd after CREAT with chdir option"
+# Run Socat with first address CREAT with modified chdir,
+# and second address SYSTEM (shell) with pwd command
+# Check if the file is created with modified pwd but shell has original pwd
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats CREAT SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - CREAT SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions chdir) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tc="test$N.creat"
+    tdd="test$N.d"
+    tdiff="$td/test$N.diff"
+    tdebug="$td/test$N.debug"
+    opwd=$(pwd)
+    CMD0="$TRACE $absSOCAT $opts -U CREAT:$tc,chdir=$td SYSTEM:pwd"
+    printf "test $F_n $TEST... " $N
+    mkdir "$td/$tdd"
+    pushd "$td/$tdd" >/dev/null
+    $CMD0 >/dev/null 2>"${te}0"
+    rc0=$?
+    popd >/dev/null
+    tpwd=$(find $td -name $tc -print); tpwd=${tpwd%/*}
+    pwd2=$(cat $tpwd/$tc </dev/null)
+    echo "Original pwd:  $opwd" >>$tdebug
+    echo "Temporary pwd: $tpwd" >>$tdebug
+    echo "Addr2 pwd:     $pwd2" >>$tdebug
+    if [ "$rc0" -ne 0 ]; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif [ "$tpwd" != "$td" ]; then
+	$PRINTF "$FAILED (chdir failed)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$pwd2" |diff "$td/$tc" - >$tdiff; then
+	$PRINTF "$FAILED (bad pwd2)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the chdir option, in particular if chdir with first address
+# (SHELL) does not affect pwd of second address, i.e. original pwd is
+# recovered
+NAME=CHDIR_ON_SHELL
+case "$TESTS" in
+*%$N%*|*%functions%*|*%shell%*|*%system%*|*%chdir%*|*%$NAME%*)
+TEST="$NAME: restore of pwd after SYSTEM with chdir option"
+# Run Socat with first address SYSTEM:"cat >file" with chdir,
+# and second address SYSTEM (shell) with pwd command.
+# Check if the file is created with modified pwd but shell has original pwd
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats SHELL SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs SHELL SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions chdir) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tc="test$N.creat"
+    tdd="test$N.d"
+    tdiff="$td/test$N.diff"
+    tdebug="$td/test$N.debug"
+    opwd=$(pwd)
+    CMD0="$TRACE $absSOCAT $opts -U SHELL:\"cat\ >$tc\",chdir=$td SYSTEM:pwd"
+    printf "test $F_n $TEST... " $N
+    mkdir "$td/$tdd"
+    pushd "$td/$tdd" >/dev/null
+    eval "$CMD0" >/dev/null 2>"${te}0"
+    rc0=$?
+    popd >/dev/null
+    tpwd=$(find $td -name $tc -print); tpwd=${tpwd%/*}
+    pwd2=$(cat $tpwd/$tc </dev/null)
+    echo "Original pwd:  $opwd" >>$tdebug
+    echo "Temporary pwd: $tpwd" >>$tdebug
+    echo "Addr2 pwd:     $pwd2" >>$tdebug
+    if [ "$rc0" -ne 0 ]; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif [ "$tpwd" != "$td" ]; then
+	$PRINTF "$FAILED (chdir failed)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$pwd2" |diff "$td/$tc" - >$tdiff; then
+	$PRINTF "$FAILED (bad pwd)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
 
 
 # Test the modified umask option, in particular if umask with first address
@@ -17372,7 +17538,7 @@ elif ! F=$(testfeats CREAT SYSTEM); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! A=$(testaddrs - CREAT SYSTEM); then
+elif ! A=$(testaddrs CREAT SYSTEM); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -17441,7 +17607,7 @@ N=$((N+1))
 # recovered
 NAME=UMASK_ON_SYSTEM
 case "$TESTS" in
-*%$N%*|*%functions%*|*%shell%*|*%umask%*|*%socket%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%shell%*|*%system%*|*%umask%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: test restore after SHELL with umask option"
 # Run Socat with first address SHELL:"cat >file" with modified umask,
 # and second address SYSTEM (shell) with umask command.

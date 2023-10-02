@@ -1990,6 +1990,10 @@ These options may be applied to all address types. They change some process
 properties that are restored after opening the address.
 
 startdit()
+label(OPTION_CHDIR)dit(bf(tt(chdir=<filename>))) dit(bf(tt(cd=<filename>)))
+   Changes the working directory. After opening the address the master process
+   changes back to the original working directory. Sub processes inherit the
+   temporary setting.
 label(OPTION_UMASK)dit(bf(tt(umask=<mode>)))
    Sets the umask of the process to <mode> [link(mode_t)(TYPE_MODE_T)] before
    opening the address. Useful when file system entries are created or a shell

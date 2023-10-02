@@ -622,6 +622,7 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    const struct addrdesc *addrdesc;
    const char *modetext[4] = { "none", "read-only", "write-only", "read-write" } ;
    /* Values to be saved until xioopen() is finished */
+   char *orig_dir = NULL;
    bool have_umask = false;
    mode_t orig_umask, tmp_umask;
    int result;
@@ -631,42 +632,10 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    struct __res_state save_res;
 #endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 #if WITH_NAMESPACES
-   char *temp_netns;
    int save_netfd = -1;
 #endif
-   int rc;
-
-   /* Apply "temporary" process properties, save value for later restore */
-
-   if (applyopts_single(sfd, sfd->opts, PH_OFFSET) < 0)
-      return -1;
-
-#if WITH_NAMESPACES
-   if (retropt_string(sfd->opts, OPT_SET_NETNS, &temp_netns) >= 0) {
-      char nspath[PATH_MAX];
-
-      snprintf(nspath, sizeof(nspath)-1, "/proc/"F_pid"/ns/net",
-	       Getpid());
-      save_netfd = Open(nspath, O_RDONLY|O_CLOEXEC, 000);
-      if (save_netfd < 0) {
-	 Error2("open(%s, O_RDONLY|O_CLOEXEC): %s", nspath, strerror(errno));
-	 return -1;
-      }
-
-      rc = xio_set_namespace("netns", temp_netns);
-      free(temp_netns);
-      if (rc < 0)
-	 return -1;
-   }
-#endif /* WITH_NAMESPACES */
-
-#if WITH_RESOLVE && HAVE_RESOLV_H
-   if ((do_res = xio_res_init(sfd, &save_res)) < 0)
-      return STAT_NORETRY;
-#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
    addrdesc = xfd->stream.addr;
-   /* Check if address supports required data directions */
    if (((xioflags+1)&XIO_ACCMODE) & ~(addrdesc->directions)) {
       Warn2("address is opened in %s mode but only supports %s", modetext[(xioflags+1)&XIO_ACCMODE], modetext[addrdesc->directions]);
    }
@@ -682,12 +651,31 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    xfd->stream.flags     &= (~XIO_ACCMODE);
    xfd->stream.flags     |= (xioflags & XIO_ACCMODE);
 
+   /* Apply "temporary" process properties, save value for later restore */
+
+   if (applyopts_single(sfd, sfd->opts, PH_OFFSET) < 0)
+      return -1;
+
+#if WITH_NAMESPACES
+   if ((save_netfd = xio_apply_namespace(sfd->opts)) < 0)
+      return -1;
+#endif /* WITH_NAMESPACES */
+
+#if HAVE_RESOLV_H
+   if ((do_res = xio_res_init(sfd, &save_res)) < 0)
+      return STAT_NORETRY;
+#endif /* HAVE_RESOLV_H */
+
+   if (xio_chdir(sfd->opts, &orig_dir) < 0)
+      return STAT_NORETRY;
+
    if (retropt_mode(xfd->stream.opts, OPT_UMASK, &tmp_umask) >= 0) {
       Info1("changing umask to 0%3o", tmp_umask);
       orig_umask = Umask(tmp_umask);
       have_umask = true;
    }
 
+   /* Call the specific xioopen function */
    result = (*addrdesc->func)(xfd->stream.argc, xfd->stream.argv,
 			      xfd->stream.opts, xioflags, xfd,
 			      addrdesc);
@@ -698,19 +686,23 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
       Umask(orig_umask);
    }
 
+   if (orig_dir != NULL) {
+      if (Chdir(orig_dir) < 0) {
+	 Error2("chdir(\"%s\"): %s", orig_dir, strerror(errno));
+	 free(orig_dir);
+	 return STAT_NORETRY;
+      }
+      free(orig_dir);
+   }
+
 #if WITH_RESOLVE && HAVE_RESOLV_H
    if (do_res)
       xio_res_restore(&save_res);
 #endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
 #if WITH_NAMESPACES
-   if (save_netfd >= 0) {
-      rc = Setns(save_netfd, CLONE_NEWNET);
-      if (rc < 0) {
-	 Error2("setns(%d, CLONE_NEWNET): %s", save_netfd, strerror(errno));
-	 Close(save_netfd);
-	 return STAT_NORETRY;
-      }
+   if (save_netfd > 0) {
+      xio_reset_namespace(save_netfd);
    }
 #endif /* WITH_NAMESPACES */
 

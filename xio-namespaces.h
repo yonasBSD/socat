@@ -11,7 +11,8 @@ extern const struct optdesc opt_set_netns;
 extern const struct optdesc opt_reset_netns;
 
 extern int xio_set_namespace(const char *nstype, const char *nsname);
-extern int xio_reset_namespace(const char *nstype);
+extern int xio_apply_namespace(struct opt *opts);
+extern int xio_reset_namespace(int saved_netfd);
 
 #endif /* WITH_NAMESPACES */
 

@@ -143,6 +143,10 @@ Features:
 	Added option res-nsaddr that overrides /etc/resolv.conf nameserver
 	address based on an undocumented resolver feature.
 
+	New option chdir changes the working directory of the address to the
+	given path, only during the open stage.
+	Tests: CHDIR_ON_CREATE CHDIR_ON_SYSTEM
+
 	Option umask now applies only during opening of its very address, not
 	for the lifetime of the process; the original umask is restored
 	afterwards.

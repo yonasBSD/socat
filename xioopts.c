@@ -314,9 +314,11 @@ const struct optname optionnames[] = {
 	IF_ANY    ("bytes",     &opt_readbytes)
 	IF_OPENSSL("cafile",	&opt_openssl_cafile)
 	IF_OPENSSL("capath",	&opt_openssl_capath)
+	IF_ANY	  ("cd", 		&opt_chdir)
 	IF_OPENSSL("cert",	&opt_openssl_certificate)
 	IF_OPENSSL("certificate",	&opt_openssl_certificate)
 	IF_TERMIOS("cfmakeraw",		&opt_termios_cfmakeraw)
+	IF_ANY	  ("chdir", 		&opt_chdir)
 #if WITH_LISTEN
 	IF_ANY    ("children-shutup",	&opt_children_shutup)
 #endif
