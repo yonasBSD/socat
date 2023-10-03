@@ -831,6 +831,13 @@ typedef unsigned long T_sigset;
 #  endif
 #endif
 
+/* OpenBSD (at least 7.2) does better with this special setting */
+#if __FreeBSD__ || __OpenBSD__
+#  define UNIX_TIGHTSOCKLEN false
+#else
+#  define UNIX_TIGHTSOCKLEN true
+#endif
+
 /* Cygwin 1.3.22 has the prototypes, but not the type... */
 #ifndef HAVE_TYPE_STAT64
 #  undef HAVE_STAT64

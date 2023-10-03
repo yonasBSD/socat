@@ -775,6 +775,10 @@ int xiogetpacketinfo(struct single *sfd, int fd)
    OFUNC_OFFSET,
    OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_USER, OPT_GROUP, OPT_CLOEXEC
    Does not fork, does not retry.
+   Alternate (alt) bind semantics are:
+      with IP sockets: lowport (selects randomly a free port from 640 to 1023)
+      with UNIX and abstract sockets: uses tmpname() to find a free file system
+      entry.
    returns 0 on success.
 */
 int _xioopen_connect(struct single *sfd, union sockaddr_union *us, size_t uslen,
@@ -1113,7 +1117,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
 
 /* waits for incoming packet, checks its source address and port. Depending
    on fork option, it may fork a subprocess.
-   Returns STAT_OK if a the packet was accepted; with fork option, this is already in
+   Returns STAT_OK if a packet was accepted; with fork option, this is already in
    a new subprocess!
    Other return values indicate a problem; this can happen in the master
    process or in a subprocess.
@@ -1393,10 +1397,10 @@ int _xioopen_dgram_recv(struct single *sfd, int xioflags,
 #endif /* && (WITH_TCP || WITH_UDP) && WITH_LIBWRAP */
 
    if (xioparms.logopt == 'm') {
-      Info("starting recvfrom loop, switching to syslog");
+      Info("starting recv loop, switching to syslog");
       diag_set('y', xioparms.syslogfac);  xioparms.logopt = 'y';
    } else {
-      Info("starting recvfrom loop");
+      Info("starting recv loop");
    }
 
    return STAT_OK;
@@ -2053,6 +2057,15 @@ xiosocketpair(struct opt *opts, int pf, int socktype, int proto, int sv[2]) {
    return result;
 }
 
+/* Binds a socket to a socket address. Handles IP (internet protocol), UNIX
+   domain, Linux abstract UNIX domain.
+   The bind address us may be NULL in which case no bind() happens, except with
+   alt (on option unix-bind-tempname (bind-tempname)).
+   Alternate (atl) bind semantics are:
+      with IP sockets: lowport (selects randomly a free port from 640 to 1023)
+      with UNIX and abstract sockets: uses a method similar to tmpname() to
+      find a free file system entry.
+*/
 int xiobind(
 	struct single *sfd,
 	union sockaddr_union *us,
@@ -2065,19 +2078,89 @@ int xiobind(
    char infobuff[256];
    int result;
 
+   if (false /* for canonical reasons */) {
+      ;
 #if WITH_UNIX
-   if (pf == PF_UNIX && us != NULL) {
-      applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
-   }
+   } else if (pf == PF_UNIX) {
+      if (alt && us != NULL) {
+	 bool abstract = false;
+	 char *usrname = NULL, *sockname;
+
+#if WITH_ABSTRACT_UNIXSOCKET
+	 abstract = (us->un.sun_path[0] == '\0');
 #endif
-   applyopts(sfd, sfd->fd, opts, PH_PREBIND);
-   applyopts(sfd, sfd->fd, opts, PH_BIND);
+
+	 if (uslen == ((char *)&us->un.sun_path-(char *)us)) {
+	    usrname = NULL;
+	 } else {
+#if WITH_ABSTRACT_UNIXSOCKET
+	    if (abstract)
+	       usrname = strndup(us->un.sun_path+1, sizeof(us->un.sun_path)-1);
+	    else
+#endif
+	       usrname = strndup(us->un.sun_path, sizeof(us->un.sun_path));
+	    if (usrname	== NULL) {
+	       int _errno = errno;
+	       Error2("strndup(\"%s\", "F_Zu"): out of memory",
+		      us->un.sun_path, sizeof(us->un.sun_path));
+	       errno = _errno;
+	       return -1;
+	    }
+	 }
+
+	 do {	/* loop over tempnam bind() attempts */
+	    sockname = xio_tempnam(usrname, abstract);
+	    if (sockname == NULL) {
+	       Error2("tempnam(\"%s\"): %s", usrname, strerror(errno));
+	       free(usrname);
+	       return -1;
+	    }
+	    strncpy(us->un.sun_path+(abstract?1:0), sockname, sizeof(us->un.sun_path));
+	    uslen = sizeof(&((struct sockaddr_un *)0)->sun_path) +
+	       Min(strlen(sockname), sizeof(us->un.sun_path)); /*?*/
+	    free(sockname);
+
+	    if (Bind(sfd->fd, (struct sockaddr *)us, uslen) < 0) {
+	       Msg4(errno==EADDRINUSE?E_INFO:level, "bind(%d, {%s}, "F_Zd"): %s",
+		    sfd->fd, sockaddr_info((struct sockaddr *)us, uslen,
+					   infobuff, sizeof(infobuff)),
+		    uslen, strerror(errno));
+	       if (errno != EADDRINUSE) {
+		  free(usrname);
+		  Close(sfd->fd);
+		  return STAT_RETRYLATER;
+	       }
+	    } else {
+	       break;	/* could bind to path, good, continue past loop */
+	    }
+	 } while (true);
+	 free(usrname);
+	 applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
+      } else
+
+      if (us != NULL) {
+	 if (Bind(sfd->fd, &us->soa, uslen) < 0) {
+	    Msg4(level, "bind(%d, {%s}, "F_Zd"): %s",
+		 sfd->fd, sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
+		 uslen, strerror(errno));
+	    Close(sfd->fd);
+	    return STAT_RETRYLATER;
+	 }
+	 applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
+      }
+
+      applyopts(sfd, sfd->fd, opts, PH_PREBIND);
+      applyopts(sfd, sfd->fd, opts, PH_BIND);
+#endif /* WITH_UNIX */
+
 #if WITH_TCP || WITH_UDP
-   if (alt) {
+   } else if (alt) {
       union sockaddr_union sin, *sinp;
       unsigned short *port, i, N;
       div_t dv;
 
+      applyopts(sfd, sfd->fd, opts, PH_PREBIND);
+      applyopts(sfd, sfd->fd, opts, PH_BIND);
       /* prepare sockaddr for bind probing */
       if (us) {
 	 sinp = us;
@@ -2147,28 +2230,21 @@ int xiobind(
 	    return STAT_RETRYLATER;
 	 }
       } while (i != N);
-   } else
 #endif /* WITH_TCP || WITH_UDP */
 
-   if (us) {
-#if WITH_UNIX
-      if (pf == PF_UNIX && us != NULL) {
-	 applyopts_named(us->un.sun_path, opts, PH_PREOPEN);
-      }
-#endif
-      if (Bind(sfd->fd, &us->soa, uslen) < 0) {
-	 Msg4(level, "bind(%d, {%s}, "F_Zd"): %s",
-	      sfd->fd, sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
-	      uslen, strerror(errno));
-	 Close(sfd->fd);
-	 return STAT_RETRYLATER;
+   } else {
+      applyopts(sfd, sfd->fd, opts, PH_PREBIND);
+      if (us) {
+	 applyopts(sfd, sfd->fd, opts, PH_BIND);
+	 if (Bind(sfd->fd, &us->soa, uslen) < 0) {
+	    Msg4(level, "bind(%d, {%s}, "F_Zd"): %s",
+		 sfd->fd, sockaddr_info(&us->soa, uslen, infobuff, sizeof(infobuff)),
+		 uslen, strerror(errno));
+	    Close(sfd->fd);
+	    return STAT_RETRYLATER;
+	 }
       }
    }
-#if WITH_UNIX
-   if (pf == PF_UNIX && us != NULL) {
-      applyopts_named(us->un.sun_path, opts, PH_PASTOPEN);
-   }
-#endif
 
    applyopts(sfd, -1, opts, PH_PASTBIND);
    return 0;

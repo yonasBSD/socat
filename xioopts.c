@@ -292,6 +292,7 @@ const struct optname optionnames[] = {
 	IF_OPEN   ("binary",		&opt_o_binary)
 #endif
 	IF_SOCKET ("bind",	&opt_bind)
+	IF_UNIX   ("bind-tempname",	&xioopt_unix_bind_tempname)
 #ifdef SO_BINDTODEVICE
 	IF_SOCKET ("bindtodevice",	&opt_so_bindtodevice)
 #endif
@@ -1880,6 +1881,7 @@ const struct optname optionnames[] = {
 	IF_ANY    ("uid-l",	&opt_user_late)
 	IF_NAMED  ("umask",	&opt_umask)
 	IF_IP6    ("unicast-hops",	&opt_ipv6_unicast_hops)
+	IF_UNIX   ("unix-bind-tempname",	&xioopt_unix_bind_tempname)
 	IF_UNIX   ("unix-tightsocklen",	&xioopt_unix_tightsocklen)
 	IF_NAMED  ("unlink",	&opt_unlink)
 	IF_NAMED  ("unlink-close",	&opt_unlink_close)
@@ -3223,6 +3225,7 @@ int retropt_bind(struct opt *opts,
 					    3..address and port allowed
 				   UNIX (or'd): 1..tight
 						2..abstract
+						4..templatename
 				*/
 		 const int ai_flags[2])
 {
@@ -3313,7 +3316,17 @@ int retropt_bind(struct opt *opts,
       {
 	 bool abstract = (feats&2);
 	 bool tight = (feats&1);
+	 bool templatename = (feats&4);
 	 struct sockaddr_un *s_un = (struct sockaddr_un *)sa;
+	 if (templatename) {
+		int i = 0;
+		srandom(getpid());
+		for (; i < strlen(bindname); i++) {
+			if (bindname[i] == 'X') {
+				bindname[i] = 'a' + (char) (random() % ('z' - 'a'));
+			}
+		}
+	 }
 	 *salen = xiosetunix(af, s_un, bindname, abstract, tight);
       }
       break;

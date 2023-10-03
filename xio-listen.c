@@ -212,7 +212,6 @@ int _xioopen_accept_fd(
 
    /* Under some circumstances (e.g., TCP listen on port 0) bind() fills empty
       fields that we want to know. */
-   salen = sizeof(sa);
    if (Getsockname(sfd->fd, us, &uslen) < 0) {
       Warn4("getsockname(%d, %p, {%d}): %s",
 	    sfd->fd, &us, uslen, strerror(errno));
@@ -255,7 +254,6 @@ int _xioopen_accept_fd(
 
       pa = &_peername;
       la = &_sockname;
-      salen = sizeof(struct sockaddr);
       do {
 	 /*? int level = E_ERROR;*/
 	 Notice1("listening on %s", sockaddr_info(us, uslen, lisname, sizeof(lisname)));
@@ -304,6 +302,7 @@ int _xioopen_accept_fd(
 	       Exit(0);
 	    }
 	 }
+	 salen = sizeof(sa);
 	 ps = Accept(sfd->fd, (struct sockaddr *)&sa, &salen);
 	 if (ps >= 0) {
 	    /*0 Info4("accept(%d, %p, {"F_Zu"}) -> %d", sfd->fd, &sa, salen, ps);*/

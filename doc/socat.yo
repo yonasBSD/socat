@@ -2136,8 +2136,8 @@ label(OPTION_BIND)dit(bf(tt(bind=<sockname>)))
    Binds the socket to the given socket address using the code(bind()) system
    call. The form of <sockname> is socket domain dependent:
    IP4 and IP6 allow the form [hostname|hostaddress][:(service|port)] (link(example)(EXAMPLE_OPTION_BIND_TCP4)),
-   unixdomain() sockets require link(<filename>)(TYPE_FILENAME),
-   VSOCK allow the form [cid][:(port)].
+   VSOCK allows the form [cid][:(port)].nl()
+   See also: link(unix-bind-tempname)(OPTION_UNIX_BIND_TEMPNAME)
 label(OPTION_CONNECT_TIMEOUT)dit(bf(tt(connect-timeout=<seconds>)))
    Abort the connection attempt after <seconds> [link(timeval)(TYPE_TIMEVAL)]
    with error status.
@@ -2292,6 +2292,15 @@ label(GROUP_SOCK_UNIX)em(bf(UNIX option group))
 
 These options apply to UNIX domain based addresses.
 startdit()
+label(OPTION_UNIX_BIND_TEMPNAME)dit(bf(tt(bind-tempname[=/tmp/pre-XXXXXX],
+   unix-bind-tempname[=/tmp/pre-XXXXXX])))
+   Binds to a random path or random address (on abstract namespace sockets).
+   This is useful with datagram client addresses (tt(SENDTO), or tt(CLIENT))
+   that are opened in child processes forked off from a common
+   parent process where the child processes cannot have different bind options.
+   In the path code(X)'s get replaced with a random character sequence
+   similar to NOEXPAND(tempnam(3)). When no argument is given socat() takes a
+   default like code(/tmp/fileXXXXXX).nl()
 label(OPTION_UNIX_TIGHTSOCKLEN)dit(bf(tt(unix-tightsocklen[=(0|1)])))
    On socket operations, pass a socket address length that does not include the
    whole code(struct sockaddr_un) record but (besides other components) only

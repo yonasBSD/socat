@@ -62,7 +62,8 @@ static int xioopen_gopen(
       Info1("\"%s\" is a socket, connecting to it", filename);
 
       result =
-	 _xioopen_unix_client(sfd, xioflags, addrdesc->groups, 0, opts, filename);
+	 _xioopen_unix_client(sfd, xioflags, addrdesc->groups, 0, opts,
+			      filename, addrdesc);
       if (result < 0) {
 	 return result;
       }

@@ -53,6 +53,7 @@ const struct addrdesc xioaddr_abstract_recv    = { "ABSTRACT-RECV",     1+XIO_RD
 const struct addrdesc xioaddr_abstract_client  = { "ABSTRACT-CLIENT",   1+XIO_RDWR,   xioopen_unix_client,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_RETRY,                          1, 0, 0 HELP(":<filename>") };
 #endif /* WITH_ABSTRACT_UNIXSOCKET */
 
+const struct optdesc xioopt_unix_bind_tempname = { "unix-bind-tempname",  "bind-tempname", OPT_UNIX_BIND_TEMPNAME,	GROUP_SOCK_UNIX, PH_PREOPEN, TYPE_STRING_NULL, OFUNC_SPEC };
 const struct optdesc xioopt_unix_tightsocklen = { "unix-tightsocklen",    "tightsocklen",  OPT_UNIX_TIGHTSOCKLEN,  GROUP_SOCK_UNIX, PH_PREBIND, TYPE_BOOL, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.un.tight), XIO_SIZEOF(para.socket.un.tight) };
 
 
@@ -90,7 +91,7 @@ xiosetunix(int pf,
 	 len = sizeof(struct sockaddr_un);
       }
       return len;
-   }
+   } else
 #endif /* WITH_ABSTRACT_UNIXSOCKET */
 
    if ((pathlen = strlen(path)) > sizeof(saun->sun_path)) {
@@ -139,7 +140,7 @@ static int xioopen_unix_listen(
    }
    name = argv[1];
 
-   sfd->para.socket.un.tight = true;
+   sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
    sfd->howtoend = END_SHUTDOWN;
 
@@ -221,11 +222,13 @@ static int xioopen_unix_connect(
    struct sockaddr_un them, us;
    socklen_t themlen, uslen = sizeof(us);
    bool needbind = false;
+   bool needtemp = false;
    bool opt_unlink_close = (addrdesc->arg1/*abstract*/ != 1);
    bool dofork = false;
    struct opt *opts0;
    char infobuff[256];
    int level;
+   char *opt_bind_tempname = NULL;
    int result;
 
    if (argc != 2) {
@@ -234,7 +237,7 @@ static int xioopen_unix_connect(
    }
    name = argv[1];
 
-   sfd->para.socket.un.tight = true;
+   sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
    sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
@@ -249,6 +252,7 @@ static int xioopen_unix_connect(
       /* Only for non abstract because abstract do not work in file system */
       retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    }
+
    if (retropt_bind(opts, pf, socktype, protocol, (struct sockaddr *)&us, &uslen,
 		    (addrdesc->arg1/*abstract*/<<1)|sfd->para.socket.un.tight,
 		    sfd->para.socket.ip.ai_flags)
@@ -256,16 +260,23 @@ static int xioopen_unix_connect(
       needbind = true;
    }
 
+   if (retropt_string(opts, OPT_UNIX_BIND_TEMPNAME, &opt_bind_tempname) == 0) {
+      if (needbind) {
+	 Error("do not use both options bind and unix-bind-tempnam");
+	 return -1;
+      }
+      needbind = true;
+      needtemp = true;
+      xiosetunix(pf, &us, opt_bind_tempname?opt_bind_tempname:"",
+		 addrdesc->arg1/*abstract*/, sfd->para.socket.un.tight);
+      if (opt_bind_tempname == NULL && !addrdesc->arg1/*abstract*/) {
+	 us.sun_path[0] = 0x01; 	/* mark as non abstract */
+      }
+   }
+
    if (!needbind &&
        (namedopt = searchopt(opts, GROUP_NAMED, 0, 0, 0))) {
       Error1("Option \"%s\" only with bind option", namedopt->desc->defname);
-   }
-
-   if (opt_unlink_close && needbind) {
-      if ((sfd->unlink_close = strdup(us.sun_path)) == NULL) {
-	 Error1("strdup(\"%s\"): out of memory", name);
-      }
-      sfd->opt_unlink_close = true;
    }
 
    retropt_bool(opts, OPT_FORK, &dofork);
@@ -288,7 +299,7 @@ static int xioopen_unix_connect(
 	_xioopen_connect(sfd,
 			needbind?(union sockaddr_union *)&us:NULL, uslen,
 			(struct sockaddr *)&them, themlen,
-			 opts, pf, socktype, protocol, false, level);
+			 opts, pf, socktype, protocol, needtemp, level);
       if (result != 0) {
 	 char infobuff[256];
 	 /* we caller must handle this */
@@ -382,10 +393,12 @@ static int xioopen_unix_sendto(
    int pf = PF_UNIX;
    int socktype = SOCK_DGRAM;
    int protocol = 0;
-   union sockaddr_union us;
+   struct sockaddr_un us;
    socklen_t uslen = sizeof(us);
    bool needbind = false;
+   bool needtemp = false;
    bool opt_unlink_close = (addrdesc->arg1/*abstract*/ != 1);
+   char *opt_bind_tempname = NULL;
    int result;
 
    if (argc != 2) {
@@ -394,7 +407,7 @@ static int xioopen_unix_sendto(
    }
    name = argv[1];
 
-   sfd->para.socket.un.tight = true;
+   sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
    sfd->howtoend = END_SHUTDOWN;
    applyopts_offset(sfd, opts);
@@ -408,11 +421,22 @@ static int xioopen_unix_sendto(
 
    sfd->dtype = XIODATA_RECVFROM;
 
-   if (retropt_bind(opts, pf, socktype, protocol, &us.soa, &uslen,
+   if (retropt_bind(opts, pf, socktype, protocol, (struct sockaddr *)&us, &uslen,
 		    (addrdesc->arg1/*abstract*/<<1)| sfd->para.socket.un.tight,
 		    sfd->para.socket.ip.ai_flags)
-      == STAT_OK) {
+       == STAT_OK) {
       needbind = true;
+   }
+
+   if (retropt_string(opts, OPT_UNIX_BIND_TEMPNAME, &opt_bind_tempname) == 0) {
+      if (needbind) {
+	 Error("do not use both options bind and bind-tempnam");
+	 return STAT_NORETRY;
+      }
+      needbind = true;
+      needtemp = true;
+      xiosetunix(pf, &us, opt_bind_tempname?opt_bind_tempname:"",
+		 addrdesc->arg1/*abstract*/, sfd->para.socket.un.tight);
    }
 
    if (!needbind &&
@@ -426,14 +450,14 @@ static int xioopen_unix_sendto(
    result =
       _xioopen_dgram_sendto(needbind?(union sockaddr_union *)&us:NULL, uslen,
 			    opts, xioflags, sfd, addrdesc->groups,
-			    pf, socktype, protocol, 0);
+			    pf, socktype, protocol, needtemp);
    if (result != 0) {
       return result;
    }
 
    if (opt_unlink_close && needbind) {
-      if ((sfd->unlink_close = strndup(us.un.sun_path, sizeof(us.un.sun_path))) == NULL) {
-	 Error2("strndup(\"%s\", "F_Zu"): out of memory", name, sizeof(us.un.sun_path));
+      if ((sfd->unlink_close = strndup(us.sun_path, sizeof(us.sun_path))) == NULL) {
+	 Error2("strndup(\"%s\", "F_Zu"): out of memory", name, sizeof(us.sun_path));
       }
       sfd->opt_unlink_close = true;
    }
@@ -468,7 +492,7 @@ int xioopen_unix_recvfrom(
    }
    name = argv[1];
 
-   sfd->para.socket.un.tight = true;
+   sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
    sfd->howtoend = END_NONE;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
@@ -554,7 +578,7 @@ static int xioopen_unix_recv(
    }
    name = argv[1];
 
-   sfd->para.socket.un.tight = true;
+   sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
    sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
@@ -625,7 +649,7 @@ static int xioopen_unix_client(
 
    return
       _xioopen_unix_client(&xxfd->stream, xioflags, addrdesc->groups,
-			   addrdesc->arg1/*abstract*/, opts, argv[1]);
+			   addrdesc->arg1/*abstract*/, opts, argv[1], addrdesc);
 }
 
 /* establishes communication with an existing UNIX type socket. supports stream
@@ -639,8 +663,15 @@ static int xioopen_unix_client(
    OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_CLOEXEC, OPT_USER, OPT_GROUP, ?OPT_FORK,
 */
 int
-_xioopen_unix_client(xiosingle_t *sfd, int xioflags, groups_t groups,
-		     int abstract, struct opt *opts, const char *name) {
+_xioopen_unix_client(
+	xiosingle_t *sfd,
+	int xioflags,
+	groups_t groups,
+	int abstract,
+	struct opt *opts,
+	const char *name,
+	const struct addrdesc *addrdesc)
+{
    const struct opt *namedopt;
    int pf = PF_UNIX;
    int socktype = 0;	/* to be determined by server socket type */
@@ -648,11 +679,13 @@ _xioopen_unix_client(xiosingle_t *sfd, int xioflags, groups_t groups,
    union sockaddr_union them, us;
    socklen_t themlen, uslen = sizeof(us);
    bool needbind = false;
+   bool needtemp = false;
    bool opt_unlink_close = false;
+   char *opt_bind_tempname = NULL;
    struct opt *opts0;
    int result;
 
-   sfd->para.socket.un.tight = true;
+   sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
    sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
@@ -667,11 +700,21 @@ _xioopen_unix_client(xiosingle_t *sfd, int xioflags, groups_t groups,
       /* only for non abstract because abstract do not work in file system */
       retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    }
+
    if (retropt_bind(opts, pf, socktype, protocol, &us.soa, &uslen,
 		    (abstract<<1)|sfd->para.socket.un.tight,
 		    sfd->para.socket.ip.ai_flags)
        != STAT_NOACTION) {
       needbind = true;
+   }
+
+   if (retropt_string(opts, OPT_UNIX_BIND_TEMPNAME, &opt_bind_tempname) == 0) {
+      if (needbind) {
+	 Error("do not use both options bind and unix-bind-tempname");
+	 return STAT_NORETRY;
+      }
+      needbind = true;
+      needtemp = true;
    }
 
    if (!needbind &&
@@ -692,40 +735,57 @@ _xioopen_unix_client(xiosingle_t *sfd, int xioflags, groups_t groups,
    /* just a breakable block, helps to avoid goto */
    do {
       /* sfd->dtype = DATA_STREAM; // is default */
+      if (needtemp)
+	 xiosetunix(pf, &us.un, opt_bind_tempname?opt_bind_tempname:"",
+		    abstract, sfd->para.socket.un.tight);
       /* this function handles AF_UNIX with EPROTOTYPE specially for us */
       if ((result =
 	_xioopen_connect(sfd,
 			 needbind?&us:NULL, uslen,
 			 &them.soa, themlen,
 			 opts, pf, socktype?socktype:SOCK_STREAM, protocol,
-			 false, E_INFO)) == 0)
+			 needtemp, E_INFO)) == 0)
 	 break;
-      if (errno != EPROTOTYPE || socktype != 0)
+      if ((errno != EPROTOTYPE
+#if WITH_ABSTRACT_UNIXSOCKET
+	   && !(abstract && errno == ECONNREFUSED)
+#endif
+	   ) || socktype != 0)
 	 break;
       if (needbind)
 	 xio_unlink(us.un.sun_path, E_ERROR);
       dropopts2(opts, PH_INIT, PH_SPEC); opts = opts0;
 
+      if (needtemp)
+	 xiosetunix(pf, &us.un, opt_bind_tempname?opt_bind_tempname:"",
+		    abstract, sfd->para.socket.un.tight);
       socktype = SOCK_SEQPACKET;
       if ((result =
 	   _xioopen_connect(sfd,
 			    needbind?&us:NULL, uslen,
 			    (struct sockaddr *)&them, themlen,
 			    opts, pf, SOCK_SEQPACKET, protocol,
-			    false, E_INFO)) == 0)
+			    needtemp, E_INFO)) == 0)
 	 break;
-      if (errno != EPROTOTYPE && errno != EPROTONOSUPPORT/*AIX*/)
+      if (errno != EPROTOTYPE && errno != EPROTONOSUPPORT/*AIX*/
+#if WITH_ABSTRACT_UNIXSOCKET
+	  && !(abstract && errno == ECONNREFUSED)
+#endif
+	  )
 	 break;
       if (needbind)
 	 xio_unlink(us.un.sun_path, E_ERROR);
       dropopts2(opts, PH_INIT, PH_SPEC); opts = opts0;
 
+      if (needtemp)
+	 xiosetunix(pf, &us.un, opt_bind_tempname?opt_bind_tempname:"",
+		    abstract, sfd->para.socket.un.tight);
       sfd->peersa = them;
-      sfd->salen = sizeof(struct sockaddr_un);
+      sfd->salen = themlen;
       if ((result =
 	      _xioopen_dgram_sendto(needbind?&us:NULL, uslen,
 				    opts, xioflags, sfd, groups,
-				    pf, SOCK_DGRAM, protocol, 0))
+				    pf, SOCK_DGRAM, protocol, needtemp))
 	  == 0) {
 	 sfd->dtype = XIODATA_RECVFROM;
 	 break;
@@ -733,7 +793,7 @@ _xioopen_unix_client(xiosingle_t *sfd, int xioflags, groups_t groups,
    } while (0);
 
    if (result != 0) {
-      Error2("UNIX-CLIENT:%s: %s", name, strerror(errno));
+      Error3("%s: %s: %s", addrdesc->defname, name, strerror(errno));
       if (needbind)
 	 xio_unlink(us.un.sun_path, E_ERROR);
       return result;
@@ -765,6 +825,81 @@ xiosetsockaddrenv_unix(int idx, char *namebuff, size_t namelen,
    strcpy(namebuff, "ADDR");
    sockaddr_unix_info(sa, salen, valuebuff, valuelen);
    return 0;
+}
+
+static const char tmpchars[] =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+static size_t numchars = sizeof(tmpchars)-1;
+
+/* Simplyfied version of tempnam(). Uses the current directory when pathx is
+   not absolute.
+   Returns a malloc()'ed string with a probably free name,
+   or NULL when an error occurred */
+char *xio_tempnam(
+	const char *pathx,
+	bool donttry)	/* for abstract, do not check if it exists */
+{
+	int len;
+	char *X; 	/* begin of XXXXXX */
+	unsigned int i = TMP_MAX;
+	unsigned int r1, r2;
+	uint64_t v;
+	char *patht;
+	char readl[PATH_MAX];
+	int rlc;
+
+	if (pathx == NULL || pathx[0] == '\0')
+		pathx = "/tmp/socat-bind.XXXXXX";
+
+	len = strlen(pathx);
+	if (len < 6 || strstr(pathx, "XXXXXX") == NULL) {
+		Warn1("xio_tempnam(\"%s\"): path pattern is not valid", pathx);
+		errno = EINVAL;
+		return NULL;
+	}
+	patht = strdup(pathx);
+	if (patht == NULL) {
+		Error1("strdup("F_Zu"): out of memory", strlen(pathx));
+		return patht;
+	}
+	X = strstr(patht, "XXXXXX");
+
+	Debug1("xio_tempnam(\"%s\"): trying path names, suppressing stat() logs",
+		patht);
+	while (i > 0) {
+		r1 = random();
+		r2 = random();
+		v = r2*RAND_MAX + r1;
+		X[0] = tmpchars[v%numchars];
+		v /= numchars;
+		X[1] = tmpchars[v%numchars];
+		v /= numchars;
+		X[2] = tmpchars[v%numchars];
+		v /= numchars;
+		X[3] = tmpchars[v%numchars];
+		v /= numchars;
+		X[4] = tmpchars[v%numchars];
+		v /= numchars;
+		X[5] = tmpchars[v%numchars];
+		v /= numchars;
+
+		if (donttry)
+			return patht;
+
+		/* readlink() might be faster than lstat() */
+		rlc = readlink(patht, readl, sizeof(readl));
+		if (rlc < 0 && errno == ENOENT)
+			break;
+
+		--i;
+	}
+
+	if (i == 0) {
+		errno = EEXIST;
+		return NULL;
+	}
+
+	return patht;
 }
 
 #endif /* WITH_UNIX */

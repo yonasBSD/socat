@@ -1146,6 +1146,7 @@ int Listen(int s, int backlog) {
 #if _WITH_SOCKET
 /* don't forget to handle EINTR when using Accept() ! */
 int Accept(int s, struct sockaddr *addr, socklen_t *addrlen) {
+      char infobuff[256];
    int result, _errno;
    fd_set accept_s;
    if (!diag_in_handler) diag_flush();
@@ -1155,15 +1156,14 @@ int Accept(int s, struct sockaddr *addr, socklen_t *addrlen) {
       return -1;
    }
 #if WITH_SYCLS
-   Debug3("accept(%d, %p, %p)", s, addr, addrlen);
+   sockaddr_info(addr, *addrlen, infobuff, sizeof(infobuff));
+   Debug3("accept(%d, %p, %p)", s, infobuff, addrlen);
 #endif /* WITH_SYCLS */
    result = accept(s, addr, addrlen);
    _errno = errno;
    if (!diag_in_handler) diag_flush();
 #if WITH_SYCLS
    if (result >= 0) {
-      char infobuff[256];
-      sockaddr_info(addr, *addrlen, infobuff, sizeof(infobuff));
       Info5("accept(%d, {%d, %s}, "F_socklen") -> %d", s,
 	    addr->sa_family,
 	    sockaddr_info(addr, *addrlen, infobuff, sizeof(infobuff)),

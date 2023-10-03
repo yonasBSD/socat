@@ -128,6 +128,8 @@ static int diag_sock_pair(void) {
    fcntl(diag_sock_send, F_SETFL, O_NONBLOCK);
    fcntl(diag_sock_recv, F_SETFL, O_NONBLOCK);
 #endif
+   fcntl(diag_sock_send, F_SETFD, FD_CLOEXEC);
+   fcntl(diag_sock_recv, F_SETFD, FD_CLOEXEC);
    return 0;
 }
 

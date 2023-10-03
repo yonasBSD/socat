@@ -859,7 +859,8 @@ enum e_optcode {
    OPT_TUN_NAME,	/* tun: tun0 */
    OPT_TUN_TYPE,	/* tun: tun|tap */
    OPT_UMASK,
-   OPT_UNIX_TIGHTSOCKLEN,	/* UNIX domain sockets */
+   OPT_UNIX_BIND_TEMPNAME,	/* UNIX domain sockets */
+   OPT_UNIX_TIGHTSOCKLEN,
    OPT_UNLINK,
    OPT_UNLINK_CLOSE,
    OPT_UNLINK_EARLY,

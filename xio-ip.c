@@ -244,7 +244,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 	}
 	if (error_num == EAI_SERVICE && protocol != 0) {
 	   if (hints.ai_protocol == 0) {
-	      Error7("getaddrinfo\"%s\", \"%s\", {0x%02x,%d,%d,%d}, {}): %s",
+	      Error7("getaddrinfo(\"%s\", \"%s\", {0x%02x,%d,%d,%d}, {}): %s",
 		     node?node:"NULL", service?service:"NULL",
 		     hints.ai_flags, hints.ai_family,
 		     hints.ai_socktype, hints.ai_protocol,
@@ -438,7 +438,7 @@ int xioresolve(const char *node, const char *service,
    }
 
    aip = res;
-   if (ai_flags[0] & AI_PASSIVE && family == PF_UNSPEC) {
+   if (ai_flags != NULL && ai_flags[0] & AI_PASSIVE && family == PF_UNSPEC) {
       /* We select the first IPv6 address, if available,
 	 because this might accept IPv4 connections too */
       while (aip != NULL) {

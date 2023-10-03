@@ -156,13 +156,23 @@ int procan(FILE *outfile) {
 		 rlim.rlim_cur, rlim.rlim_max);
       }
 #endif
+   }
+
 #ifdef SIZE_MAX
-      fprintf(outfile, "SIZE_MAX                  = %-24lu\n", SIZE_MAX);
+   fprintf(outfile, "SIZE_MAX                  = %-24lu\n", SIZE_MAX);
+#endif
+#ifdef P_tmpdir
+   fprintf(outfile, "P_tmpdir                  = \"%s\"\n", P_tmpdir);
+#endif
+#ifdef L_tmpnam
+   fprintf(outfile, "L_tmpnam                  = %u\n", L_tmpnam);
+#endif
+#ifdef TMP_MAX
+   fprintf(outfile, "TMP_MAX                   = %d\n", TMP_MAX);
 #endif
 #ifdef PIPE_BUF
-      fprintf(outfile, "PIPE_BUF                  = %-24d\n", PIPE_BUF);
+   fprintf(outfile, "PIPE_BUF                  = %-24d\n", PIPE_BUF);
 #endif
-   }
 
    /* Name spaces */
    {

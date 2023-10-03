@@ -1462,6 +1462,11 @@ waitunixport () {
     waitfile "$1" "$2" "$3"
 }
 
+# Not implemented
+waitabstractport () {
+    relsleep 5
+}
+
 # wait until a filesystem entry exists
 waitfile () {
     local crit=-e
@@ -5610,7 +5615,7 @@ N=$((N+1))
 # Test if Filan can determine UNIX domain socket in file system
 NAME=FILANSOCKET
 case "$TESTS" in
-*%$N%*|*%filan%*|*%listen%*|*%$NAME%*)
+*%$N%*|*%filan%*|*%unix%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: capability to analyze named unix socket"
 # Run Filan on a listening UNIX domain socket.
 # When its output gives "socket" as type (2nd column), the test succeeded
@@ -5701,7 +5706,7 @@ fi
 NAME=PTMXWAITSLAVE
 PTYTYPE=ptmx
 case "$TESTS" in
-*%$N%*|*%functions%*|*%pty%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%pty%*|*%unix%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: test if master pty ($PTYTYPE) waits for slave connection"
 if ! eval $NUMCOND; then :; else
 if ! feat=$(testfeats pty); then
@@ -5722,7 +5727,7 @@ N=$((N+1))
 NAME=OPENPTYWAITSLAVE
 PTYTYPE=openpty
 case "$TESTS" in
-*%$N%*|*%functions%*|*%pty%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%pty%*|*%unix%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: test if master pty ($PTYTYPE) waits for slave connection"
 if ! eval $NUMCOND; then :;
 elif ! feat=$(testfeats pty); then
@@ -7803,7 +7808,7 @@ N=$((N+1))
 
 NAME=EXECENDCLOSE
 case "$TESTS" in
-*%$N%*|*%functions%*|*%exec%*|*%listen%*|*%fork%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%exec%*|*%listen%*|*%unix%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: end-close keeps EXEC child running"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
@@ -7867,7 +7872,7 @@ printf "test $F_n $TEST... " $N
 # output for the PTY name
 { $CMD 2>"${te}"; echo $? >"$td/test$N.rc0"; } &
 waitfile "${te}"
-psleep 0.1
+psleep 0.5	# 0.1 is too few for FreeBSD-10
 PTY=$(grep "N PTY is " $te |sed 's/.*N PTY is //')
 [ -e "$PTY" ] && cat $PTY >/dev/null 2>/dev/null
 rc=$(cat "$td/test$N.rc0")
@@ -9015,7 +9020,7 @@ N=$((N+1))
 # process under some circumstances.
 NAME=EXECPTYKILL
 case "$TESTS" in
-*%$N%*|*%functions%*|*%bugs%*|*%exec%*|*%pty%*|*%listen%*|*%fork%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%bugs%*|*%exec%*|*%pty%*|*%listen%*|*%unix%*|*%fork%*|*%$NAME%*)
 TEST="$NAME: exec:...,pty explicitely kills sub process"
 # we want to check if the exec'd sub process is killed in time
 # for this we have a shell script that generates a file after two seconds;
@@ -14920,7 +14925,7 @@ for addr in exec system; do
   ADDR=$(echo $addr |tr a-z A-Z)
   NAME=${ADDR}SOCKETPAIRPACKETS
   case "$TESTS" in
-    *%$N%*|*%functions%*|*%exec%*|*%socketpair%*|*%packets%*|*%$NAME%*)
+    *%$N%*|*%functions%*|*%exec%*|*%socketpair%*|*%unix%*|*%dgram%*|*%packets%*|*%$NAME%*)
 	TEST="$NAME: simple echo via $addr of cat with socketpair, keeping packet boundaries"
 # Start a Socat process with a UNIX datagram socket on the left side and with
 # a sub process connected via datagram socketpair that keeps packet boundaries
@@ -16478,7 +16483,7 @@ N=$((N+1))
 # Test the netns (net namespace) feature with EXEC and reset
 NAME=NETNS_EXEC
 case "$TESTS" in
-*%$N%*|*%functions%*|*%root%*|*%namespace%*|*%netns%*|*%socket%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%root%*|*%namespace%*|*%netns%*|*%socket%*|*%abstract%*|*%dgram%*|*%$NAME%*)
 ns=socat-$$-test$N
 TEST="$NAME: option netns with EXEC (net namespace $ns)"
 # Start a simple server with option netns on localhost of a net namespace that
@@ -17490,20 +17495,21 @@ else
     tdiff="$td/test$N.diff"
     tdebug="$td/test$N.debug"
     opwd=$(pwd)
-    CMD0="$TRACE $absSOCAT $opts -U SHELL:\"cat\ >$tc\",chdir=$td SYSTEM:pwd"
+    CMD0="$TRACE $absSOCAT $opts SHELL:\"cat\ >$tc\",chdir=$td SYSTEM:pwd"
     printf "test $F_n $TEST... " $N
     mkdir "$td/$tdd"
     pushd "$td/$tdd" >/dev/null
     eval "$CMD0" >/dev/null 2>"${te}0"
     rc0=$?
     popd >/dev/null
+    waitfile "$td/$tc"
     tpwd=$(find $td -name $tc -print); tpwd=${tpwd%/*}
     pwd2=$(cat $tpwd/$tc </dev/null)
     echo "Original pwd:  $opwd" >>$tdebug
     echo "Temporary pwd: $tpwd" >>$tdebug
     echo "Addr2 pwd:     $pwd2" >>$tdebug
     if [ "$rc0" -ne 0 ]; then
-	$PRINTF "$FAILED\n"
+	$PRINTF "$FAILED (rc=$rc0)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
 	numFAIL=$((numFAIL+1))
@@ -17693,6 +17699,200 @@ else
 fi # NUMCOND
  ;;
 esac
+N=$((N+1))
+
+
+while read _UNIX _SRV _CLI; do
+    if [ -z "$_UNIX" ] || [[ "$_UNIX" == \#* ]]; then continue; fi
+SRV=${_UNIX}-$_SRV
+CLI=${_UNIX}-$_CLI
+CLI_=$(echo $CLI |tr x- x_)
+PROTO=${_UNIX}
+proto=$(tolower $PROTO)
+
+# Test the unix-bind-tempname option
+NAME=${_UNIX}_${_SRV}_${_CLI}_BIND_TEMPNAME
+case "$TESTS" in
+*%$N%*|*%functions%*|*%$proto%*|*%socket%*|*%tempname%*|*%listen%*|*%fork%*|*%$NAME%*)
+TEST="$NAME: Option unix-bind-tempname"
+# Start a UNIX domain service with forking
+# Start a TCP service with forking that relays to the UNIX domain service
+# Open two concurrent client sessions to the TCP service.
+# When both sessions work (in particular, when the UNIX domain service does not
+# log "Transport endpoint is not connected" and the TCP service does not fail
+# with "Address already in use"), the test succeeded.
+if ! eval $NUMCOND; then :;
+elif [[ $CLI_ =~ ABSTRACT-* ]] && ! feat=$(testfeats abstract-unixsocket); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+ts="$td/test$N.sock"
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts -lp server $SRV:${ts}0,fork PIPE"
+# Using this command would show the principal problem: UNIX (and ABSTRACT)
+# datagram clients do not internally bind to a defined address and thus cannot
+# receive replies. Applies to all(?) Linux, (some)FreeBSD, (some)Solaris, others
+# not tried
+#CMD1="$TRACE $SOCAT $opts -lp bind-tempname TCP4-LISTEN:$PORT,reuseaddr,fork $CLI:${ts}0"
+# Attempt to bind the datagram client to some address works, but only for a
+# single client; when multiple clients are forked they conflict
+# The following command is the solution: option unix-bind-tempname generates
+# random names (like tempnam(2)) for binding the datagram client socket;
+# creating the XXXXXX file makes sure that the (non abstract) clients cannot
+# erronously bind there (part of the test)
+CMD1="$TRACE $SOCAT $opts -lp bind-tempname TCP4-LISTEN:$PORT,reuseaddr,fork $CLI:${ts}0,bind=${ts}1"
+touch ${ts}1.XXXXXX; CMD1="$TRACE $SOCAT $opts -lp tempname TCP4-LISTEN:$PORT,reuseaddr,fork $CLI:${ts}0,bind-tempname=${ts}1.XXXXXX"
+CMD2="$TRACE $SOCAT $opts -lp client - TCP4-CONNECT:$LOCALHOST:$PORT"
+printf "test $F_n $TEST... " $N
+$CMD0 2>"${te}0" &
+pid0=$!
+wait${proto}port ${ts}0 1
+$CMD1 2>"${te}1" &
+pid1=$!
+waittcp4port $PORT 1
+{ echo "$da a"; sleep 2; } |$CMD2 >"${tf}2a" 2>"${te}2a" &
+pid2a=$!
+sleep 1
+echo "$da b" |$CMD2 >"${tf}2b" 2>"${te}2b"
+rc2b=$?
+sleep 1
+kill $pid0 $pid1 $pid2a 2>/dev/null; wait
+if [ $rc2b -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2 &"
+    cat "${te}2a" >&2
+    echo "$CMD2"
+    cat "${te}2b" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+elif ! echo "$da a" |diff - ${tf}2a >${tdiff}2a; then
+    $PRINTF "$FAILED (phase a)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2a" >&2
+    echo "diff a:" >&2
+    cat ${tdiff}2a >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+elif ! echo "$da b" |diff - ${tf}2b >${tdiff}2b; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2 &"
+    cat "${te}2a" >&2
+    echo "$CMD2"
+    cat "${te}2b" >&2
+    echo "diff b:" >&2
+    cat ${tdiff}2b >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+done <<<"
+UNIX     LISTEN   CONNECT
+UNIX     LISTEN   CLIENT
+UNIX     RECVFROM CLIENT
+UNIX     RECVFROM SENDTO
+ABSTRACT LISTEN   CONNECT
+ABSTRACT LISTEN   CLIENT
+ABSTRACT RECVFROM CLIENT
+ABSTRACT RECVFROM SENDTO
+"
+
+# Test if OS/libc is not prone to symlink attacks on UNIX bind()
+NAME=TEMPNAME_SEC
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%unix%*|*%dgram%*|*%security%*|*%$NAME%*)
+TEST="$NAME: test if a symlink attack works against bind()"
+# Create a symlink .sock2 pointing to non-existing .sock3
+# Start Socat with UNIX-SENDTO...,bind=.sock2
+# When .sock3 exists the test failed
+if ! eval $NUMCOND; then :; else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+ts1="$td/test$N.sock1"
+ts2="$td/test$N.sock2"
+ts3="$td/test$N.sock3"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0a="rm -f $ts3"
+CMD0b="ln -s $ts3 $ts2"
+CMD1="$TRACE $SOCAT $opts UNIX-SENDTO:$ts1,bind=$ts2 PIPE"
+rc1=$?
+printf "test $F_n $TEST... " $N
+$CMD0a
+$CMD0b
+#echo; ls -l $ts2 $ts3
+$CMD1 2>"${te}1" &
+pid1=$!
+waitunixport $ts1 1 1 2>/dev/null
+#res="$(ls -l $ts3 2>/dev/null)"
+kill $pid1 2>/dev/null
+if [ -e $ts3 ]; then
+    $PRINTF "$FAILED\n"
+    echo "symlink target has been created" >&2
+    echo "$CMD0a" >&2
+    cat "${te}0a" >&2
+    echo "$CMD0b" >&2
+    cat "${te}0b" >&2
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+elif ! grep -q " E " ${te}1; then
+    $PRINTF "$FAILED\n"
+    echo "Socat did not fail"
+    echo "$CMD0a" >&2
+    cat "${te}0a" >&2
+    echo "$CMD0b" >&2
+    cat "${te}0b" >&2
+    echo "$CMD1" >&2
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0a"; fi
+    if [ "$DEBUG" ];   then cat "${te}0a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD0b"; fi
+    if [ "$DEBUG" ];   then cat "${te}0b" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
 N=$((N+1))
 
 
