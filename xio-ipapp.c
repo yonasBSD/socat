@@ -30,9 +30,9 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    const char *hostname = argv[1], *portname = argv[2];
    bool dofork = false;
    union sockaddr_union us_sa,  *us = &us_sa;
-   union sockaddr_union them_sa, *them = &them_sa;
    socklen_t uslen = sizeof(us_sa);
-   socklen_t themlen = sizeof(them_sa);
+   struct addrinfo *themlist, *themp;
+   char infobuff[256];
    bool needbind = false;
    bool lowport = false;
    int level;
@@ -52,7 +52,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    if (_xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
 			      xfd->para.socket.ip.res_opts[1],
 			      xfd->para.socket.ip.res_opts[0],
-			      them, &themlen, us, &uslen, &needbind, &lowport,
+			      &themlist, us, &uslen, &needbind, &lowport,
 			      socktype) != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -68,20 +68,36 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       Info("starting connect loop");
    }
 
-   do {	/* loop over retries and forks */
+   do {	/* loop over retries, and forks */
+
+      themp = themlist;
+      /* Loop over themlist */
+      result = STAT_RETRYLATER;
+      while (themp != NULL) {
+	 Notice1("opening connection to %s",
+		 sockaddr_info(themp->ai_addr, themp->ai_addrlen,
+			       infobuff, sizeof(infobuff)));
 
 #if WITH_RETRY
-      if (xfd->forever || xfd->retry) {
-	 level = E_INFO;
-      } else
+	 if (xfd->forever || xfd->retry || themp->ai_next != NULL) {
+	    level = E_INFO;
+         } else
 #endif /* WITH_RETRY */
-	 level = E_ERROR;
+	    level = E_ERROR;
 
-      result =
+       result =
 	 _xioopen_connect(xfd,
 			  needbind?us:NULL, uslen,
-			  (struct sockaddr *)them, themlen,
-			  opts, pf, socktype, ipproto, lowport, level);
+			  themp->ai_addr, themp->ai_addrlen,
+			  opts, pf?pf:themp->ai_family, socktype, ipproto,
+			  lowport, level);
+       if (result == STAT_OK)
+	  break;
+       themp = themp->ai_next;
+       if (themp == NULL) {
+	  result = STAT_RETRYLATER;
+       }
+      }
       switch (result) {
       case STAT_OK: break;
 #if WITH_RETRY
@@ -95,10 +111,10 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 	    dropopts(opts, PH_ALL); free(opts); opts = copyopts(opts0, GROUP_ALL);
 	    continue;
 	 }
-	 return STAT_NORETRY;
 #endif /* WITH_RETRY */
       default:
-	  free(opts0);free(opts);
+	 xiofreeaddrinfo(themlist);
+	 free(opts0);free(opts);
 	 return result;
       }
 
@@ -114,7 +130,8 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 	    if (xfd->forever || --xfd->retry) {
 	       Nanosleep(&xfd->intervall, NULL); continue;
 	    }
-	  free(opts0);
+	    xiofreeaddrinfo(themlist);
+	    free(opts0);
 	    return STAT_RETRYLATER;
 	 }
 
@@ -136,6 +153,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       }
    } while (true);
    /* only "active" process breaks (master without fork, or child) */
+   xiofreeaddrinfo(themlist);
 
    if ((result = _xio_openlate(xfd, opts)) < 0) {
 	   free(opts0);free(opts);
@@ -158,12 +176,11 @@ int
 			   int *pf,
 			   int protocol,
 			   unsigned long res_opts0, unsigned long res_opts1,
-			   union sockaddr_union *them, socklen_t *themlen,
+			  struct addrinfo **themlist,
 			   union sockaddr_union *us, socklen_t *uslen,
 			   bool *needbind, bool *lowport,
 			   int socktype) {
    uint16_t port;
-   char infobuff[256];
    int result;
 
    retropt_socket_pf(opts, pf);
@@ -171,36 +188,35 @@ int
    if ((result =
 	xiogetaddrinfo(hostname, portname,
 		       *pf, socktype, protocol,
-		       (union sockaddr_union *)them, themlen,
+		       themlist,
 		       res_opts0, res_opts1
 		       ))
        != STAT_OK) {
       return STAT_NORETRY;	/*! STAT_RETRYLATER? */
    }
-   if (*pf == PF_UNSPEC) {
-      *pf = them->soa.sa_family;
-   }
 
    applyopts(-1, opts, PH_EARLY);
 
    /* 3 means: IP address AND port accepted */
-   if (retropt_bind(opts, *pf, socktype, protocol, (struct sockaddr *)us, uslen, 3,
+   if (retropt_bind(opts, (*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family,
+		    socktype, protocol, (struct sockaddr *)us, uslen, 3,
 		    res_opts0, res_opts1)
        != STAT_NOACTION) {
       *needbind = true;
    } else {
-      switch (*pf) {
+      switch ((*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family) {
 #if WITH_IP4
       case PF_INET:  socket_in_init(&us->ip4);  *uslen = sizeof(us->ip4); break;
 #endif /* WITH_IP4 */
 #if WITH_IP6
       case PF_INET6: socket_in6_init(&us->ip6); *uslen = sizeof(us->ip6); break;
 #endif /* WITH_IP6 */
+      default: Error("unsupported protocol family");
       }
    }
 
    if (retropt_2bytes(opts, OPT_SOURCEPORT, &port) >= 0) {
-      switch (*pf) {
+      switch ((*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family) {
 #if WITH_IP4
       case PF_INET:  us->ip4.sin_port = htons(port); break;
 #endif /* WITH_IP4 */
@@ -216,8 +232,6 @@ int
 
    *opts0 = copyopts(opts, GROUP_ALL);
 
-   Notice1("opening connection to %s",
-	   sockaddr_info((struct sockaddr *)them, *themlen, infobuff, sizeof(infobuff)));
    return STAT_OK;
 }
 #endif /* WITH_IP4 */
@@ -240,15 +254,14 @@ int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0,
    retropt_socket_pf(opts, pf);
 
    retropt_string(opts, OPT_BIND, &bindname);
-   if ((result =
-	xiogetaddrinfo(bindname, portname, *pf, socktype, ipproto,
-		       (union sockaddr_union *)us, uslen,
-		       res_opts0, res_opts1))
-       != STAT_OK) {
+   result =
+	xioresolve(bindname, portname, *pf, socktype, ipproto,
+		   us, uslen,
+		   res_opts0, res_opts1);
+   if (result != STAT_OK) {
       /*! STAT_RETRY? */
       return result;
    }
-
    *opts0 = copyopts(opts, GROUP_ALL);
    return STAT_OK;
 }

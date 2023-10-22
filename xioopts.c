@@ -2596,8 +2596,8 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	       Error1("trailing data in option \"%s\"", token);
 	    }
 	    *buffp = '\0';
-	    if (xiogetaddrinfo(buff, NULL, AF_INET, SOCK_DGRAM, IPPROTO_IP,
-			       (union sockaddr_union *)&sa, &salen,
+	    if (xioresolve(buff, NULL, AF_INET, SOCK_DGRAM, IPPROTO_IP,
+			   (union sockaddr_union *)&sa, &salen,
 			       0, 0/*!!!*/) != STAT_OK) {
 	       opt->desc = ODESC_ERROR; continue;
 	    }
@@ -3174,7 +3174,7 @@ int retropt_bind(struct opt *opts,
 	 }
       }
       if ((result =
-	   xiogetaddrinfo(hostname[0]!='\0'?hostname:NULL, portp,
+	   xioresolve(hostname[0]!='\0'?hostname:NULL, portp,
 			  af, socktype, ipproto,
 			  (union sockaddr_union *)sa, salen,
 			  res_opts0, res_opts1))

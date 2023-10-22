@@ -382,7 +382,7 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
 
    xfd->salen = sizeof(xfd->peersa);
    if ((result =
-	xiogetaddrinfo(hostname, servname, pf, socktype, ipproto,
+	xioresolve(hostname, servname, pf, socktype, ipproto,
 		       &xfd->peersa, &xfd->salen,
 		       xfd->para.socket.ip.res_opts[0],
 		       xfd->para.socket.ip.res_opts[1]))
@@ -515,7 +515,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
    }
 
    if ((result =
-	xiogetaddrinfo(NULL, argv[1], pf, socktype, ipproto,
+	xioresolve(NULL, argv[1], pf, socktype, ipproto,
 		       &us, &uslen, xfd->stream.para.socket.ip.res_opts[0],
 		       xfd->stream.para.socket.ip.res_opts[1]))
        != STAT_OK) {
@@ -588,7 +588,7 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
    }
 
    if ((result =
-	xiogetaddrinfo(NULL, argv[1], pf, socktype, ipproto,
+	xioresolve(NULL, argv[1], pf, socktype, ipproto,
 		       &us, &uslen, xfd->stream.para.socket.ip.res_opts[0],
 		       xfd->stream.para.socket.ip.res_opts[1]))
        != STAT_OK) {
@@ -627,6 +627,7 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, pf, &xfd->stream.para.socket.range) < 0) {
+	 free(rangename);
 	 return STAT_NORETRY;
       }
       xfd->stream.para.socket.dorange = true;

@@ -145,7 +145,7 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
       xiosetchilddied();	/* set SIGCHLD handler */
    }
 
-   if ((xfd->fd = xiosocket(opts, us->sa_family, socktype, proto, level)) < 0) {
+   if ((xfd->fd = xiosocket(opts, pf?pf:us->sa_family, socktype, proto, level)) < 0) {
       return STAT_RETRYLATER;
    }
    applyopts(xfd->fd, opts, PH_PASTSOCKET);
@@ -199,8 +199,7 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range)
-	  < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }

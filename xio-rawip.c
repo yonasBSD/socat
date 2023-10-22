@@ -121,7 +121,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 
    xfd->salen = sizeof(xfd->peersa);
    if ((result =
-	xiogetaddrinfo(hostname, NULL, *pf, socktype, ipproto,
+	xioresolve(hostname, NULL, *pf, socktype, ipproto,
 		       &xfd->peersa, &xfd->salen,
 		       xfd->para.socket.ip.res_opts[0],
 		       xfd->para.socket.ip.res_opts[1]))

@@ -541,6 +541,7 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
 
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, 0, &xfd->para.socket.range) < 0) {
+	 free(rangename);
 	 return STAT_NORETRY;
       }
       xfd->para.socket.dorange = true;
@@ -619,6 +620,7 @@ int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
 
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, 0, &xfd->para.socket.range) < 0) {
+	 free(rangename);
 	 return STAT_NORETRY;
       }
       xfd->para.socket.dorange = true;
@@ -1167,8 +1169,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 
    /* for generic sockets, this has already been retrieved */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range)
-	  < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -1370,8 +1371,7 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range)
-	  < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -1890,6 +1890,7 @@ int xioparsenetwork(const char *rangename, int pf, struct xiorange *range) {
 int xioparserange(const char *rangename, int pf, struct xiorange *range) {
    int i;
    if (xioparsenetwork(rangename, pf, range) < 0) {
+      Error2("failed to parse or resolve range \"%s\" (pf=%d)", rangename, pf);
       return -1;
    }
    /* we have parsed the address and mask; now we make sure that the stored

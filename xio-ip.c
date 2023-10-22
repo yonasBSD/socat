@@ -135,15 +135,13 @@ unsigned long res_opts() {
 */
 int xiogetaddrinfo(const char *node, const char *service,
 		   int family, int socktype, int protocol,
-		   union sockaddr_union *sau, socklen_t *socklen,
+		   struct addrinfo **res,
 		   unsigned long res_opts0, unsigned long res_opts1) {
-   int port = -1;	/* port number in network byte order */
    char *numnode = NULL;
    size_t nodelen;
    unsigned long save_res_opts = 0;
 #if HAVE_GETADDRINFO
    struct addrinfo hints = {0};
-   struct addrinfo *res = NULL;
 #else /* HAVE_PROTOTYPE_LIB_getipnodebyname || nothing */
    struct hostent *host;
 #endif
@@ -161,13 +159,12 @@ int xiogetaddrinfo(const char *node, const char *service,
 	     save_res_opts, _res.options);
    }
 #endif /* HAVE_RESOLV_H */
-   memset(sau, 0, *socklen);
-   sau->soa.sa_family = family;
 
    if (service && service[0]=='\0') {
       Error("empty port/service");
    }
 
+#if LATER
 #ifdef WITH_VSOCK
    if (family == AF_VSOCK) {
       error_num = sockaddr_vm_parse(&sau->vm, node, service);
@@ -177,18 +174,7 @@ int xiogetaddrinfo(const char *node, const char *service,
       return STAT_OK;
    }
 #endif /* WITH_VSOCK */
-
-   /* if service is numeric we don't want to have a lookup (might take long
-      with NIS), so we handle this specially */
-   if (service && isdigit(service[0]&0xff)) {
-      char *extra;
-      port = htons(strtoul(service, &extra, 0));
-      if (*extra != '\0') {
-	 Warn2("xiogetaddrinfo(, \"%s\", ...): extra trailing data \"%s\"",
-	       service, extra);
-      }
-      service = NULL;
-   }
+#endif /* LATER */
 
    /* the resolver functions might handle numeric forms of node names by
       reverse lookup, that's not what we want.
@@ -220,7 +206,7 @@ int xiogetaddrinfo(const char *node, const char *service,
    if (node != NULL || service != NULL) {
       struct addrinfo *record;
 
-      hints.ai_flags |= AI_PASSIVE;
+      hints.ai_flags |= AI_PASSIVE; 	/* important for IPv4+IPv6 listen */
       hints.ai_family = family;
       hints.ai_socktype = socktype;
       hints.ai_protocol = protocol;
@@ -230,7 +216,7 @@ int xiogetaddrinfo(const char *node, const char *service,
       hints.ai_next = NULL;
 
       do {
-	error_num = Getaddrinfo(node, service, &hints, &res);
+	error_num = Getaddrinfo(node, service, &hints, res);
 	if (error_num == 0)  break;
 	if (error_num == EAI_SOCKTYPE && socktype != 0) {
 	   /* there are systems where kernel goes SCTP but not getaddrinfo() */
@@ -244,21 +230,20 @@ int xiogetaddrinfo(const char *node, const char *service,
 		     hints.ai_flags, hints.ai_family,
 		     hints.ai_socktype, hints.ai_protocol,
 		     gai_strerror(error_num));
-	      if (res != NULL)  freeaddrinfo(res);
+	      if (res != NULL)  freeaddrinfo(*res);
 	      if (numnode)  free(numnode);
 	      return STAT_NORETRY;
 	   }
 	   hints.ai_protocol = 0;
 	   continue;
 	}
-	if (error_num != 0) {
+      if ((error_num = Getaddrinfo(node, service, &hints, res)) != 0) {
 	 Error7("getaddrinfo(\"%s\", \"%s\", {%d,%d,%d,%d}, {}): %s",
 		node?node:"NULL", service?service:"NULL",
 		hints.ai_flags, hints.ai_family,
 		hints.ai_socktype, hints.ai_protocol,
 		(error_num == EAI_SYSTEM)?
 		strerror(errno):gai_strerror(error_num));
-	 if (res != NULL)  freeaddrinfo(res);
 	 if (numnode)  free(numnode);
 
 #if HAVE_RESOLV_H
@@ -272,65 +257,15 @@ int xiogetaddrinfo(const char *node, const char *service,
       } while (1);
       service = NULL;	/* do not resolve later again */
 
-      record = res;
-      if (family == PF_UNSPEC && xioparms.preferred_ip == '0') {
-	 /* we just take the first result */
-	 family = res[0].ai_addr->sa_family;
+#if WITH_MSGLEVEL <= E_DEBUG
+      record = *res;
+      while (record) {
+	 char buff[256/*!*/];
+	 sockaddr_info(record->ai_addr, record->ai_addrlen, buff, sizeof(buff));
+	 Debug5("getaddrinfo() -> flags=%d family=%d socktype=%d protocol=%d addr=%s", record->ai_flags, record->ai_family, record->ai_socktype, record->ai_protocol, buff);
+	 record = record->ai_next;
       }
-      if (family == PF_UNSPEC) {
-	 int trypf;
-	 trypf = (xioparms.preferred_ip=='6'?PF_INET6:PF_INET);
-	 /* we must look for a matching entry */
-	 while (record != NULL) {
-	    if (record->ai_family == trypf) {
-	       family = trypf;
-	       break;	/* family and record set accordingly */
-	    }
-	    record = record->ai_next;
-	 }
-	 if (record == NULL) {
-	    /* we did not find a "preferred" entry, take the first */
-	    record = res;
-	    family = res[0].ai_addr->sa_family;
-	 }
-      }
-
-      switch (family) {
-#if WITH_IP4
-      case PF_INET:
-	 if (*socklen > record->ai_addrlen) {
-	    *socklen = record->ai_addrlen;
-	 }
-	 memcpy(&sau->ip4, record->ai_addr, *socklen);
-	 break;
-#endif /* WITH_IP4 */
-#if WITH_IP6
-      case PF_INET6:
-#if _AIX
-	 /* older AIX versions pass wrong length, so we correct it */
-	 record->ai_addr->sa_len = sizeof(struct sockaddr_in6);
-#endif
-	 if (*socklen > record->ai_addrlen) {
-	    *socklen = record->ai_addrlen;
-	 }
-	 memcpy(&sau->ip6, record->ai_addr, *socklen);
-	 break;
-#endif /* WITH_IP6 */
-      default:
-	 Error1("address resolved to unknown protocol family %d",
-		record->ai_addr->sa_family);
-	 break;
-      }
-      freeaddrinfo(res);
-   } else {
-      switch (family) {
-#if WITH_IP4
-      case PF_INET:  *socklen = sizeof(sau->ip4); break;
-#endif /* WITH_IP4 */
-#if WITH_IP6
-      case PF_INET6: *socklen = sizeof(sau->ip6); break;
-#endif /* WITH_IP6 */
-      }
+#endif /* WITH_MSGLEVEL <= E_DEBUG */
    }
 
 #elif HAVE_PROTOTYPE_LIB_getipnodebyname /* !HAVE_GETADDRINFO */
@@ -381,7 +316,7 @@ int xiogetaddrinfo(const char *node, const char *service,
       freehostent(host);
    }
 
-#else /* !HAVE_PROTOTYPE_LIB_getipnodebyname */
+#elsif 0 /* !HAVE_PROTOTYPE_LIB_getipnodebyname */
 
    if (node != NULL) {
       /* this is not a typical IP6 resolver function - but Linux
@@ -411,7 +346,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 	 return STAT_RETRYLATER;
       }
       if (host->h_addrtype != family) {
-	 Error2("xioaddrinfo(): \"%s\" does not resolve to %s",
+	 Error2("xiogetaddrinfo(): \"%s\" does not resolve to %s",
 		node, family==PF_INET?"IP4":"IP6");
       } else {
 	 switch (family) {
@@ -435,22 +370,6 @@ int xiogetaddrinfo(const char *node, const char *service,
 
 #endif
 
-#if WITH_TCP || WITH_UDP
-   if (service) {
-      port = parseport(service, protocol);
-   }
-   if (port >= 0) {
-      switch (family) {
-#if WITH_IP4
-      case PF_INET:  sau->ip4.sin_port  = port; break;
-#endif /* WITH_IP4 */
-#if WITH_IP6
-      case PF_INET6: sau->ip6.sin6_port = port; break;
-#endif /* WITH_IP6 */
-      }
-   }
-#endif /* WITH_TCP || WITH_UDP */
-
    if (numnode)  free(numnode);
 
 #if HAVE_RESOLV_H
@@ -462,6 +381,50 @@ int xiogetaddrinfo(const char *node, const char *service,
    return STAT_OK;
 }
 
+void xiofreeaddrinfo(struct addrinfo *res) {
+#if HAVE_GETADDRINFO
+   freeaddrinfo(res);
+#else
+   ;
+#endif
+}
+
+/* A simple resolver interface that just returns one address,
+   the first found by calling xiogetaddrinfo().
+   family may be AF_INET, AF_INET6, or AF_UNSPEC.
+   Returns -1 when an error occurred or when no result found.
+*/
+int xioresolve(const char *node, const char *service,
+	       int family, int socktype, int protocol,
+	       union sockaddr_union *addr, socklen_t *addrlen,
+	       unsigned long res_opts0, unsigned long res_opts1) {
+   struct addrinfo *res = NULL;
+   int rc;
+
+   rc = xiogetaddrinfo(node, service, family, socktype, protocol,
+		       &res, res_opts0, res_opts1);
+   if (rc != 0) {
+      xiofreeaddrinfo(res);
+      return -1;
+   }
+   if (res == NULL) {
+      Warn1("xioresolve(node=\"%s\", ...): No result", node);
+      xiofreeaddrinfo(res);
+      return -1;
+   }
+   if (res->ai_addrlen > *addrlen) {
+      Warn3("xioresolve(node=\"%s\", addrlen="F_socklen", ...): "F_socklen" bytes required", node, *addrlen, res->ai_addrlen);
+      xiofreeaddrinfo(res);
+      return -1;
+   }
+   if (res->ai_next != NULL) {
+      Info4("xioresolve(node=\"%s\", service=%s%s%s, ...): More than one address found", node?node:"NULL", service?"\"":"", service?service:"NULL", service?"\"":"");
+   }
+   memcpy(addr, res->ai_addr, res->ai_addrlen);
+   *addrlen = res->ai_addrlen;
+   xiofreeaddrinfo(res);
+   return 0;
+}
 
 #if defined(HAVE_STRUCT_CMSGHDR) && defined(CMSG_DATA)
 /* Converts the ancillary message in *cmsg into a form useable for further
@@ -773,10 +736,10 @@ mc:addr
 
 	/* first parameter is alway multicast address */
 	/*! result */
-	xiogetaddrinfo(opt->value.u_string/*multiaddr*/, NULL,
+	xioresolve(opt->value.u_string/*multiaddr*/, NULL,
 		       xfd->para.socket.la.soa.sa_family,
 		       SOCK_DGRAM, IPPROTO_IP,
-		       &sockaddr1, &socklen1, 0, 0);
+		   &sockaddr1, &socklen1, 0, 0);
 	ip4_mreqn.mreq.imr_multiaddr = sockaddr1.ip4.sin_addr;
 	if (0) {
 		;	/* for canonical reasons */
@@ -784,7 +747,7 @@ mc:addr
 	} else if (opt->value3.u_string/*ifindex*/ != NULL) {
 		/* three parameters */
 		/* second parameter is interface address */
-		xiogetaddrinfo(opt->value2.u_string/*param2*/, NULL,
+		xioresolve(opt->value2.u_string/*param2*/, NULL,
 			       xfd->para.socket.la.soa.sa_family,
 			       SOCK_DGRAM, IPPROTO_IP,
 			       &sockaddr2, &socklen2, 0, 0);
@@ -812,7 +775,7 @@ mc:addr
 #endif /* HAVE_STRUCT_IP_MREQN */
 		} else {
 			/*! result */
-			xiogetaddrinfo(opt->value2.u_string/*param2*/, NULL,
+			xioresolve(opt->value2.u_string/*param2*/, NULL,
 				       xfd->para.socket.la.soa.sa_family,
 				       SOCK_DGRAM, IPPROTO_IP,
 				       &sockaddr2, &socklen2, 0, 0);
@@ -960,25 +923,34 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
    socklen_t socklen2 = sizeof(sockaddr2.ip4);
    union sockaddr_union sockaddr3;
    socklen_t socklen3 = sizeof(sockaddr3.ip4);
+   int rc;
 
    /* first parameter is always multicast address */
-   /*! result */
-   xiogetaddrinfo(opt->value.u_string/*mcaddr*/, NULL,
+   rc = xioresolve(opt->value.u_string/*mcaddr*/, NULL,
 		  xfd->para.socket.la.soa.sa_family,
 		  SOCK_DGRAM, IPPROTO_IP,
 		  &sockaddr1, &socklen1, 0, 0);
+   if (rc < 0) {
+      return -1;
+   }
    ip4_mreq_src.imr_multiaddr = sockaddr1.ip4.sin_addr;
    /* second parameter is interface address */
-   xiogetaddrinfo(opt->value2.u_string/*ifaddr*/, NULL,
+   rc = xioresolve(opt->value.u_string/*ifaddr*/, NULL,
 		  xfd->para.socket.la.soa.sa_family,
 		  SOCK_DGRAM, IPPROTO_IP,
 		  &sockaddr2, &socklen2, 0, 0);
+   if (rc < 0) {
+      return -1;
+   }
    ip4_mreq_src.imr_interface = sockaddr2.ip4.sin_addr;
    /* third parameter is source address */
-   xiogetaddrinfo(opt->value3.u_string/*srcaddr*/, NULL,
+   rc = xioresolve(opt->value.u_string/*srcaddr*/, NULL,
 		  xfd->para.socket.la.soa.sa_family,
 		  SOCK_DGRAM, IPPROTO_IP,
 		  &sockaddr3, &socklen3, 0, 0);
+   if (rc < 0) {
+      return -1;
+   }
    ip4_mreq_src.imr_sourceaddr = sockaddr3.ip4.sin_addr;
    if (Setsockopt(xfd->fd, opt->desc->major, opt->desc->minor,
 		  &ip4_mreq_src, sizeof(ip4_mreq_src)) < 0) {

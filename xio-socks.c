@@ -52,11 +52,11 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
    int ipproto = IPPROTO_TCP;
    bool dofork = false;
    union sockaddr_union us_sa,  *us = &us_sa;
-   union sockaddr_union them_sa, *them = &them_sa;
    socklen_t uslen = sizeof(us_sa);
-   socklen_t themlen = sizeof(them_sa);
+   struct addrinfo *themlist, *themp;
    bool needbind = false;
    bool lowport = false;
+   char infobuff[256];
    unsigned char buff[BUFF_LEN];
    struct socks4 *sockhead = (struct socks4 *)buff;
    size_t buflen = sizeof(buff);
@@ -87,7 +87,7 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
 			     &pf, ipproto,
 			     xfd->para.socket.ip.res_opts[1],
 			     xfd->para.socket.ip.res_opts[0],
-			     them, &themlen, us, &uslen,
+			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
 
    Notice5("opening connection to %s:%u via socks4 server %s:%s as user \"%s\"",
@@ -123,12 +123,24 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
 	 return result;
       }
 
+      themp = themlist;
+      /* loop over themlist */
+      while (themp != NULL) {
+	 Notice1("opening connection to %s",
+		 sockaddr_info(themp->ai_addr, themp->ai_addrlen,
+			       infobuff, sizeof(infobuff)));
       /* this cannot fork because we retrieved fork option above */
       result =
-	 _xioopen_connect (xfd,
-			   needbind?us:NULL, sizeof(*us),
-			   (struct sockaddr *)them, themlen,
-			   opts, pf, socktype, IPPROTO_TCP, lowport, level);
+	 _xioopen_connect(xfd,
+			  needbind?us:NULL, sizeof(*us),
+			  themp->ai_addr, themp->ai_addrlen,
+			  opts, pf?pf:themp->ai_family, socktype, IPPROTO_TCP, lowport, level);
+      if (result == STAT_OK)
+	 break;
+      themp = themp->ai_next;
+       if (themp == NULL) {
+	  result = STAT_RETRYLATER;
+      }
       switch (result) {
       case STAT_OK: break;
 #if WITH_RETRY
@@ -140,9 +152,11 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
 	 }
 #endif /* WITH_RETRY */
       default:
+	 xiofreeaddrinfo(themlist);
 	 return result;
       }
-
+      }
+      xiofreeaddrinfo(themlist);
       applyopts(xfd->fd, opts, PH_ALL);
 
       if ((result = _xio_openlate(xfd, opts)) < 0)
@@ -257,7 +271,7 @@ int
       union sockaddr_union sau;
       socklen_t saulen = sizeof(sau);
 
-      if ((result = xiogetaddrinfo(hostname, NULL,
+      if ((result = xioresolve(hostname, NULL,
 				   PF_INET, SOCK_STREAM, IPPROTO_TCP,
 				   &sau, &saulen,
 				   xfd->para.socket.ip.res_opts[1],

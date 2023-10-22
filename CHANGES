@@ -70,6 +70,11 @@ Features:
 	addresses. reuseaddr= restores the old behaviour.
 	Tests: TCP4_REUSEADDR OPENSSL_6_REUSEADDR REUSEADDR_NULL
 
+	TCP based client addresses now try all results of name resolution until
+	a connection attempt succeeded.
+	Tests: TRY_ADDRS_4 TRY_ADDRS_4_6
+	Feature recommended by Anand Buddhdev.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

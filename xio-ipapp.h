@@ -22,7 +22,7 @@ extern int
 			   const char *hostname,
 			   const char *portname, int *pf, int protocol,
 			   unsigned long res_opts0, unsigned long res_opts1,
-			   union sockaddr_union *them, socklen_t *themlen,
+			  struct addrinfo **res,
 			   union sockaddr_union *us,  socklen_t *uslen,
 			   bool *needbind, bool *lowport,
 			   int socktype);

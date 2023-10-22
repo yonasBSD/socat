@@ -12,6 +12,7 @@
 #include "xioopen.h"
 
 #include "xio-fd.h"
+#include "xio-ip.h"
 #include "xio-socket.h"	/* _xioopen_connect() */
 #include "xio-listen.h"
 #include "xio-udp.h"
@@ -247,9 +248,8 @@ static int
    int ipproto = IPPROTO_TCP;
    bool dofork = false;
    union sockaddr_union us_sa,  *us = &us_sa;
-   union sockaddr_union them_sa, *them = &them_sa;
    socklen_t uslen = sizeof(us_sa);
-   socklen_t themlen = sizeof(them_sa);
+   struct addrinfo *themlist, *themp;
    bool needbind = false;
    bool lowport = false;
    int level;
@@ -328,7 +328,7 @@ static int
       _xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
 			     xfd->para.socket.ip.res_opts[1],
 			     xfd->para.socket.ip.res_opts[0],
-			     them, &themlen, us, &uslen,
+			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)  return STAT_NORETRY;
 
@@ -348,12 +348,22 @@ static int
 #endif /* WITH_RETRY */
 	 level = E_ERROR;
 
-      /* this cannot fork because we retrieved fork option above */
-      result =
+      themp = themlist;
+      /* loop over themlist */
+      while (themp != NULL) {
+       /* This cannot fork because we retrieved fork option above */
+       result =
 	 _xioopen_connect(xfd,
 			  needbind?us:NULL, uslen,
-			  (struct sockaddr *)them, themlen,
-			  opts, pf, socktype, ipproto, lowport, level);
+			  themp->ai_addr, themp->ai_addrlen,
+			  opts, pf?pf:themp->ai_addr->sa_family, socktype, ipproto, lowport, level);
+       if (result == STAT_OK)
+	  break;
+       themp = themp->ai_next;
+       if (themp == NULL) {
+	  result = STAT_RETRYLATER;
+      }
+      }
       switch (result) {
       case STAT_OK: break;
 #if WITH_RETRY
@@ -367,14 +377,16 @@ static int
 	    --xfd->retry;
 	    continue;
 	 }
+	 xiofreeaddrinfo(themlist);
 	 return STAT_NORETRY;
 #endif /* WITH_RETRY */
       default:
+	 xiofreeaddrinfo(themlist);
 	 return result;
       }
-
       /*! isn't this too early? */
       if ((result = _xio_openlate(xfd, opts)) < 0) {
+	 xiofreeaddrinfo(themlist);
 	 return result;
       }
 
@@ -395,7 +407,9 @@ static int
 	    continue;
 	 }
 #endif /* WITH_RETRY */
-      default: return STAT_NORETRY;
+      default:
+	 xiofreeaddrinfo(themlist);
+	 return STAT_NORETRY;
       }
 
       if (dofork) {
@@ -413,6 +427,7 @@ static int
 	    if (xfd->forever || --xfd->retry) {
 	       Nanosleep(&xfd->intervall, NULL); continue;
 	    }
+	    xiofreeaddrinfo(themlist);
 	    return STAT_RETRYLATER;
 	 }
 
@@ -433,6 +448,7 @@ static int
 #endif /* WITH_RETRY */
       break;
    } while (true);	/* drop out on success */
+   xiofreeaddrinfo(themlist);
 
    openssl_conn_loginfo(xfd->para.openssl.ssl);
 

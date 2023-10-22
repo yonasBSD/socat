@@ -45,7 +45,7 @@ int xioparsenetwork_ip4(const char *rangename, struct xiorange *range) {
 	 netmask_in->s_addr = htonl((0xffffffff << (32-bits)));
       }
    } else if (delimpos = strchr(rangename1, ':')) {
-      if ((rc = xiogetaddrinfo(delimpos+1, NULL, PF_UNSPEC, 0, 0,
+      if ((rc = xioresolve(delimpos+1, NULL, PF_INET, 0, 0,
 			       &sau, &socklen, 0, 0))
 	  != STAT_OK) {
 	 return rc;
@@ -58,7 +58,7 @@ int xioparsenetwork_ip4(const char *rangename, struct xiorange *range) {
    }
    {
       *delimpos = 0;
-      if ((rc = xiogetaddrinfo(rangename1, NULL, PF_UNSPEC, 0, 0,
+      if ((rc = xioresolve(rangename1, NULL, PF_INET, 0, 0,
 			       &sau, &socklen, 0, 0))
 	  != STAT_OK) {
 	 return rc;

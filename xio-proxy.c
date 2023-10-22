@@ -91,9 +91,8 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    /* */
    int pf = PF_UNSPEC;
    union sockaddr_union us_sa,   *us = &us_sa;
-   union sockaddr_union them_sa, *them = &them_sa;
    socklen_t uslen = sizeof(us_sa);
-   socklen_t themlen = sizeof(them_sa);
+   struct addrinfo *themlist, *themp;
    const char *proxyname; char *proxyport = NULL;
    const char *targetname, *targetport;
    int ipproto = IPPROTO_TCP;
@@ -133,7 +132,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 			     &pf, ipproto,
 			     xfd->para.socket.ip.res_opts[1],
 			     xfd->para.socket.ip.res_opts[0],
-			     them, &themlen, us, &uslen,
+			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)  return result;
 
@@ -149,11 +148,20 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 #endif /* WITH_RETRY */
          level = E_ERROR;
 
+      themp = themlist;
+      /* Loop over themlist */
+      while (themp != NULL) {
    result =
       _xioopen_connect(xfd,
 		       needbind?us:NULL, sizeof(*us),
-		       (struct sockaddr *)them, themlen,
-		       opts, pf, socktype, IPPROTO_TCP, lowport, level);
+		       themp->ai_addr, themp->ai_addrlen,
+		       opts, pf?pf:themp->ai_family, socktype, IPPROTO_TCP, lowport, level);
+       if (result == STAT_OK)
+	  break;
+       themp = themp->ai_next;
+       if (themp == NULL) {
+	  result = STAT_RETRYLATER;
+      }
       switch (result) {
       case STAT_OK: break;
 #if WITH_RETRY
@@ -165,9 +173,11 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 	 }
 #endif /* WITH_RETRY */
       default:
+	 xiofreeaddrinfo(themlist);
 	 return result;
       }
-
+      }
+      xiofreeaddrinfo(themlist);
       applyopts(xfd->fd, opts, PH_ALL);
 
       if ((result = _xio_openlate(xfd, opts)) < 0)
@@ -291,7 +301,7 @@ int _xioopen_proxy_prepare(struct proxyvars *proxyvars, struct opt *opts,
       /* currently we only resolve to IPv4 addresses. This is in accordance to
 	 RFC 2396; however once it becomes clear how IPv6 addresses should be
 	 represented in CONNECT commands this code might be extended */
-      rc = xiogetaddrinfo(targetname, targetport, PF_UNSPEC,
+      rc = xioresolve(targetname, targetport, PF_INET/*!?*/,
 			  SOCK_STREAM, IPPROTO_TCP,
 			  &host, &socklen, 0, 0);
       if (rc != STAT_OK) {

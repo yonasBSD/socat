@@ -11,7 +11,7 @@
 #include "xioopen.h"
 #include "xio-ascii.h"
 #include "xio-socket.h"
-#include "xio-ip.h"	/* xiogetaddrinfo() */
+#include "xio-ip.h"	/* xioresolve() */
 
 #include "xio-ip6.h"
 #include "nestlex.h"
@@ -85,7 +85,6 @@ const struct optdesc opt_ipv6_recvpathmtu = { "ipv6-recvpathmtu", "recvpathmtu",
 int xioip6_pton(const char *src, struct in6_addr *dst) {
    union sockaddr_union sockaddr;
    socklen_t sockaddrlen = sizeof(sockaddr);
-   int res;
 
    if (src[0] == '[') {
       char plainaddr[INET6_ADDRSTRLEN];
@@ -97,9 +96,8 @@ int xioip6_pton(const char *src, struct in6_addr *dst) {
 	 *clos = '\0';
       return xioip6_pton(plainaddr, dst);
    }
-   if ((res =
-	xiogetaddrinfo(src, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
-			     0, 0))
+   if (xioresolve(src, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
+		      0, 0)
        != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -136,7 +134,7 @@ int xioparsenetwork_ip6(const char *rangename, struct xiorange *range) {
       return STAT_NORETRY;
    }
    baseaddr[delimind-2] = '\0';
-   if (xiogetaddrinfo(baseaddr, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
+   if (xioresolve(baseaddr, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
 		      0, 0)
        != STAT_OK) {
       return STAT_NORETRY;
@@ -481,7 +479,7 @@ int xioapply_ipv6_join_group(
 	/* Always two parameters */
 	/* First parameter is multicast address */
 	if ((res =
-	     xiogetaddrinfo(opt->value.u_string/*multiaddr*/, NULL,
+	     xioresolve(opt->value.u_string/*multiaddr*/, NULL,
 			    xfd->para.socket.la.soa.sa_family,
 			    SOCK_DGRAM, IPPROTO_IP,
 			    &sockaddr1, &socklen1, 0, 0)) != STAT_OK) {
@@ -620,7 +618,7 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
 
    /* First parameter is always multicast address */
    if ((res =
-	xiogetaddrinfo(opt->value.u_string/*mcaddr*/, NULL,
+	xioresolve(opt->value.u_string/*mcaddr*/, NULL,
 		       xfd->para.socket.la.soa.sa_family,
 		       SOCK_DGRAM, IPPROTO_IP,
 		       &sockaddr1, &socklen1, 0, 0)) != STAT_OK) {
@@ -637,7 +635,7 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
    }
    /* Third parameter is source address */
    if ((res =
-	xiogetaddrinfo(opt->value3.u_string/*srcaddr*/, NULL,
+	xioresolve(opt->value3.u_string/*srcaddr*/, NULL,
 		       xfd->para.socket.la.soa.sa_family,
 		       SOCK_DGRAM, IPPROTO_IP,
 		       &sockaddr2, &socklen2, 0, 0)) != STAT_OK) {
