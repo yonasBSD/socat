@@ -170,6 +170,15 @@ Features:
 	than pipe buffer. Socat now tries to detect if transfer block size is
 	large enough and issues a warning.
 
+	Added direct support of DCCP protocol, new addresses:
+	DCCP-CONNECT (DCCP)
+	DCCP-LISTEN (DCCP-L)
+	DCCP4-CONNECT (DCCP4)
+	DCCP4-LISTEN (DCCP4-L)
+	DCCP6-CONNECT (DCCP6)
+	DCCP6-LISTEN (DCCP6-L)
+	New option: dccp-set-ccid (ccid)
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

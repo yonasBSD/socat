@@ -43,6 +43,32 @@ const struct addrname addressnames[] = {
 #endif
 #if WITH_GENERICSOCKET
    { "DATAGRAM",		&xioaddr_socket_datagram },
+#endif
+#if (WITH_IP4 || WITH_IP6) && WITH_DCCP
+   { "DCCP",			&xioaddr_dccp_connect },
+   { "DCCP-CONNECT",		&xioaddr_dccp_connect },
+#if WITH_LISTEN
+   { "DCCP-L",			&xioaddr_dccp_listen },
+   { "DCCP-LISTEN",		&xioaddr_dccp_listen },
+#endif
+#if WITH_IP4
+   { "DCCP4",			&xioaddr_dccp4_connect },
+   { "DCCP4-CONNECT",		&xioaddr_dccp4_connect },
+#if WITH_LISTEN
+   { "DCCP4-L",			&xioaddr_dccp4_listen },
+   { "DCCP4-LISTEN",		&xioaddr_dccp4_listen },
+#endif
+#endif /* WITH_IP4 */
+#if WITH_IP6
+   { "DCCP6",			&xioaddr_dccp6_connect },
+   { "DCCP6-CONNECT",		&xioaddr_dccp6_connect },
+#if WITH_LISTEN
+   { "DCCP6-L",			&xioaddr_dccp6_listen },
+   { "DCCP6-LISTEN",		&xioaddr_dccp6_listen },
+#endif
+#endif /* WITH_IP6 */
+#endif /* (WITH_IP4 || WITH_IP6) && WITH_DCCP */
+#if WITH_GENERICSOCKET
    { "DGRAM",			&xioaddr_socket_datagram },
 #endif
 #if WITH_OPENSSL

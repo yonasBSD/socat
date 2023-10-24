@@ -978,9 +978,25 @@ runssctp6 () {
     return 0;
 }
 
-routesip6 () {
-    runsip6 >/dev/null || { echo route6; return 1; }
-    ping -c 1 -s 0 -6 2606:4700:4700::1111 >/dev/null 2>&1 || { echo route6; return 1; }
+# check if DCCP on IPv4 is available on host
+runsdccp4 () {
+    runsip4 >/dev/null || { echo DCCP4; return 1; }
+    $SOCAT -h |grep -i ' DCCP4-' >/dev/null || return 1
+    $SOCAT /dev/null DCCP4-L:0,accept-timeout=0.001 2>/dev/null || return 1;
+    return 0;
+}
+
+# check if DCCP on IPv6 is available on host
+runsdccp6 () {
+    runsip6 >/dev/null || { echo DCCP6; return 1; }
+    $SOCAT -h |grep -i ' DCCP6-' >/dev/null || return 1
+    $SOCAT /dev/null DCCP6-L:0,accept-timeout=0.001 2>/dev/null || return 1;
+    return 0;
+}
+
+# check if UNIX domain sockets work
+runsunix () {
+    # for now...
     return 0;
 }
 
@@ -1066,7 +1082,7 @@ checkconds() {
 
     if [ "$inet" ]; then
 	if [ -z "$NTERNET" ]; then
-	    echo "Use test.sh option -internet"
+	    echo "Use test.sh option --internet"
 	    return -1
 	fi
     fi
@@ -18123,6 +18139,68 @@ else
 fi
 fi # NUMCOND
  ;;
+esac
+N=$((N+1))
+
+
+NAME=DCCP4
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%dccp%*|*%listen%*|*%$NAME%*)
+TEST="$NAME: DCCP over IPv4"
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds "" "" "" \
+			 "IP4 DCCP LISTEN STDIO PIPE" \
+			 "DCCP4-LISTEN PIPE STDIN STDOUT DCCP4" \
+			 "so-reuseaddr" \
+			 "dccp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+newport dccp4; tsl=$PORT
+ts="127.0.0.1:$tsl"
+da="test$N $(date) $RANDOM"
+CMD1="$TRACE $SOCAT $opts DCCP4-LISTEN:$tsl,$REUSEADDR PIPE"
+CMD2="$TRACE $SOCAT $opts STDIN!!STDOUT DCCP4:$ts"
+printf "test $F_n $TEST... " $N
+$CMD1 >"$tf" 2>"${te}1" &
+pid1=$!
+waittcp4port $tsl 1
+echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
+if [ $? -ne 0 ]; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+fi
+kill $pid1 2>/dev/null
+wait
+fi ;; # NUMCOND, checkconds
 esac
 N=$((N+1))
 

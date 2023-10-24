@@ -150,7 +150,9 @@
 #if HAVE_LINUX_IF_TUN_H
 #include <linux/if_tun.h>
 #endif
-
+#if HAVE_LINUX_DCCP_H
+#include <linux/dccp.h>
+#endif
 #if HAVE_TERMIOS_H && _WITH_TERMIOS
 #include <termios.h>
 #endif

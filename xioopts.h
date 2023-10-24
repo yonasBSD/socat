@@ -182,7 +182,6 @@ enum e_func {
 
 #define GROUP_IP_UDP	0x01000000 	/* not yet used? */
 #define GROUP_IP_TCP	0x02000000
-#define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP)	/* true: indicates one of UDP, TCP, SCTP */
 #define GROUP_IP_SOCKS4	0x04000000
 #define GROUP_OPENSSL	0x08000000
 
@@ -191,19 +190,20 @@ enum e_func {
 #define GROUP_HTTP	0x40000000	/* any HTTP client */
 
 /* Keep condition consistent with xio.h:groups_t! */
-#if WITH_SCTP || WITH_POSIXMQ
+#if WITH_POSIXMQ || WITH_SCTP || WITH_DCCP
 /* The following groups are not expected on systems without uint64_t */
-/* The following groups are not expected on systems withous uint64_t */
-#define GROUP_IP_SCTP	0x0100000000U
-#define GROUP_POSIXMQ	0x0200000000U
-#define GROUP_ALL	0x03ffffffffU
-#else
-#define GROUP_IP_SCTP	0
+#define GROUP_POSIXMQ	0x0100000000U
+#define GROUP_IP_SCTP	0x0200000000U
+#define GROUP_IP_DCCP	0x0400000000U
+#define GROUP_ALL	0x07ffffffffU
+#else /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP) */
 #define GROUP_POSIXMQ	0
+#define GROUP_IP_SCTP	0
+#define GROUP_IP_DCCP	0
 #define GROUP_ALL	0xffffffffU
-#endif
+#endif /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP) */
 
-#define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP)	/* true: indicates one of UDP, TCP, SCTP */
+#define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP|GROUP_IP_DCCP)	/* true: indicates one of UDP, TCP, SCTP, DCCP */
 #define GROUP_ANY	(GROUP_PROCESS|GROUP_APPL)
 
 
@@ -300,6 +300,7 @@ enum e_optcode {
    OPT_CSIZE,		/* termios.c_cflag */
    OPT_CSTOPB,		/* termios.c_cflag */
    OPT_DASH,		/* exec() */
+   OPT_DCCP_SET_CCID,
    OPT_ECHO,		/* termios.c_lflag */
    OPT_ECHOCTL,		/* termios.c_lflag */
    OPT_ECHOE,		/* termios.c_lflag */

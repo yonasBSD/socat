@@ -369,6 +369,32 @@ else
 fi
 fi
 
+AC_MSG_CHECKING(whether to include DCCP support)
+AC_ARG_ENABLE(dccp, [  --disable-dccp           disable DCCP support],
+	      [case "$enableval" in
+	       no) AC_MSG_RESULT(no); WITH_DCCP= ;;
+	       *) AC_MSG_RESULT(yes); WITH_DCCP=1 ;;
+	       esac],
+	       [AC_MSG_RESULT(yes);   WITH_DCCP=1 ])
+
+if test -n "$WITH_DCCP"; then
+AC_MSG_CHECKING(for IPPROTO_DCCP)
+AC_CACHE_VAL(sc_cv_define_ipproto_dccp,
+[AC_TRY_COMPILE([#include <sys/types.h>
+#include <netinet/in.h>],
+[IPPROTO_DCCP;],
+[sc_cv_define_ipproto_dccp=yes],
+[sc_cv_define_ipproto_dccp=no])])
+AC_MSG_RESULT($sc_cv_define_ipproto_dccp)
+if test $sc_cv_define_ipproto_dccp = yes; then
+   AC_DEFINE(WITH_DCCP)
+   AC_CHECK_HEADER(linux/dccp.h,
+     AC_DEFINE(HAVE_LINUX_DCCP_H))
+else
+   AC_MSG_WARN([IPPROTO_DCCP undefined, disabling DCCP support])
+fi
+fi
+
 AC_MSG_CHECKING(whether to include vsock support)
 AC_ARG_ENABLE(vsock, [  --disable-vsock         disable vsock support],
 	      [case "$enableval" in

@@ -96,6 +96,12 @@ bool xioopts_ignoregroups;
 #  define IF_SCTP(a,b)
 #endif
 
+#if WITH_DCCP
+#  define IF_DCCP(a,b) {a,b},
+#else
+#  define IF_DCCP(a,b)
+#endif
+
 #if WITH_SOCKS4
 #  define IF_SOCKS4(a,b) {a,b},
 #else
@@ -315,6 +321,9 @@ const struct optname optionnames[] = {
 	IF_ANY    ("bytes",     &opt_readbytes)
 	IF_OPENSSL("cafile",	&opt_openssl_cafile)
 	IF_OPENSSL("capath",	&opt_openssl_capath)
+#if defined(SOL_DCCP) && defined(DCCP_SOCKOPT_QPOLICY_ID)
+	IF_DCCP   ("ccid",	&xioopt_dccp_set_ccid)
+#endif
 	IF_ANY	  ("cd", 		&opt_chdir)
 	IF_OPENSSL("cert",	&opt_openssl_certificate)
 	IF_OPENSSL("certificate",	&opt_openssl_certificate)
@@ -392,6 +401,9 @@ const struct optname optionnames[] = {
 	IF_TERMIOS("ctlecho",	&opt_echoctl)
 	IF_TERMIOS("ctty",	&opt_tiocsctty)
 	IF_EXEC   ("dash",	&opt_dash)
+#if defined(SOL_DCCP) && defined(DCCP_SOCKOPT_QPOLICY_ID)
+	IF_DCCP   ("dccp-set-ccid",	&xioopt_dccp_set_ccid)
+#endif
 	IF_SOCKET ("debug",	&opt_so_debug)
 	/*IF_RESOLVE("debug",	&opt_res_debug)*/
 #ifdef O_DEFER

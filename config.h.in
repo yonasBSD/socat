@@ -282,6 +282,9 @@
 /* Define if you have the <linux/if_tun.h> header file.  */
 #undef HAVE_LINUX_IF_TUN_H
 
+/* Define if you have the <linux/dccp.h> header file.  */
+#undef HAVE_LINUX_DCCP_H
+
 /* Define if you have the <linux/vm_sockets.h> header file.  */
 #undef HAVE_LINUX_VM_SOCKETS_H
 
@@ -710,6 +713,7 @@
 #undef WITH_TCP
 #undef WITH_UDP
 #undef WITH_SCTP
+#undef WITH_DCCP
 #undef WITH_LISTEN
 #undef WITH_POSIXMQ
 #undef WITH_SOCKS4

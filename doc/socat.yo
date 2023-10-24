@@ -51,10 +51,10 @@ manpagedescription()
 
 Socat() is a command line based utility that establishes two bidirectional byte
 streams and transfers data between them. Because the streams can be constructed
-from a large set of different types of data sinks and sources 
+from a large set of different types of data sinks and sources
 (see link(address types)(ADDRESS_TYPES)), and because lots of
 link(address options)(ADDRESS_OPTIONS) may be applied to the streams, socat can
-be used for many different purposes. 
+be used for many different purposes.
 
 Filan() is a utility that prints information about its active file
 descriptors to stdout. It has been written for debugging socat(), but might be
@@ -314,6 +314,69 @@ label(ADDRESS_CREAT)dit(bf(tt(CREATE:<filename>)))
    link(unlink-late)(OPTION_UNLINK_LATE),
    link(append)(OPTION_APPEND)nl()
    See also: link(OPEN)(ADDRESS_OPEN), link(GOPEN)(ADDRESS_GOPEN)
+
+label(ADDRESS_DCCP_CONNECT)dit(bf(tt(DCCP-CONNECT:<host>:<port>)) (bf(tt(DCCP:<host>:<port>))))
+   Establishes a DCCP connect to the specified <host> [link(IP
+   address)(TYPE_IP_ADDRESS)] and <port> [link(DCCP service)(TYPE_TCP_SERVICE)]
+   using IP version 4 or 6 depending on address specification, name
+   resolution, or option link(pf)(OPTION_PROTOCOL_FAMILY).nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(SCTP)(GROUP_SCTP),link(CHILD)(GROUP_CHILD),link(RETRY)(GROUP_RETRY) nl()
+   Useful options:
+   link(bind)(OPTION_BIND),
+   link(connect-timeout)(OPTION_CONNECT_TIMEOUT),
+   link(tos)(OPTION_TOS),
+   link(dccp-set-ccid)(OPTION_DCCP_SET_CCID),
+   link(nonblock)(OPTION_NONBLOCK),
+   link(sourceport)(OPTION_SOURCEPORT),
+   link(retry)(OPTION_RETRY),
+   link(readbytes)(OPTION_READBYTES)nl()
+   See also:
+   link(DCCP4-CONNECT)(ADDRESS_DCCP4_CONNECT),
+   link(DCCP6-CONNECT)(ADDRESS_DCCP6_CONNECT),
+   link(DCCP-LISTEN)(ADDRESS_DCCP_LISTEN),
+   link(TCP-CONNECT)(ADDRESS_TCP_CONNECT)
+   link(SCTP-CONNECT)(ADDRESS_SCTP_CONNECT)
+label(ADDRESS_DCCP4_CONNECT)dit(bf(tt(DCCP4-CONNECT:<host>:<port>)) (bf(tt(DCCP4:<host>:<port>))))
+   Like link(DCCP-CONNECT)(ADDRESS_DCCP_CONNECT), but only supports IPv4 protocol.nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(DCCP)(GROUP_DCCP),link(CHILD)(GROUP_CHILD),link(RETRY)(GROUP_RETRY) nl()
+label(ADDRESS_DCCP6_CONNECT)dit(bf(tt(DCCP6-CONNECT:<host>:<port>)) (bf(tt(DCCP6:<host>:<port>))))
+   Like link(DCCP-CONNECT)(ADDRESS_DCCP_CONNECT), but only supports IPv6 protocol.nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP6)(GROUP_IP6),link(DCCP)(GROUP_DCCP),link(CHILD)(GROUP_CHILD),link(RETRY)(GROUP_RETRY) nl()
+
+label(ADDRESS_DCCP_LISTEN)dit(bf(tt(DCCP-LISTEN:<port>)) (bf(tt(DCCP-L:<port>))))
+   Listens on <port> [link(DCCP service)(TYPE_TCP_SERVICE)] and accepts an
+   DCCP connection. The IP version is 4 or the one specified with
+   address option link(pf)(OPTION_PROTOCOL_FAMILY), socat option
+   (link(-4)(option_4), link(-6)(option_6)), or environment variable link(SOCAT_DEFAULT_LISTEN_IP)(ENV_SOCAT_DEFAULT_LISTEN_IP).
+   Note that opening
+   this address usually blocks until a client connects.nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(LISTEN)(GROUP_LISTEN),link(CHILD)(GROUP_CHILD),link(RANGE)(GROUP_RANGE),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(DCCP)(GROUP_DCCP),link(RETRY)(GROUP_RETRY) nl()
+   Useful options:
+   link(fork)(OPTION_FORK),
+   link(bind)(OPTION_BIND),
+   link(range)(OPTION_RANGE),
+   link(max-children)(OPTION_MAX_CHILDREN),
+   link(backlog)(OPTION_BACKLOG),
+   link(accept-timeout)(OPTION_ACCEPT_TIMEOUT),
+   link(dccp-set-sid)(OPTION_DCCP_SET_CCID),
+   link(su)(OPTION_SUBSTUSER),
+   link(reuseaddr)(OPTION_SO_REUSEADDR),
+   link(retry)(OPTION_RETRY)nl()
+   See also:
+   link(DCCP4-LISTEN)(ADDRESS_DCCP4_LISTEN),
+   link(DCCP6-LISTEN)(ADDRESS_DCCP6_LISTEN),
+   link(TCP-LISTEN)(ADDRESS_TCP_LISTEN),
+   link(SCTP-LISTEN)(ADDRESS_SCTP_LISTEN),
+   link(DCCP-CONNECT)(ADDRESS_DCCP_CONNECT)
+label(ADDRESS_DCCP4_LISTEN)dit(bf(tt(DCCP4-LISTEN:<port>)) (bf(tt(DCCP4-L:<port>))))
+   Like link(DCCP-LISTEN)(ADDRESS_DCCP_LISTEN), but only supports IPv4
+   protocol.nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(LISTEN)(GROUP_LISTEN),link(CHILD)(GROUP_CHILD),link(RANGE)(GROUP_RANGE),link(IP4)(GROUP_IP4),link(DCCP)(GROUP_DCCP),link(RETRY)(GROUP_RETRY) nl()
+label(ADDRESS_DCCP6_LISTEN)dit(bf(tt(DCCP6-LISTEN:<port>)) (bf(tt(DCCP6-L:<port>))))
+   Like link(DCCP-LISTEN)(ADDRESS_DCCP_LISTEN), but only supports IPv6
+   protocol.nl()
+   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(LISTEN)(GROUP_LISTEN),link(CHILD)(GROUP_CHILD),link(RANGE)(GROUP_RANGE),link(IP6)(GROUP_IP6),link(DCCP)(GROUP_DCCP),link(RETRY)(GROUP_RETRY) nl()
+
 label(ADDRESS_EXEC)dit(bf(tt(EXEC:<command-line>)))
    Forks a sub process that establishes communication with its parent process
    and invokes the specified program with code(execvp()).
@@ -2651,10 +2714,22 @@ enddit()
 startdit()enddit()nl()
 
 
-em(bf(UDP, TCP, and SCTP option group))
+label(GROUP_DCCP)em(bf(DCCP option group))
+
+These options may be applied to DCCP sockets.
+startdit()
+label(OPTION_DCCP_SET_CCID)dit(bf(tt(dccp-set-ccid=<int>)))
+dit(bf(tt(ccid=<int>)))
+   Selects the desired congestion control mechanism (CCID).
+enddit()
+
+startdit()enddit()nl()
+
+
+em(bf(UDP, TCP, SCTP, and DCCP option group))
 
 Here we find options that are related to the network port mechanism and thus
-can be used with UDP, TCP, and SCTP client and server addresses.
+can be used with UDP, TCP, SCTP, and DCCP client and server addresses.
 startdit()
 label(OPTION_SOURCEPORT)dit(bf(tt(sourceport=<port>)))
    For outgoing (client) TCP and UDP connections, it sets the source
@@ -4080,10 +4155,9 @@ htmlcommand(<hr><div class="shell">socat &#x5C;
     TCP-LISTEN:10021,reuseaddr,socktype=6,protocol=33,fork &#x5C;
     PIPE</div>)
 
-is a simple DCCP echo server. It uses socat()s TCP procedures, but changes the
+is a simple DCCP echo server. DCCP is now directly provisioned in socat(),
+however this example shows how use socat()s TCP procedures and change the
 socket type to SOCK_DCCP=6 (on Linux) and the IP protocol to IPPROTO_DCCP=33.
-This works in contrast to attempts with UDP basis, even though DCCP is named a
-datagram protocol.
 
 
 label(EXAMPLE_GENERIC_DCCP_CLIENT)
@@ -4099,7 +4173,8 @@ mancommand(\.fi)
 htmlcommand(<hr><div class="shell">socat - &#x5C;
     TCP:<server>:10021,reuseaddr,socktype=6,protocol=33,fork</div>)
 
-is a simple DCCP client. It uses socat()s TCP procedures, but changes the
+is a simple DCCP client. DCCP is now directly provisioned in socat(),
+however this example shows how use socat()s TCP procedures, but changes the
 socket type to SOCK_DCCP=6 (on Linux) and the IP protocol to IPPROTO_DCCP=33.
 
 
