@@ -15224,6 +15224,7 @@ wait
 fi ;; # NUMCOND, feats
 esac
 PORT=$((PORT+1))
+N=$((N+1))
 
 
 # Test the so-rcvtimeo address option with DTLS
@@ -15293,6 +15294,103 @@ fi
 fi
 wait
 fi ;; # testfeats, NUMCOND
+esac
+N=$((N+1))
+
+
+# Test the use of interesting variables in the sniffing file names
+NAME=VARS_IN_SNIFFPATH
+case "$TESTS" in
+*%$N%*|*%functions%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: sniff file names with variables"
+# Start a server process with option fork that sniffs traffic and stores it in
+# two files for each child process, using PID, timestamp, microseconds, and
+# client IP
+# Connect two times.
+# For now we say that the test succeeded when 4 log files have been generated.
+if ! eval $NUMCOND; then :;
+elif ! A=$(testfeats IP4 TCP LISTEN PIPE STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - TCP4 TCP4-LISTEN PIPE STDIO); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions so-reuseaddr fork) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport tcp4 	# or whatever proto, or drop this line
+CMD0="$TRACE $SOCAT $opts -lp server0 -r \"$td/test$N.\\\$PROGNAME-\\\$TIMESTAMP.\\\$MICROS-\\\$SERVER0_PEERADDR-\\\$\\\$.in.log\" -R \"$td/test$N.\\\$PROGNAME-\\\$TIMESTAMP.\\\$MICROS-\\\$SERVER0_PEERADDR-\\\$\\\$.out.log\" TCP4-LISTEN:$PORT,so-reuseaddr,fork PIPE"
+CMD1="$TRACE $SOCAT $opts - TCP4-CONNECT:$LOCALHOST:$PORT"
+printf "test $F_n $TEST... " $N
+eval "$CMD0" >/dev/null 2>"${te}0" &
+pid0=$!
+waittcp4port $PORT 1
+echo "$da" |$CMD1 >"${tf}1a" 2>"${te}1a"
+rc1a=$?
+echo "$da" |$CMD1 >"${tf}1b" 2>"${te}1b"
+rc1b=$?
+kill $(childpids $pid0) $pid0 2>/dev/null; wait
+if [ $rc1a != 0 -o $rc1b != 0 ]; then
+    $PRINTF "$FAILED (client problem)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1a" >&2
+    echo "$CMD1"
+    cat "${te}1b" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif test $(ls -l $td/test$N.*.log |wc -l) -eq 4 &&
+	test $(ls $td/test$N.*.log |head -n 1 |wc -c) -ge 56; then
+    # Are the names correct?
+    # Convert timestamps to epoch and compare
+    # Are the contents correct?
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1a" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
+    numOK=$((numOK+1))
+elif test -f $td/test$N.\$PROGNAME-\$TIMESTAMP.\$MICROS-\$SERVER0_PEERADDR-\$\$.in.log; then
+    $PRINTF "$FAILED (vars not resolved)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1a" >&2
+    echo "$CMD1"
+    cat "${te}1b" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+else
+    $PRINTF "$FAILED (unknown)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1a" >&2
+    echo "$CMD1"
+    cat "${te}1b" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
 esac
 N=$((N+1))
 

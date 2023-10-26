@@ -21,7 +21,9 @@ xioparms_t xioparms = {
    NULL,	/* syslogfac */
    '4',		/* default_ip */
    '4',		/* preferred_ip */
-   false 	/* experimental */
+   false, 	/* experimental */
+   NULL, 	/* sniffleft_name */
+   NULL 	/* sniffright_name */
 } ;
 
 
@@ -43,6 +45,8 @@ int xiosetopt(char what, const char *arg) {
       break;
    case 'l': xioparms.logopt = *arg; break;
    case 'y': xioparms.syslogfac = arg; break;
+   case 'r': xioparms.sniffleft_name = arg; break;
+   case 'R': xioparms.sniffright_name = arg; break;
    default:
       Error2("xiosetopt('%c', \"%s\"): unknown option",
 	     what, arg?arg:"NULL");
@@ -60,6 +64,26 @@ int xioinqopt(char what, char *arg, size_t n) {
       return 0;
    case 'o': return xioparms.ip4portsep;
    case 'l': return xioparms.logopt;
+   case 'r':
+      if (xioparms.sniffleft_name == NULL) {
+	 return 1;
+      }
+      if (n < strlen(xioparms.sniffleft_name)+1) {
+	 return -1;
+      }
+      arg[0] = '\0';
+      strncat(arg, xioparms.sniffleft_name, n-1);
+      return 0;
+   case 'R':
+      if (xioparms.sniffright_name == NULL) {
+	 return 1;
+      }
+      if (n < strlen(xioparms.sniffright_name)+1) {
+	 return -1;
+      }
+      arg[0] = '\0';
+      strncat(arg, xioparms.sniffright_name, n-1);
+      return 0;
    default:
       Error3("xioinqopt('%c', \"%s\", "F_Zu"): unknown option",
 	     what, arg, n);

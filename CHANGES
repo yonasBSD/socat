@@ -37,6 +37,10 @@ Features:
 	Test: RCVTIMEO_DTLS
 	Feature proposed by Vladimir Nikishkin.
 
+	The file names with -r and -R now may contain environment variable
+	references.
+	Test: VARS_IN_SNIFFPATH
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

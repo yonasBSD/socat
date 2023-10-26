@@ -36,8 +36,6 @@ struct {
    char logopt;		/* y..syslog; s..stderr; f..file; m..mixed */
    bool lefttoright;	/* first addr ro, second addr wo */
    bool righttoleft;	/* first addr wo, second addr ro */
-   int sniffleft;	/* -1 or an FD for teeing data arriving on xfd1 */
-   int sniffright;	/* -1 or an FD for teeing data arriving on xfd2 */
    xiolock_t lock;	/* a lock file */
    unsigned long log_sigs;	/* signals to be caught just for logging */
 } socat_opts = {
@@ -52,8 +50,6 @@ struct {
    's',		/* logopt */
    false,	/* lefttoright */
    false,	/* righttoleft */
-   -1,		/* sniffleft */
-   -1,		/* sniffright */
    { NULL, 0 },	/* lock */
    1<<SIGHUP | 1<<SIGINT | 1<<SIGQUIT | 1<<SIGILL | 1<<SIGABRT | 1<<SIGBUS | 1<<SIGFPE | 1<<SIGSEGV | 1<<SIGTERM, 	/* log_sigs */
 };
@@ -61,7 +57,6 @@ struct {
 void socat_usage(FILE *fd);
 void socat_opt_hint(FILE *fd, char a, char b);
 void socat_version(FILE *fd);
-static int xio_openauxwr(const char *path, const char *hint);
 int socat(const char *address1, const char *address2);
 int _socat(void);
 int cv_newline(unsigned char *buff, ssize_t *bytes, int lineterm1, int lineterm2);
@@ -213,9 +208,7 @@ int main(int argc, const char *argv[]) {
 	       break;
 	    }
 	 }
-	 if ((socat_opts.sniffleft = xio_openauxwr(a, "option -r")) < 0) {
-	    Error2("option -r: failed to open \"%s\": %s", a, strerror(errno));
-	 }
+	 xiosetopt('r', a);
 	 break;
       case 'R': if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -226,9 +219,7 @@ int main(int argc, const char *argv[]) {
 	       break;
 	    }
 	 }
-	 if ((socat_opts.sniffright = xio_openauxwr(a, "option -R")) < 0) {
-	    Error2("option -R: failed to open \"%s\": %s", a, strerror(errno));
-	 }
+	 xiosetopt('R', a);
 	 break;
       case 'b': if (arg1[0][2]) {
 	    a = *arg1+2;
@@ -655,50 +646,11 @@ void socat_version(FILE *fd) {
 }
 
 
-/* Opens a path for logging or tracing.
-   Return the filedescriptor, or -1 when an error occurred (errn0).
-   Prints messages but no Error().
-*/
-static int xio_openauxwr(const char *path, const char *hint)
-{
-	int fd;
-	int _errno;
-
-	if ((fd = Open(path, O_CREAT|O_WRONLY|O_APPEND|
-#ifdef O_LARGEFILE
-		       O_LARGEFILE|
-#endif
-#ifdef O_CLOEXEC
-		       O_CLOEXEC|
-#endif
-		       O_NONBLOCK, 0664)) < 0) {
-		if (errno != ENXIO)
-			return -1;
-		/* Possibly a named pipe that does not yet have a reader */
-		_errno = errno;
-		Notice3("%s \"%s\": %s, retrying r/w", hint, path, strerror(errno));
-		if ((fd = Open(path, O_CREAT|O_RDWR|O_APPEND|
-#ifdef O_LARGEFILE
-			       O_LARGEFILE|
-#endif
-#ifdef O_CLOEXEC
-			       O_CLOEXEC|
-#endif
-			       O_NONBLOCK, 0664)) < 0) {
-			errno = _errno;
-			return -1;
-		}
-	}
-#ifndef O_CLOEXEC
-	 Fcntl_l(fd, F_SETFD, FD_CLOEXEC);
-#endif
-	 return fd;
-}
-
-
 xiofile_t *sock1, *sock2;
 int closing = 0;	/* 0..no eof yet, 1..first eof just occurred,
 			   2..counting down closing timeout */
+int sniffleft = -1; 		/* -1 or an FD for teeing data arriving on xfd1 */
+int sniffright = -1; 	/* -1 or an FD for teeing data arriving on xfd2 */
 
 /* call this function when the common command line options are parsed, and the
    addresses are extracted (but not resolved). */
@@ -860,6 +812,28 @@ int _socat(void) {
    int polling = 0;	/* handling ignoreeof */
    int wasaction = 1;	/* last poll was active, do NOT sleep before next */
    struct timeval total_timeout;	/* the actual total timeout timer */
+
+   {
+      /* Open sniff file(s) */
+      char name[PATH_MAX];
+      struct timeval tv = { 0 }; 	/* 'cache' to have same time in both */
+
+      if (xioinqopt('r', name, sizeof(name)) == 0) {
+	 if (sniffleft >= 0)  Close(sniffleft);
+	 sniffleft = xio_opensnifffile(name, &tv);
+	 if (sniffleft < 0) {
+	    Error2("option -r \"%s\": %s", name, strerror(errno));
+         }
+      }
+
+      if (xioinqopt('R', name, sizeof(name)) == 0) {
+	 if (sniffright >= 0)  Close(sniffright);
+	 sniffright = xio_opensnifffile(name, &tv);
+	 if (sniffright < 0) {
+	    Error2("option -R \"%s\": %s", name, strerror(errno));
+         }
+      }
+   }
 
 #if WITH_FILAN
    if (socat_opts.debug) {
@@ -1398,23 +1372,23 @@ int xiotransfer(xiofile_t *inpipe, xiofile_t *outpipe,
 	       errno = EAGAIN;  return -1;
 	    }
 
-	    if (!righttoleft && socat_opts.sniffleft >= 0) {
-	       if ((sniffed = Write(socat_opts.sniffleft, buff, bytes)) < bytes) {
+	    if (!righttoleft && sniffleft >= 0) {
+	       if ((sniffed = Write(sniffleft, buff, bytes)) < bytes) {
 		  if (sniffed < 0)
 		     Warn3("-r: write(%d, buff, "F_Zu"): %s",
-			   socat_opts.sniffleft, bytes, strerror(errno));
+			   sniffleft, bytes, strerror(errno));
 		  else if (sniffed < bytes)
 		     Warn3("-r: write(%d, buff, "F_Zu") -> "F_Zd,
-			   socat_opts.sniffleft, bytes, sniffed);
+			   sniffleft, bytes, sniffed);
 	       }
-	    } else if (righttoleft && socat_opts.sniffright >= 0) {
-	       if ((sniffed = Write(socat_opts.sniffright, buff, bytes)) < bytes) {
+	    } else if (righttoleft && sniffright >= 0) {
+	       if ((sniffed = Write(sniffright, buff, bytes)) < bytes) {
 		  if (sniffed < 0)
 		     Warn3("-R: write(%d, buff, "F_Zu"): %s",
-			   socat_opts.sniffright, bytes, strerror(errno));
+			   sniffright, bytes, strerror(errno));
 		  else if (sniffed < bytes)
 		     Warn3("-R: write(%d, buff, "F_Zu") -> "F_Zd,
-			   socat_opts.sniffright, bytes, sniffed);
+			   sniffright, bytes, sniffed);
 	       }
 	    }
 

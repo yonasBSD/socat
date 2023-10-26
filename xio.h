@@ -112,6 +112,8 @@ typedef struct {
    char preferred_ip;	/* preferred prot.fam. for name resolution ('0' for
 			   unspecified, '4', or '6') */
    bool experimental;	/* enable some features */
+   const char *sniffleft_name; 		/* file name with -r */
+   const char *sniffright_name; 	/* file name with -R */
 } xioparms_t;
 
 /* pack the description of a lock file */
@@ -440,6 +442,8 @@ extern int xioopenhelp(FILE *of, int level);
 
 /* must be outside function for use by childdied handler */
 extern xiofile_t *sock1, *sock2;
+extern int sniffleft, sniffright;
+
 #define NUMUNKNOWN 4
 extern pid_t diedunknown[NUMUNKNOWN];	/* child died before it is registered */
 #define diedunknown1 (diedunknown[0])
