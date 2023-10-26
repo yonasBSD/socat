@@ -19,8 +19,8 @@ xioparms_t xioparms = {
    ':',		/* ip6portsep */
    '\0',	/* logopt */
    NULL,	/* syslogfac */
-   '4',		/* default_ip */
-   '4',		/* preferred_ip */
+   WITH_DEFAULT_IPV, 	/* default_ip */
+   WITH_DEFAULT_IPV, 	/* preferred_ip */
    false, 	/* experimental */
    NULL, 	/* sniffleft_name */
    NULL 	/* sniffright_name */

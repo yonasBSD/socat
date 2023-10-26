@@ -44,7 +44,7 @@ usage() {
     $ECHO "\t-foreign \tAllow tests that send packets to Internet"
     $ECHO "\t-expect-fail N1,N2,... \tIgnore failure of these tests"
     $ECHO "\ttest-spec \Number of test or name of test"
-    $ECHO "Contents of environment variable OPTS are passed to Socat invokations, e.'g:"
+    $ECHO "Contents of environment variable OPTS are passed to Socat invocations, e.'g:"
     $ECHO "OPTS=\"-d -d -d -d -lu\" ./test.sh"
     $ECHO "TRACE=\"strace -tt -v\" 	Use trace,valgrind etc.on socat"
     $ECHO "SOCAT=/path/to/socat \tselect socat executable for test"
@@ -155,7 +155,7 @@ MCINTERFACE=$INTERFACE
 [ -z "$MCINTERFACE" ] && MCINTERFACE=lo	# !!! Linux only - and not always
 #LOCALHOST=192.168.58.1
 LOCALHOST=localhost 	# attention: on FreeBSD-10 localhost resolves primarily to IPv6
-#LOCALHOST=127.0.0.1
+LOCALHOST4=127.0.0.1
 LOCALHOST6="[::1]"
 #PROTO=$(awk '{print($2);}' /etc/protocols |sort -n |tail -n 1)
 #PROTO=$(($PROTO+1))
@@ -972,16 +972,10 @@ runssctp4 () {
 # check if SCTP on IPv6 is available on host
 runssctp6 () {
     runsip6 >/dev/null || { echo SCTP6; return 1; }
-    $SOCAT -h |grep ' SCTP6-' >/dev/null || return 1
+    $SOCAT -h |grep -i ' SCTP6-' >/dev/null || return 1
     $SOCAT /dev/null SCTP6-L:0,accept-timeout=0.001 2>/dev/null || return 1;
     return 0;
 }
-
-# check if UNIX domain sockets work - see above
-#runsunix () {
-#    # for now...
-#    return 0;
-#}
 
 routesip6 () {
     runsip6 >/dev/null || { echo route6; return 1; }
@@ -3456,6 +3450,8 @@ fi ;; # NUMCOND, feats
 esac
 N=$((N+1))
 
+
+newport $RUNS 	# in case it has not yet been invoked
 
 while read NAMEKEYW FEAT RUNS TESTTMPL PEERTMPL WAITTMPL; do
 if [ -z "$NAMEKEYW" ] || [[ "$NAMEKEYW" == \#* ]]; then continue; fi
@@ -11398,8 +11394,9 @@ if [ $RLIMIT_NOFILE -gt 1024 ]; then
 fi
 newport tcp4
 CMD0="$TRACE $SOCAT $opt_d0 $opts TCP4-LISTEN:$PORT,$REUSEADDR,range=$LOCALHOST:255.255.255.255 PIPE"
+#CMD0="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,pf=ip4,$REUSEADDR,range=$LOCALHOST4:255.255.255.255 PIPE"
 CMD1="$TRACE $SOCAT $opts -t 0 /dev/null TCP4:$SECONDADDR:$PORT,bind=$SECONDADDR"
-CMD2="$TRACE $SOCAT $opts - TCP4:$LOCALHOST:$PORT,bind=$LOCALHOST"
+CMD2="$TRACE $SOCAT $opts - TCP:$LOCALHOST4:$PORT,bind=$LOCALHOST4"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
@@ -11414,7 +11411,11 @@ kill $pid0 2>/dev/null; wait
 echo -e "$da" |diff "${tf}2" - >$tdiff
 if [ $rc2 -ne 0 ]; then
     $PRINTF "$FAILED (rc2=$rc2)\n"
-    echo "$CMD2 &"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
     cat "${te}2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -11690,20 +11691,20 @@ gentestcert testcli
 test_proto=tcp4
 case "$MODE" in
     SERVER)
-	CMD0="$SOCAT $opts -u $TESTADDRESS system:\"echo SOCAT_${SSLDIST}_${MODULE}_${FIELD}=\\\$SOCAT_${SSLDIST}_${MODULE}_${FIELD}; sleep 1\""
+	CMD0="$SOCAT $opts -u -lp socat $TESTADDRESS SYSTEM:\"echo SOCAT_${SSLDIST}_${MODULE}_${FIELD}=\\\$SOCAT_${SSLDIST}_${MODULE}_${FIELD}; sleep 1\""
 	CMD1="$SOCAT $opts -u /dev/null $PEERADDRESS"
 	printf "test $F_n $TEST... " $N
 	eval "$CMD0 2>\"${te}0\" >\"$tf\" &"
 	pid0=$!
 	wait${test_proto}port $PORT 1
-	$CMD1 2>"${te}1"
+	{ $CMD1 2>"${te}1"; sleep 1; }
 	rc1=$?
 	waitfile "$tf" 2
 	kill $pid0 2>/dev/null; wait
 	;;
     CLIENT)
 	CMD0="$SOCAT $opts -u /dev/null $PEERADDRESS"
-	CMD1="$SOCAT $opts -u $TESTADDRESS system:\"echo SOCAT_${SSLDIST}_${MODULE}_${FIELD}=\\\$SOCAT_${SSLDIST}_${MODULE}_${FIELD}; sleep 1\""
+	CMD1="$SOCAT $opts -u -lp socat $TESTADDRESS SYSTEM:\"echo SOCAT_${SSLDIST}_${MODULE}_${FIELD}=\\\$SOCAT_${SSLDIST}_${MODULE}_${FIELD}; sleep 1\""
 	printf "test $F_n $TEST... " $N
 	$CMD0 2>"${te}0" &
 	pid0=$!
@@ -14663,7 +14664,7 @@ CMD="$TRACE $SOCAT $opts -d -d -d -d /dev/null UDP4-SENDTO:$LOCALHOST:$PORT,lowp
 printf "test $F_n $TEST... " $N
 $CMD >/dev/null 2>"${te}"
 rc1=$?
-LOWPORT=$(grep '[DE] bind(.*:' $te |sed 's/.*:\([0-9][0-9]*\),.*/\1/')
+LOWPORT=$(grep '[DE] bind(.*:' $te |sed 's/.*:\([0-9][0-9]*\)[}]*,.*/\1/' |head -n 1)
 #echo "LOWPORT=\"$LOWPORT\"" >&2
 #type socat >&2
 if  [[ $LOWPORT =~ [0-9][0-9]* ]] && [ "$LOWPORT" -ge 640 -a "$LOWPORT" -le 1023 ]; then
@@ -15937,10 +15938,12 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
+printf "test $F_n $TEST... " $N
 newport tcp6
 # Yup, it seems that with OpenSSL the side that begins with shutdown does NOT
 # begin shutdown of the TCP connection
 # therefore we let the client timeout
+# result is not reliable (OK seen even without any SO_REUSEADDR)
 CMD0a="$TRACE $SOCAT $opts -lp server1 -6 OPENSSL-LISTEN:$PORT,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD0b="$TRACE $SOCAT $opts -lp server2 -6 OPENSSL-LISTEN:$PORT,accept-timeout=.01,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD1="$TRACE $SOCAT $opts -lp client -6 -T 0.1 PIPE OPENSSL-CONNECT:$LOCALHOST6:$PORT,verify=0"
@@ -16078,6 +16081,10 @@ elif [ -z "$FOREIGN" ]; then
     $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+#elif ! $(type nslookup >/dev/null 2>&1) && ! $(type host >/dev/null 2>&1); then
+#    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup and host not available${NORMAL}\n" $N
+#    numCANT=$((numCANT+1))
+#    listCANT="$listCANT $N"
 elif ! F=$(testfeats IP4 TCP GOPEN); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
@@ -16095,7 +16102,11 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-ADDRS=$(nslookup server-4.dest-unreach.net. |sed -n '/^$/,$ p' |grep ^Address |awk '{print($2);}')
+if type nslookup >/dev/null 2>&1; then
+    ADDRS=$(nslookup server-4.dest-unreach.net. |sed -n '/^$/,$ p' |grep ^Address |awk '{print($2);}')
+elif type host >/dev/null 2>&1; then
+    ADDRS=$(host server-4.dest-unreach.net. |sed 's/.*address //')
+fi
 while true; do
     newport tcp4
     OPEN=
@@ -16115,7 +16126,7 @@ CMD="$TRACE $SOCAT $opts -d -d /dev/null TCP4:server-4.dest-unreach.net:$PORT"
 printf "test $F_n $TEST... " $N
 $CMD >/dev/null 2>"${te}"
 rc=$?
-if [ $(grep " N opening connection to AF=2 " ${te} |wc -l) -eq 2 ]; then
+if [ $(grep " N opening connection to .*AF=2 " ${te} |wc -l) -eq 2 ]; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
@@ -16143,8 +16154,12 @@ TEST="$NAME: for TCP try all available IPv4 and IPv6 addresses"
 # neither IPv4 nor IPv6
 # Check the log if Socat tried both addresses
 if ! eval $NUMCOND; then :;
-#elif [ -z "$FOREIGN" ]; then	# only needs Internet DNS
-#    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+elif [ -z "$FOREIGN" ]; then	# only needs Internet DNS
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+#elif ! $(type nslookup >/dev/null 2>&1) && ! $(type host >/dev/null 2>&1); then
+#    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup and host not available${NORMAL}\n" $N
 #    numCANT=$((numCANT+1))
 #    listCANT="$listCANT $N"
 elif ! F=$(testfeats ip4 ip6 tcp); then
@@ -16169,7 +16184,11 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 LOCALHOST_4_6=localhost-4-6.dest-unreach.net
-ADDRS=$(nslookup . |sed -n '/^$/,$ p' |grep ^Address |awk '{print($2);}')
+if type nslookup >/dev/null 2>&1; then
+    ADDRS=$(nslookup server-4.dest-unreach.net. |sed -n '/^$/,$ p' |grep ^Address |awk '{print($2);}')
+elif type host >/dev/null 2>&1; then
+    ADDRS=$(host server-4.dest-unreach.net. |sed 's/.*address //')
+fi
 while true; do
     OPEN=
     for addr in $ADDRS; do
@@ -16192,7 +16211,7 @@ CMD="$TRACE $SOCAT $opts -d -d /dev/null TCP:localhost-4-6.dest-unreach.net:$POR
 printf "test $F_n $TEST... " $N
 $CMD >/dev/null 2>"${te}"
 rc=$?
-if [ $(grep " N opening connection to AF=\(2\|10\) " ${te} |wc -l) -eq 2 ]; then
+if [ $(grep " N opening connection to .*AF=[0-9]" ${te} |wc -l) -eq 2 ]; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi

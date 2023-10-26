@@ -109,7 +109,7 @@ typedef struct {
    char ip6portsep;	/* do not change, might be hardcoded somewhere! */
    char logopt;	/* 'm' means "switch to syslog when entering daemon mode" */
    const char *syslogfac;	/* syslog facility (only with mixed mode) */
-   char default_ip;	/* default prot.fam for IP based listen ('4' or '6') */
+   char default_ip;	/* default prot.fam for IP based listen ('4' '6' or '\0') */
    char preferred_ip;	/* preferred prot.fam. for name resolution ('0' for
 			   unspecified, '4', or '6') */
    bool experimental;	/* enable some features */

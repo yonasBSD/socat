@@ -75,6 +75,9 @@ Features:
 	Tests: TRY_ADDRS_4 TRY_ADDRS_4_6
 	Feature recommended by Anand Buddhdev.
 
+	configure option --with-default-ipv allows to specify at build time if
+	IPv4, IPv6, or none of these is the preferred default.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

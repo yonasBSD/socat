@@ -723,6 +723,8 @@
 
 #undef WITH_MSGLEVEL
 
+#undef WITH_DEFAULT_IPV 		/* default IP version: undef, "4", "6" */
+
 #define BUILD_DATE __DATE__ " " __TIME__
 
 #endif /* !defined(__config_h_included) */

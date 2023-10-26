@@ -548,7 +548,7 @@ static int
    struct opt *opts0 = NULL;
    union sockaddr_union us_sa, *us = &us_sa;
    socklen_t uslen = sizeof(us_sa);
-   int pf;
+   int pf = PF_UNSPEC;
    bool use_dtls = (protogrp != 0);
    int socktype = SOCK_STREAM;
    int ipproto = IPPROTO_TCP;
@@ -572,7 +572,11 @@ static int
    }
 
 #if WITH_IP4 && WITH_IP6
-   pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
+   switch (xioparms.default_ip) {
+   case '4': pf = PF_INET; break;
+   case '6': pf = PF_INET6; break;
+   default: break;		/* includes \0 */
+   }
 #elif WITH_IP6
    pf = PF_INET6;
 #else
@@ -612,6 +616,8 @@ static int
        != STAT_OK) {
       return STAT_NORETRY;
    }
+   if (pf == 0)
+      pf = us->soa.sa_family;
 
    xfd->dtype = XIODATA_OPENSSL;
 

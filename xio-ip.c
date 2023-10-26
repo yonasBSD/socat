@@ -104,6 +104,24 @@ const struct optdesc opt_res_dnsrch   = { "res-dnsrch",   "dnsrch",   OPT_RES_DN
 #endif /* WITH_IP4 || WITH_IP6 */
 
 
+int xioinit_ip(
+	struct single *sfd,
+	int *pf)
+{
+	if (*pf == PF_UNSPEC) {
+		switch (xioparms.preferred_ip) {
+		case '0': *pf = PF_UNSPEC; break;
+#if WITH_IP4
+		case '4': *pf = PF_INET; break;
+#endif
+#if WITH_IP6
+		case '6': *pf = PF_INET6; break;
+#endif
+		}
+	}
+	return 0;
+}
+
 #if HAVE_RESOLV_H
 int Res_init(void) {
    int result;
@@ -274,7 +292,11 @@ int xiogetaddrinfo(const char *node, const char *service,
       /* first fallback is getipnodebyname() */
       if (family == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-	 family = xioparms.default_ip=='6'?PF_INET6:PF_INET;
+      switch (xioparms.default_ip) {
+      case '4': pf = PF_INET; break;
+      case '6': pf = PF_INET6; break;
+      default: break;		/* includes \0 */
+      }
 #elif WITH_IP6
 	 family = PF_INET6;
 #else
@@ -325,7 +347,11 @@ int xiogetaddrinfo(const char *node, const char *service,
 	 be useful somewhere sometimes in a future even for IP6 */
       if (family == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-	 family = xioparms.default_ip=='6'?PF_INET6:PF_INET;
+      switch (xioparms.default_ip) {
+      case '4': pf = PF_INET; break;
+      case '6': pf = PF_INET6; break;
+      default: break;		/* includes \0 */
+      }
 #elif WITH_IP6
 	 family = PF_INET6;
 #else

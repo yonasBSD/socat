@@ -33,10 +33,10 @@ int xioparsenetwork_ip4(const char *rangename, struct xiorange *range) {
       char *endptr;
       bits = strtoul(delimpos+1, &endptr, 10);
       if (! ((*(delimpos+1) != '\0') && (*endptr == '\0'))) {
-	 Error1("not a valid netmask in \"%s\"", rangename);
+	 Error1("not a valid IPv4 netmask in \"%s\"", rangename);
 	 bits = 32;	/* most secure selection */
       } else if (bits > 32) {
-	 Error1("netmask \"%s\" is too large", rangename);
+	 Error1("IPv4 netmask \"%s\" is too large", rangename);
 	 bits = 32;
       }
       if (bits <= 0) {

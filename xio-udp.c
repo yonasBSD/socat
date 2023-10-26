@@ -296,7 +296,11 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
 
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-      pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
+      switch (xioparms.default_ip) {
+      case '4': pf = PF_INET; break;
+      case '6': pf = PF_INET6; break;
+      default: break;		/* includes \0 */
+      }
 #elif WITH_IP6
       pf = PF_INET6;
 #else
@@ -506,7 +510,11 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-      pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
+      switch (xioparms.default_ip) {
+      case '4': pf = PF_INET; break;
+      case '6': pf = PF_INET6; break;
+      default: break;		/* includes \0 */
+      }
 #elif WITH_IP6
       pf = PF_INET6;
 #else
@@ -579,7 +587,11 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
-      pf = xioparms.default_ip=='6'?PF_INET6:PF_INET;
+      switch (xioparms.default_ip) {
+      case '4': pf = PF_INET; break;
+      case '6': pf = PF_INET6; break;
+      default: break;		/* includes \0 */
+      }
 #elif WITH_IP6
       pf = PF_INET6;
 #else

@@ -676,6 +676,15 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_MSGLEVEL\n", fd);
 #endif
+#ifdef WITH_DEFAULT_IPV
+#  if WITH_DEFAULT_IPV
+   fprintf(fd, "  #define WITH_DEFAULT_IPV %c\n", WITH_DEFAULT_IPV);
+#  else
+   fprintf(fd, "  #define WITH_DEFAULT_IPV '\\0'\n");
+#  endif
+#else
+   fputs("  #undef WITH_DEFAULT_IPV\n", fd);
+#endif
 }
 
 
