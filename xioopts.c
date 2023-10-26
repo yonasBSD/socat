@@ -936,9 +936,15 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("max-version",	&opt_openssl_max_proto_version)
 #endif
 	IF_LISTEN ("maxchildren",	&opt_max_children)
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+	IF_OPENSSL("maxfraglen",	&opt_openssl_maxfraglen)
+#endif
 #ifdef TCP_MAXSEG
 	IF_TCP    ("maxseg",	&opt_tcp_maxseg)
 	IF_TCP    ("maxseg-late",	&opt_tcp_maxseg_late)
+#endif
+#if HAVE_SSL_CTX_set_max_send_fragment || defined(SSL_CTX_set_max_send_fragment)
+	IF_OPENSSL("maxsendfrag",	&opt_openssl_maxsendfrag)
 #endif
 #ifdef TCP_MD5SUM
 	IF_TCP    ("md5sig",	&opt_tcp_md5sig)
@@ -1189,6 +1195,12 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("openssl-key",	&opt_openssl_key)
 #if HAVE_SSL_set_max_proto_version || defined(SSL_set_max_proto_version)
 	IF_OPENSSL("openssl-max-proto-version",	&opt_openssl_max_proto_version)
+#endif
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+	IF_OPENSSL("openssl-maxfraglen",	&opt_openssl_maxfraglen)
+#endif
+#if HAVE_SSL_CTX_set_max_send_fragment || defined(SSL_CTX_set_max_send_fragment)
+	IF_OPENSSL("openssl-maxsendfrag",	&opt_openssl_maxsendfrag)
 #endif
 #if WITH_OPENSSL_METHOD
 	IF_OPENSSL("openssl-method",	&opt_openssl_method)

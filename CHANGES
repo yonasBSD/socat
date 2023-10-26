@@ -25,6 +25,13 @@ Features:
 	Test: PROXY_HTTPVERSION
 	Feature inspired by Robin Palotai.
 
+	New options openssl-maxfraglen and openssl-maxsendfrag for
+	functions/macros SSL_CTX_set_tlsext_max_fragment_length() and
+	SSL_CTX_set_max_send_fragment().
+	Thanks to James Tavares for his contribution.
+
+	Added Info log of resulting OpenSSL max fragment length.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

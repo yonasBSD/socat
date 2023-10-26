@@ -2896,6 +2896,15 @@ label(OPTION_OPENSSL_EGD)dit(bf(tt(egd=<filename>)))
    On some systems, openssl requires an explicit source of random data. Specify
    the socket name where an entropy gathering daemon like egd provides random
    data, e.g. /dev/egd-pool.
+label(OPTION_OPENSSL_MAXFRAGLEN)dit(bf(tt(maxfraglen=<int>, openssl-maxfraglen=<int>)))
+   For client connections, make a Max Fragment Length Negotiation Request to the server to limit the
+   maximum size fragment the server will send to us. Supported lengths are: 512, 1024, 2048, or
+   4096. Note that this option is not applicable for link(OPENSSL-LISTEN)(ADDRESS_OPENSSL_LISTEN).
+label(OPTION_OPENSSL_MAXSENDFRAG)dit(bf(tt(maxsendfrag=<int>, openssl-maxsendfrag=<int>)))
+   Limit the maximum size of the fragment we will send to the other side. Supported length range:
+   512 - 16384. Note that under link(OPENSSL-LISTEN)(ADDRESS_OPENSSL_LISTEN), the maximum fragment
+   size may be further limited by the client's Maximum Fragment Length Negotiation Request, if it
+   makes one.
 label(OPTION_OPENSSL_PSEUDO)dit(bf(tt(pseudo)))
    On systems where openssl cannot find an entropy source and where no entropy
    gathering daemon can be utilized, this option activates a mechanism for

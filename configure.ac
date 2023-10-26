@@ -1578,6 +1578,23 @@ AC_CHECK_FUNC(ASN1_STRING_get0_data, AC_DEFINE(HAVE_ASN1_STRING_get0_data), AC_C
 AC_CHECK_FUNC(RAND_status, AC_DEFINE(HAVE_RAND_status))
 AC_CHECK_FUNC(SSL_CTX_clear_mode, AC_DEFINE(HAVE_SSL_CTX_clear_mode))
 AC_CHECK_FUNC(SSL_set_tlsext_host_name, AC_DEFINE(HAVE_SSL_set_tlsext_host_name))
+AC_CHECK_FUNC(SSL_CTX_set_tlsext_max_fragment_length, AC_DEFINE(HAVE_SSL_CTX_set_tlsext_max_fragment_length))
+
+AC_MSG_CHECKING(if SSL_CTX_set_max_send_fragment exists)
+AC_CACHE_VAL(ac_cv_have_SSL_CTX_set_max_send_fragment,
+[AC_TRY_COMPILE([#include <openssl/ssl.h>],[
+#ifndef SSL_CTX_set_max_send_fragment
+#error "SSL_CTX_set_max_send_fragment not found"
+#endif
+],
+[ac_cv_have_SSL_CTX_set_max_send_fragment=yes],
+[ac_cv_have_SSL_CTX_set_max_send_fragment=no])]
+)
+if test $ac_cv_have_SSL_CTX_set_max_send_fragment = yes; then
+   AC_DEFINE(HAVE_SSL_CTX_set_max_send_fragment)
+fi
+AC_MSG_RESULT($ac_cv_have_SSL_CTX_set_max_send_fragment)
+
 AC_CHECK_FUNC(SSL_library_init, AC_DEFINE(HAVE_SSL_library_init))
 AC_CHECK_FUNC(ERR_error_string, AC_DEFINE(HAVE_ERR_error_string))
 

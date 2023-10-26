@@ -319,6 +319,26 @@ int sycSSL_CTX_set_tmp_dh(SSL_CTX *ctx, DH *dh) {
    return result;
 }
 
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+int sycSSL_CTX_set_tlsext_max_fragment_length(SSL_CTX *ctx, uint8_t mode) {
+   int result;
+   Debug2("SSL_CTX_set_tlsext_max_fragment_length(%p, %u)", ctx, mode);
+   result = SSL_CTX_set_tlsext_max_fragment_length(ctx, mode);
+   Debug1("SSL_CTX_set_tlsext_max_fragment_length() -> %d", result);
+   return result;
+}
+#endif
+
+#if HAVE_SSL_CTX_set_max_send_fragment || defined(SSL_CTX_set_max_send_fragment)
+int sycSSL_CTX_set_max_send_fragment(SSL_CTX *ctx, long msf) {
+   int result;
+   Debug2("SSL_CTX_set_max_send_fragment(%p, %ld)", ctx, msf);
+   result = SSL_CTX_set_max_send_fragment(ctx, msf);
+   Debug1("SSL_CTX_set_max_send_fragment() -> %d", result);
+   return result;
+}
+#endif
+
 int sycSSL_set_cipher_list(SSL *ssl, const char *str) {
    int result;
    Debug2("SSL_set_cipher_list(%p, \"%s\")", ssl, str);

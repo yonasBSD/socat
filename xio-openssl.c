@@ -125,6 +125,12 @@ const struct optdesc opt_openssl_dhparam     = { "openssl-dhparam",     "dh",   
 const struct optdesc opt_openssl_cafile      = { "openssl-cafile",     "cafile", OPT_OPENSSL_CAFILE,      GROUP_OPENSSL, PH_SPEC, TYPE_FILENAME, OFUNC_SPEC };
 const struct optdesc opt_openssl_capath      = { "openssl-capath",     "capath", OPT_OPENSSL_CAPATH,      GROUP_OPENSSL, PH_SPEC, TYPE_FILENAME, OFUNC_SPEC };
 const struct optdesc opt_openssl_egd         = { "openssl-egd",        "egd",    OPT_OPENSSL_EGD,         GROUP_OPENSSL, PH_SPEC, TYPE_FILENAME, OFUNC_SPEC };
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+const struct optdesc opt_openssl_maxfraglen  = { "openssl-maxfraglen",  "maxfraglen",  OPT_OPENSSL_MAXFRAGLEN,  GROUP_OPENSSL, PH_SPEC, TYPE_INT, OFUNC_SPEC };
+#endif
+#if HAVE_SSL_CTX_set_max_send_fragment || defined(SSL_CTX_set_max_send_fragment)
+const struct optdesc opt_openssl_maxsendfrag = { "openssl-maxsendfrag", "maxsendfrag", OPT_OPENSSL_MAXSENDFRAG, GROUP_OPENSSL, PH_SPEC, TYPE_INT, OFUNC_SPEC };
+#endif
 const struct optdesc opt_openssl_pseudo      = { "openssl-pseudo",     "pseudo", OPT_OPENSSL_PSEUDO,      GROUP_OPENSSL, PH_SPEC, TYPE_BOOL,     OFUNC_SPEC };
 #if OPENSSL_VERSION_NUMBER >= 0x00908000L && !defined(OPENSSL_NO_COMP)
 const struct optdesc opt_openssl_compress    = { "openssl-compress",   "compress", OPT_OPENSSL_COMPRESS,  GROUP_OPENSSL, PH_SPEC, TYPE_STRING,   OFUNC_SPEC };
@@ -137,7 +143,6 @@ const struct optdesc opt_openssl_commonname  = { "openssl-commonname", "cn",    
 const struct optdesc opt_openssl_no_sni      = { "openssl-no-sni",    "nosni",   OPT_OPENSSL_NO_SNI,      GROUP_OPENSSL, PH_SPEC, TYPE_BOOL,     OFUNC_SPEC };
 const struct optdesc opt_openssl_snihost     = { "openssl-snihost",   "snihost", OPT_OPENSSL_SNIHOST,     GROUP_OPENSSL, PH_SPEC, TYPE_STRING,   OFUNC_SPEC };
 #endif
-
 
 /* If FIPS is compiled in, we need to track if the user asked for FIPS mode.
  * On forks, the FIPS mode must be reset by a disable, then enable since
@@ -166,6 +171,7 @@ int xio_reset_fips_mode(void) {
 
 static void openssl_conn_loginfo(SSL *ssl) {
    const char *string;
+   SSL_SESSION *session;
 
    string = SSL_get_cipher_version(ssl);
    Notice1("SSL proto version used: %s", string);
@@ -186,6 +192,31 @@ static void openssl_conn_loginfo(SSL *ssl) {
               comp?sycSSL_COMP_get_name(comp):"none");
       Notice1("SSL connection expansion \"%s\"",
               expansion?sycSSL_COMP_get_name(expansion):"none");
+   }
+#endif
+   session = SSL_get_session(ssl);
+   if (session == NULL) {
+      Warn1("SSL_get_session(%p) failed", ssl);
+      return;
+   }
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+   {
+      uint8_t fragcod;
+      int fraglen = -1;
+      fragcod = SSL_SESSION_get_max_fragment_length(session);
+      switch (fragcod) {
+      case TLSEXT_max_fragment_length_DISABLED: fraglen =  0; break;
+      case TLSEXT_max_fragment_length_512:  fraglen =  512; break;
+      case TLSEXT_max_fragment_length_1024: fraglen = 1024; break;
+      case TLSEXT_max_fragment_length_2048: fraglen = 2048; break;
+      case TLSEXT_max_fragment_length_4096: fraglen = 4096; break;
+      default: Warn1("SSL_SESSION_get_max_fragment_length(): unknown code %u",
+		    fragcod);
+	 break;
+      }
+      if (fraglen > 0) {
+	 Info1("OpenSSL: max fragment length is %d", fraglen);
+      }
    }
 #endif
 }
@@ -1404,6 +1435,60 @@ cont_out:
 			    SSL_VERIFY_NONE,
 			    NULL);
    }
+
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+   {
+      /* set client max fragment length negotiation (512, 1024, 2048, or 4096) */
+
+      int opt_maxfraglen = -1;
+
+      retropt_int(opts, OPT_OPENSSL_MAXFRAGLEN, &opt_maxfraglen);
+
+      if (!server) {
+         /* on client connection, ask the server not to send us packets bigger than our inbound buffer */
+         uint8_t mfl_code = TLSEXT_max_fragment_length_DISABLED;
+         if (opt_maxfraglen == -1) {
+            /* max frag length is not specified, leave DISABLED */
+         } else if (opt_maxfraglen == 512) {
+            mfl_code = TLSEXT_max_fragment_length_512;
+         } else if (opt_maxfraglen == 1024) {
+            mfl_code = TLSEXT_max_fragment_length_1024;
+         } else if (opt_maxfraglen == 2048) {
+            mfl_code = TLSEXT_max_fragment_length_2048;
+         } else if (opt_maxfraglen == 4096) {
+            mfl_code = TLSEXT_max_fragment_length_4096;
+         } else {
+            Error1("openssl: maxfraglen %d is not one of 512, 1024, 2048, or 4096", opt_maxfraglen);
+            return STAT_NORETRY;
+         }
+
+         sycSSL_CTX_set_tlsext_max_fragment_length(ctx, mfl_code);
+      } else {
+         if (opt_maxfraglen != -1) {
+            Error("openssl: maxfraglen option not applicable to a server");
+            return STAT_NORETRY;
+         }
+      }
+   }
+#endif
+
+#if HAVE_SSL_CTX_set_max_send_fragment || defined(SSL_CTX_set_max_send_fragment)
+   {
+      /* limit the maximum size of sent packets */
+      const int maxsendfrag_min = 512; /* per OpenSSL documentation */
+      int opt_maxsendfrag = SSL3_RT_MAX_PLAIN_LENGTH;
+
+      retropt_int(opts, OPT_OPENSSL_MAXSENDFRAG, &opt_maxsendfrag);
+
+      if (opt_maxsendfrag < maxsendfrag_min || opt_maxsendfrag > SSL3_RT_MAX_PLAIN_LENGTH) {
+         Error2("openssl: maxsendfrag %d out of range 512 - %d", maxsendfrag_min,
+            SSL3_RT_MAX_PLAIN_LENGTH);
+         return STAT_NORETRY;
+      }
+
+      sycSSL_CTX_set_max_send_fragment(ctx, opt_maxsendfrag);
+   }
+#endif
 
    return STAT_OK;
 }

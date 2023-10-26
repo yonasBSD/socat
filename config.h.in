@@ -532,6 +532,12 @@
 /* Define if you have the OpenSSL SSL_set_tlsext_host_name define/function */
 #undef HAVE_SSL_set_tlsext_host_name
 
+/* Define if you have the OpenSSL SSL_CTX_set_tlsext_max_fragment_length define/function */
+#undef HAVE_SSL_CTX_set_tlsext_max_fragment_length
+
+/* Define if you have the OpenSSL SSL_CTX_set_max_send_fragment define/function */
+#undef HAVE_SSL_CTX_set_max_send_fragment
+
 /* Define if you have the flock function */
 #undef HAVE_FLOCK
 

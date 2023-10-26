@@ -506,6 +506,12 @@ enum e_optcode {
    OPT_OPENSSL_EGD,
    OPT_OPENSSL_FIPS,
    OPT_OPENSSL_KEY,
+#if HAVE_SSL_CTX_set_tlsext_max_fragment_length || defined(SSL_CTX_set_tlsext_max_fragment_length)
+   OPT_OPENSSL_MAXFRAGLEN,
+#endif
+#if HAVE_SSL_CTX_set_max_send_fragment || defined(SSL_CTX_set_max_send_fragment)
+   OPT_OPENSSL_MAXSENDFRAG,
+#endif
    OPT_OPENSSL_MAX_PROTO_VERSION,
    OPT_OPENSSL_METHOD,
    OPT_OPENSSL_MIN_PROTO_VERSION,
