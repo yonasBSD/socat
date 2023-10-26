@@ -1482,6 +1482,7 @@ const struct optname optionnames[] = {
 #ifdef SIOCSPGRP
 	IF_SOCKET ("siocspgrp",	&opt_siocspgrp)
 #endif
+	IF_PTY    ("sitout-eio", 	&opt_sitout_eio)
 	IF_TUN    ("slave",	&opt_iff_slave)
 	IF_SOCKET ("sndbuf",	&opt_so_sndbuf)
 	IF_SOCKET ("sndbuf-late",	&opt_so_sndbuf_late)

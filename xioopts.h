@@ -644,6 +644,7 @@ enum e_optcode {
 #ifdef SIOCSPGRP
    OPT_SIOCSPGRP,
 #endif
+   OPT_SITOUT_EIO,
 #ifdef SO_ACCEPTCONN
    OPT_SO_ACCEPTCONN,
 #endif /* SO_ACCEPTCONN */

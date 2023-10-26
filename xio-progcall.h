@@ -10,6 +10,7 @@ extern const struct optdesc opt_fdout;
 extern const struct optdesc opt_path;
 extern const struct optdesc opt_pipes;
 extern const struct optdesc opt_pty;
+extern const struct optdesc opt_sitout_eio;
 extern const struct optdesc opt_openpty;
 extern const struct optdesc opt_ptmx;
 extern const struct optdesc opt_stderr;

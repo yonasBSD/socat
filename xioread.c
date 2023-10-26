@@ -75,23 +75,48 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
       break;
 
    case XIOREAD_PTY:
-      do {
+   {
+       int eio = 0;
+       bool m = false; 	/* loop message printed? */
+      while (true) {
+       do {
 	 bytes = Read(pipe->fd, buff, bufsiz);
-      } while (bytes < 0 && errno == EINTR);
-      if (bytes < 0) {
+       } while (bytes < 0 && errno == EINTR);
+       if (bytes < 0) {
 	 _errno = errno;
-	 if (_errno == EIO) {
-	    Notice4("read(%d, %p, "F_Zu"): %s (probably PTY closed)",
-		    pipe->fd, buff, bufsiz, strerror(_errno));
-	    return 0;
-	 } else {
-	    Error4("read(%d, %p, "F_Zu"): %s",
-		   pipe->fd, buff, bufsiz, strerror(_errno));
+	 if (_errno != EIO) {
+	    Error4("read(%d, %p, "F_Zu"): %s", pipe->fd, buff, bufsiz, strerror(_errno));
+	    errno = _errno;
+	    return -1;
 	 }
-	 errno = _errno;
-	 return -1;
+	 if (pipe->para.exec.sitout_eio.tv_sec == 0 &&
+	     pipe->para.exec.sitout_eio.tv_usec == 0) {
+		Notice4("read(%d, %p, "F_Zu"): %s (probably PTY closed)",
+			pipe->fd, buff, bufsiz, strerror(_errno));
+		return 0;
+	 }
+	 if (!m) {
+		 /* Starting first iteration: calc and report */
+		 /* Round up to 10ms */
+		 eio = 100*pipe->para.exec.sitout_eio.tv_sec +
+			    (pipe->para.exec.sitout_eio.tv_usec+9999)/10000;
+		 Notice3("xioread(fd=%d): EIO, sitting out %u.%02lus for recovery", pipe->fd, eio/100, (unsigned long)eio%100);
+		 m = true;
+	 }
+	 poll(NULL, 0, 10);
+	 if (--eio <= 0) {
+		 /* Timeout */
+		 Error4("read(%d, %p, "F_Zu"): %s", pipe->fd, buff, bufsiz, strerror(_errno));
+		 errno = _errno;
+		 return -1;
+	 }
+	 /* Not reached */
+       } else
+	       break; 	/* no error */
       }
-      break;
+   }
+   return bytes;
+   break;
 
 #if WITH_READLINE
    case XIOREAD_READLINE:

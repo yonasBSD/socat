@@ -45,6 +45,11 @@ Features:
 	before exit. Signal USR1 logs actual values.
 	Tests: OPTION_STATISTICS SIGUSR1_STATISTICS
 
+	Added option sitout-eio to specify a timerange in which EIO on the pty
+	of a sub process is tolerated.
+	Red Hat issue 1853102 related.
+	Thanks to Jonathan Casiot for sending an initial patch.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

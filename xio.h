@@ -234,6 +234,7 @@ typedef struct single {
       struct {
 	 pid_t pid;		/* child PID, with EXEC: */
 	 int fdout;		/* use fd for output if two pipes */
+	 struct timeval sitout_eio;
       } exec;
 #if WITH_READLINE
       struct {

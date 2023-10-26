@@ -547,7 +547,11 @@ ssize_t Read(int fd, void *buf, size_t count) {
    _errno = errno;
    if (!diag_in_handler) diag_flush();
 #if WITH_SYCLS
-   Debug1("read -> "F_Zd, result);
+   if (result < 0) {
+      Debug2("read -> "F_Zd" (errno=%d)", result, _errno);
+   } else {
+      Debug1("read -> "F_Zd, result);
+   }
 #endif /* WITH_SYCLS */
    errno = _errno;
    return result;

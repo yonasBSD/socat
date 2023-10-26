@@ -2823,6 +2823,12 @@ label(OPTION_PTY_INTERVAL)dit(bf(tt(pty-interval=<seconds>)))
    periodically checks the HUP condition using tt(poll()) to find if the pty's
    slave side has been opened. The default polling interval is 1s. Use the
    pty-interval option [link(timeval)(TYPE_TIMEVAL)] to change this value.
+label(OPTION_SITOUT_EIO)dit(bf(tt(sitout-eio=<timeval>)))
+   The login program in Linux closes its tty/pty and reopens it for security
+   reasons. During this time the pty master would get EIO on I/O operations and
+   might terminate. With this option socat() tolerates EIO for the specified
+   time. Please note that in this state socat() blocks traffic in both
+   directions, even when it is not related to this channel.
 enddit()
 
 

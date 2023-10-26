@@ -21,6 +21,7 @@ const struct optdesc opt_openpty = { "openpty",   NULL, OPT_OPENPTY,     GROUP_P
 #if HAVE_DEV_PTMX || HAVE_DEV_PTC
 const struct optdesc opt_ptmx    = { "ptmx",      NULL, OPT_PTMX,        GROUP_PTY,   PH_BIGEN, TYPE_BOOL, 	OFUNC_SPEC };
 #endif
+const struct optdesc opt_sitout_eio = { "sitout-eio", NULL, OPT_SITOUT_EIO, GROUP_PTY, PH_INIT, TYPE_TIMEVAL, OFUNC_OFFSET, XIO_OFFSETOF(para.exec.sitout_eio), XIO_SIZEOF(para.exec.sitout_eio) };
 
 #if WITH_EXEC || WITH_SYSTEM
 
