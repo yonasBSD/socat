@@ -50,6 +50,9 @@ Features:
 	Red Hat issue 1853102 related.
 	Thanks to Jonathan Casiot for sending an initial patch.
 
+	Socat now installs as socat1 and is referenced by symbolic link socat,
+	same with man page (socat1.1 by socat.1)
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/
