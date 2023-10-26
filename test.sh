@@ -5559,7 +5559,7 @@ elif ! feat=$(testoptions connect-timeout); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-# we need a hanging connection attempt, guess an address for this
+# We need a hanging connection attempt, guess an address for this
 case "$UNAME" in
 Linux) HANGIP=1.0.0.1 ;;
 *) HANGIP=255.255.255.254 ;;
@@ -5569,31 +5569,35 @@ tk1="$td/test$N.kill1"
 te2="$td/test$N.stderr2"
 tk2="$td/test$N.kill2"
 $PRINTF "test $F_n $TEST... " $N
-# first, try to make socat hang and see if it can be killed
-#$TRACE $SOCAT $opts - tcp:$HANGIP:1 >"$te1" 2>&1 </dev/null &
-CMD="$TRACE $SOCAT $opts - tcp:$HANGIP:1"
-$CMD >"$te1" 2>&1 </dev/null &
+# First, try to make socat hang and see if it can be killed
+CMD="$TRACE $SOCAT $opts - TCP:$HANGIP:1"
+$CMD >"$te1" 2>$te1 </dev/null &
 pid1=$!
 sleep 2
 if ! kill $pid1 2>"$tk1"; then
     $PRINTF "${YELLOW}does not hang${NORMAL}\n"
+    echo "$CMD" >&2
+    cat "$te1" >&2
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-# second, set connect-timeout and see if socat exits before kill
-$TRACE $SOCAT $opts - tcp:$HANGIP:1,connect-timeout=1.0 >"$te2" 2>&1 </dev/null &
+# Second, set connect-timeout and see if socat exits before kill
+CMD="$TRACE $SOCAT $opts - TCP:$HANGIP:1,connect-timeout=1.0"
+$CMD >"$te1" 2>$te2 </dev/null &
 pid2=$!
 sleep 2
 if kill $pid2 2>"$tk2"; then
     $PRINTF "$FAILED\n"
-    echo "$CMD"
-    cat "$te1"
-    cat "$te2"
+    echo "$CMD" >&2
+    cat "$te2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-   numOK=$((numOK+1))
+    if [ "$VERBOSE" ]; then
+	echo "$CMD" >&2
+    fi
+    numOK=$((numOK+1))
 fi
 fi
 wait
@@ -15169,7 +15173,7 @@ elif ! $(type proxyecho.sh >/dev/null 2>&1); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! F=$(testfeats IP4 TCP LISTEN EXEC STDIO PROXY); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! A=$(testaddrs TCP4-LISTEN EXEC STDIO PROXY-CONNECT); then
@@ -15199,12 +15203,12 @@ waittcp4port $PORT 1
 echo "$da" |$CMD1 >"$tf" 2>"${te}0"
 if ! echo "$da" |diff - "$tf" >"$tdiff"; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD0 &" >&2
-    cat "${te}0"
-    echo "$CMD1" >&2
-    cat "${te}1"
-    echo "diff:"
-    cat "$tdiff"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
@@ -15220,6 +15224,77 @@ wait
 fi ;; # NUMCOND, feats
 esac
 PORT=$((PORT+1))
+
+
+# Test the so-rcvtimeo address option with DTLS
+NAME=RCVTIMEO_DTLS
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udp%*|*%timeout%*|*%openssl%*|*%dtls%*|*%$NAME%*)
+TEST="$NAME: test the so-rcvtimeo option with DTLS"
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats STDIO OPENSSL); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO DTLS); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions verify so-rcvtimeo) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+# We need a hanging connection attempt, guess an address for this
+HANGIP=0.0.0.1
+te1="$td/test$N.stderr1"
+tk1="$td/test$N.kill1"
+te2="$td/test$N.stderr2"
+tk2="$td/test$N.kill2"
+$PRINTF "test $F_n $TEST... " $N
+# First, try to make socat hang and see if it can be killed
+CMD1="$TRACE $SOCAT $opts - DTLS:$HANGIP:1,verify=0"
+$CMD1 >"$te1" 2>$te1 </dev/null &
+pid1=$!
+sleep 2
+if ! kill -0 $pid1 2>"$tk1"; then
+    $PRINTF "${YELLOW}does not hang${NORMAL}\n"
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    wait
+else
+    # DTLS restarts read() a few times
+    while kill $pid1 2>/dev/null; do :; done
+# Second, set so-rcvtimeo and see if Socat exits before kill
+CMD2="$TRACE $SOCAT $opts - DTLS:$HANGIP:1,verify=0,so-rcvtimeo=1.0"
+$CMD2 >"$te1" 2>$te2 </dev/null &
+pid2=$!
+sleep 3 	# in OpenSSL 1.1.1f DTLS takes two timeouts
+if kill $pid2 2>"$tk2"; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD2"
+    cat "$te2" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    while kill $pid2 2>/dev/null; do :; done
+    wait
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD2 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi
+wait
+fi ;; # testfeats, NUMCOND
+esac
+N=$((N+1))
 
 
 # end of common tests

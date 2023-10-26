@@ -119,6 +119,13 @@ const struct optdesc opt_so_sndlowat = { "so-sndlowat",  "sndlowat", OPT_SO_SNDL
 #endif
 /* end of setsockopt options of UNIX98 standard */
 
+#ifdef SO_RCVTIMEO
+const struct optdesc opt_so_rcvtimeo = { "so-rcvtimeo",  "rcvtimeo", OPT_SO_RCVTIMEO, GROUP_SOCKET, PH_PASTSOCKET, TYPE_TIMEVAL, OFUNC_SOCKOPT, SOL_SOCKET, SO_RCVTIMEO };
+#endif
+#ifdef SO_SNDTIMEO
+const struct optdesc opt_so_sndtimeo = { "so-sndtimeo",  "sndtimeo", OPT_SO_SNDTIMEO, GROUP_SOCKET, PH_PASTSOCKET, TYPE_TIMEVAL, OFUNC_SOCKOPT, SOL_SOCKET, SO_SNDTIMEO };
+#endif
+
 #ifdef SO_AUDIT	/* AIX 4.3.3 */
 const struct optdesc opt_so_audit    = { "so-audit",     "audit",    OPT_SO_AUDIT,    GROUP_SOCKET, PH_PASTSOCKET, TYPE_INT,  OFUNC_SOCKOPT, SOL_SOCKET, SO_AUDIT };
 #endif /* SO_AUDIT */

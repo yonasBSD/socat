@@ -32,6 +32,11 @@ Features:
 
 	Added Info log of resulting OpenSSL max fragment length.
 
+	Implemented options rcvtimeo and sndtimeo, the first of which may be
+	useful to prevent endlessly hanging DTLS connection etablishment.
+	Test: RCVTIMEO_DTLS
+	Feature proposed by Vladimir Nikishkin.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

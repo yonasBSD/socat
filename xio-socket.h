@@ -44,6 +44,8 @@ extern const struct optdesc opt_so_type;
 extern const struct optdesc opt_so_dontroute;
 extern const struct optdesc opt_so_rcvlowat;
 extern const struct optdesc opt_so_sndlowat;
+extern const struct optdesc opt_so_rcvtimeo;
+extern const struct optdesc opt_so_sndtimeo;
 extern const struct optdesc opt_so_audit;
 extern const struct optdesc opt_so_attach_filter;
 extern const struct optdesc opt_so_detach_filter;

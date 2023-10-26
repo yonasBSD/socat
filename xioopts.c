@@ -1311,6 +1311,9 @@ const struct optname optionnames[] = {
 #ifdef SO_RCVLOWAT
 	IF_SOCKET ("rcvlowat",	&opt_so_rcvlowat)
 #endif
+#ifdef SO_RCVTIMEO
+	IF_SOCKET ("rcvtimeo",		&opt_so_rcvtimeo)
+#endif
 	IF_OPEN   ("rdonly",	&opt_o_rdonly)
 	IF_OPEN   ("rdwr",	&opt_o_rdwr)
 	IF_ANY    ("readbytes", &opt_readbytes)
@@ -1485,6 +1488,9 @@ const struct optname optionnames[] = {
 #ifdef SO_SNDLOWAT
 	IF_SOCKET ("sndlowat",	&opt_so_sndlowat)
 #endif
+#ifdef SO_SNDTIMEO
+	IF_SOCKET ("sndtimeo",		&opt_so_sndtimeo)
+#endif
 #if defined(HAVE_SSL_set_tlsext_host_name) || defined(SSL_set_tlsext_host_name)
 	IF_OPENSSL("snihost",    &opt_openssl_snihost)
 #endif
@@ -1549,6 +1555,9 @@ const struct optname optionnames[] = {
 #ifdef SO_RCVLOWAT
 	IF_SOCKET ("so-rcvlowat",	&opt_so_rcvlowat)
 #endif
+#ifdef SO_RCVTIMEO
+	IF_SOCKET ("so-rcvtimeo",	&opt_so_rcvtimeo)
+#endif
 	IF_SOCKET ("so-reuseaddr",	&opt_so_reuseaddr)
 #ifdef SO_REUSEPORT	/* AIX 4.3.3 */
 	IF_SOCKET ("so-reuseport",	&opt_so_reuseport)
@@ -1566,6 +1575,9 @@ const struct optname optionnames[] = {
 	IF_SOCKET ("so-sndbuf-late",	&opt_so_sndbuf_late)
 #ifdef SO_SNDLOWAT
 	IF_SOCKET ("so-sndlowat",	&opt_so_sndlowat)
+#endif
+#ifdef SO_SNDTIMEO
+	IF_SOCKET ("so-sndtimeo",	&opt_so_sndtimeo)
 #endif
 #ifdef SO_TIMESTAMP
 	IF_SOCKET ("so-timestamp",	&opt_so_timestamp)

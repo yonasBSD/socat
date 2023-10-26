@@ -608,7 +608,8 @@ label(ADDRESS_OPENSSL_DTLS_CLIENT)dit(bf(tt(OPENSSL-DTLS-CLIENT:<host>:<port>)))
    link(bind)(OPTION_BIND),
    link(pf)(OPTION_PROTOCOL_FAMILY),
    link(sourceport)(OPTION_SOURCEPORT),
-   link(retry)(OPTION_RETRY)nl()
+   link(retry)(OPTION_RETRY),
+   link(rcvtimeo)(OPTION_SO_RCVTIMOE)nl()
    See also:
    link(OPENSSL-DTLS-SERVER)(ADDRESS_OPENSSL_DTLS_SERVER),
    link(OPENSSL-CONNECT)(ADDRESS_OPENSSL_CONNECT),
@@ -644,6 +645,7 @@ label(ADDRESS_OPENSSL_DTLS_SERVER)dit(bf(tt(OPENSSL-DTLS-SERVER:<port>)))
    link(su)(OPTION_SUBSTUSER),
    link(reuseaddr)(OPTION_REUSEADDR),
    link(retry)(OPTION_RETRY)nl()
+   link(rcvtimeo)(OPTION_SO_RCVTIMOE)nl()
    See also:
    link(OPENSSL-DTLS-CLIENT)(ADDRESS_OPENSSL_DTLS_CLIENT),
    link(OPENSSL-LISTEN)(ADDRESS_OPENSSL_LISTEN),
@@ -1983,9 +1985,15 @@ label(OPTION_RCVBUF_LATE)dit(bf(tt(rcvbuf-late=<bytes>)))
    connected to <bytes> [link(int)(TYPE_INT)]. 
    With TCP sockets, this value corresponds to the socket's 
    maximal window size. 
-label(OPTION_RCVLOWAT)dit(bf(tt(rcvlowat=<bytes>)))
-   Specifies the minimum number of received bytes [link(int)(TYPE_INT)] until
-   the socket layer will pass the buffered data to socat(). 
+label(OPTION_SO_RCVTIMOE)dit(bf(tt(so-rcvtimeo=<time>, rcvtimeo=<time>)))
+   Specifies the time [link(int)(TYPE_TIMEVAL)] until code(recv()), code(read())
+   etc. functions timeout when no data is received. Note that in the transfer
+   phase socat() only calls these functions when code(select()) has reported
+   that data is available. However this option is useful with DTLS addresses to
+   timeout during connection negotiation.
+label(OPTION_SO_SNDTIMOE)dit(bf(tt(so-sndtimeo=<time>, sndtimeo=<time>)))
+   Like link(so-recvtimeo)(OPTION_SO_RCVTIMOE), but for code(send). Not usecase
+   known.
 label(OPTION_REUSEADDR)dit(bf(tt(reuseaddr)))
    Allows other sockets to bind to an address even if parts of it (e.g. the
    local port) are already in use by socat() (link(example)(EXAMPLE_OPTION_REUSEADDR)). 
@@ -2896,11 +2904,11 @@ label(OPTION_OPENSSL_EGD)dit(bf(tt(egd=<filename>)))
    On some systems, openssl requires an explicit source of random data. Specify
    the socket name where an entropy gathering daemon like egd provides random
    data, e.g. /dev/egd-pool.
-label(OPTION_OPENSSL_MAXFRAGLEN)dit(bf(tt(maxfraglen=<int>, openssl-maxfraglen=<int>)))
+label(OPTION_OPENSSL_MAXFRAGLEN)dit(bf(tt(openssl-maxfraglen=<int>, maxfraglen=<int>)))
    For client connections, make a Max Fragment Length Negotiation Request to the server to limit the
    maximum size fragment the server will send to us. Supported lengths are: 512, 1024, 2048, or
    4096. Note that this option is not applicable for link(OPENSSL-LISTEN)(ADDRESS_OPENSSL_LISTEN).
-label(OPTION_OPENSSL_MAXSENDFRAG)dit(bf(tt(maxsendfrag=<int>, openssl-maxsendfrag=<int>)))
+label(OPTION_OPENSSL_MAXSENDFRAG)dit(bf(tt(openssl-maxsendfrag=<int>, maxsendfrag=<int>)))
    Limit the maximum size of the fragment we will send to the other side. Supported length range:
    512 - 16384. Note that under link(OPENSSL-LISTEN)(ADDRESS_OPENSSL_LISTEN), the maximum fragment
    size may be further limited by the client's Maximum Fragment Length Negotiation Request, if it
