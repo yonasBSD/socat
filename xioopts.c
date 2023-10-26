@@ -125,6 +125,12 @@ bool xioopts_ignoregroups;
 #  define IF_OPENSSL(a,b)
 #endif
 
+#if WITH_INTERFACE
+#  define IF_INTERFACE(a,b) {a,b},
+#else
+#  define IF_INTERFACE(a,b)
+#endif
+
 #if WITH_TUN
 #  define IF_TUN(a,b) {a,b},
 #else
@@ -167,7 +173,7 @@ const struct optname optionnames[] = {
 #if defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
 	IF_IP     ("add-source-membership",	&opt_ip_add_source_membership)
 #endif
-	IF_TUN    ("allmulti",	&opt_iff_allmulti)
+	IF_INTERFACE("allmulti",	&opt_iff_allmulti)
 #if WITH_LIBWRAP && defined(HAVE_HOSTS_ALLOW_TABLE)
 	IF_IPAPP  ("allow-table",	&opt_tcpwrap_hosts_allow_table)
 #endif
@@ -185,7 +191,9 @@ const struct optname optionnames[] = {
 #ifdef IPV6_AUTHHDR
 	IF_IP6    ("authhdr",	&opt_ipv6_authhdr)
 #endif
-	IF_TUN    ("automedia",	&opt_iff_automedia)
+#ifdef IFF_AUTOMEDIA
+	IF_INTERFACE("automedia",	&opt_iff_automedia)
+#endif
 #ifdef CBAUD
 	IF_TERMIOS("b0",	&opt_b0)
 #ifdef B1000000
@@ -629,23 +637,31 @@ const struct optname optionnames[] = {
 #ifdef SO_BINDTODEVICE
 	IF_SOCKET ("if",	&opt_so_bindtodevice)
 #endif
-	IF_TUN    ("iff-allmulti",	&opt_iff_allmulti)
-	IF_TUN    ("iff-automedia",	&opt_iff_automedia)
-	IF_TUN    ("iff-broadcast",	&opt_iff_broadcast)
-	IF_TUN    ("iff-debug",	&opt_iff_debug)
-	/*IF_TUN    ("iff-dynamic",	&opt_iff_dynamic)*/
-	IF_TUN    ("iff-loopback",	&opt_iff_loopback)
-	IF_TUN    ("iff-master",	&opt_iff_master)
-	IF_TUN    ("iff-multicast",	&opt_iff_multicast)
+	IF_INTERFACE("iff-allmulti",	&opt_iff_allmulti)
+#ifdef IFF_AUTOMEDIA
+	IF_INTERFACE("iff-automedia",	&opt_iff_automedia)
+#endif
+	IF_INTERFACE("iff-broadcast",	&opt_iff_broadcast)
+	IF_INTERFACE("iff-debug",	&opt_iff_debug)
+	/*IF_INTERFACE("iff-dynamic",	&opt_iff_dynamic)*/
+	IF_INTERFACE("iff-loopback",	&opt_iff_loopback)
+#ifdef IFF_MASTER
+	IF_INTERFACE("iff-master",	&opt_iff_master)
+#endif
+	IF_INTERFACE("iff-multicast",	&opt_iff_multicast)
 	IF_TUN    ("iff-no-pi",	&opt_iff_no_pi)
-	IF_TUN    ("iff-noarp",	&opt_iff_noarp)
-	IF_TUN    ("iff-notrailers",	&opt_iff_notrailers)
-	IF_TUN    ("iff-pointopoint",	&opt_iff_pointopoint)
-	IF_TUN    ("iff-portsel",	&opt_iff_portsel)
-	IF_TUN    ("iff-promisc",	&opt_iff_promisc)
-	IF_TUN    ("iff-running",	&opt_iff_running)
-	IF_TUN    ("iff-slave",	&opt_iff_slave)
-	IF_TUN    ("iff-up",	&opt_iff_up)
+	IF_INTERFACE("iff-noarp",	&opt_iff_noarp)
+	IF_INTERFACE("iff-notrailers",	&opt_iff_notrailers)
+	IF_INTERFACE("iff-pointopoint",	&opt_iff_pointopoint)
+#ifdef IFF_PORTSEL
+	IF_INTERFACE("iff-portsel",	&opt_iff_portsel)
+#endif
+	IF_INTERFACE("iff-promisc",	&opt_iff_promisc)
+	IF_INTERFACE("iff-running",	&opt_iff_running)
+#ifdef IFF_SLAVE
+	IF_INTERFACE("iff-slave",	&opt_iff_slave)
+#endif
+	IF_INTERFACE("iff-up",	&opt_iff_up)
 	IF_TERMIOS("ignbrk",	&opt_ignbrk)
 	IF_TERMIOS("igncr",	&opt_igncr)
   /* you might need to terminate socat manually if you use this option: */
@@ -914,7 +930,7 @@ const struct optname optionnames[] = {
 	IF_ANY    ("lockw",	&opt_flock_ex_nb)	/* BSD, fallback */
 #endif
 	IF_EXEC   ("login",	&opt_dash)
-	IF_TUN    ("loopback",	&opt_iff_loopback)
+	IF_INTERFACE("loopback",	&opt_iff_loopback)
 	IF_IPAPP  ("lowport",	&opt_lowport)
 #if HAVE_LSEEK64
 	IF_ANY    ("lseek",	&opt_lseek64_set)
@@ -931,7 +947,9 @@ const struct optname optionnames[] = {
 	IF_ANY    ("lseek64-end",	&opt_lseek64_end)
 	IF_ANY    ("lseek64-set",	&opt_lseek64_set)
 #endif
-	IF_TUN    ("master",	&opt_iff_master)
+#ifdef IFF_MASTER
+	IF_INTERFACE("master",	&opt_iff_master)
+#endif
 	IF_LISTEN ("max-children",	&opt_max_children)
 #if HAVE_SSL_set_max_proto_version || defined(SSL_set_max_proto_version)
 	IF_OPENSSL("max-version",	&opt_openssl_max_proto_version)
@@ -971,7 +989,7 @@ const struct optname optionnames[] = {
 #ifdef IP_MTU_DISCOVER
 	IF_IP     ("mtudiscover",	&opt_ip_mtu_discover)
 #endif
-	IF_TUN    ("multicast",	&opt_iff_multicast)
+	IF_INTERFACE("multicast",	&opt_iff_multicast)
 	IF_IP     ("multicast-if",	&opt_ip_multicast_if)
 	IF_IP     ("multicast-loop",	&opt_ip_multicast_loop)
 	IF_IP     ("multicast-ttl",	&opt_ip_multicast_ttl)
@@ -999,7 +1017,7 @@ const struct optname optionnames[] = {
 #if defined(HAVE_SSL_set_tlsext_host_name) || defined(SSL_set_tlsext_host_name)
 	IF_OPENSSL("no-sni",	&opt_openssl_no_sni)
 #endif
-	IF_TUN    ("noarp",	&opt_iff_noarp)
+	IF_INTERFACE("noarp",	&opt_iff_noarp)
 #ifdef O_NOATIME
 	IF_OPEN   ("noatime",	&opt_o_noatime)
 #endif
@@ -1038,7 +1056,7 @@ const struct optname optionnames[] = {
 #if defined(HAVE_SSL_set_tlsext_host_name) || defined(SSL_set_tlsext_host_name)
 	IF_OPENSSL("nosni",		&opt_openssl_no_sni)
 #endif
-	IF_TUN    ("notrailers",	&opt_iff_notrailers)
+	IF_INTERFACE("notrailers",	&opt_iff_notrailers)
 #ifdef O_NSHARE
 	IF_OPEN   ("nshare",	&opt_o_nshare)
 #endif
@@ -1251,12 +1269,14 @@ const struct optname optionnames[] = {
 	IF_IP     ("pktoptions",	&opt_ip_pktoptions)
 	IF_IP     ("pktopts",	&opt_ip_pktoptions)
 #endif
-	IF_TUN    ("pointopoint",	&opt_iff_pointopoint)
+	IF_INTERFACE("pointopoint",	&opt_iff_pointopoint)
 #ifdef I_POP
 	IF_ANY    ("pop-all",	&opt_streams_i_pop_all)
 #endif
 	/*IF_IPAPP("port",	&opt_port)*/
-	IF_TUN    ("portsel",	&opt_iff_portsel)
+#ifdef IFF_PORTSEL
+	IF_INTERFACE("portsel",	&opt_iff_portsel)
+#endif
 #if HAVE_RESOLV_H && WITH_RES_PRIMARY
 	IF_IP     ("primary",	&opt_res_primary)
 #endif
@@ -1266,7 +1286,7 @@ const struct optname optionnames[] = {
 #ifdef O_PRIV
 	IF_OPEN   ("priv",	&opt_o_priv)
 #endif
-	IF_TUN    ("promisc",	&opt_iff_promisc)
+	IF_INTERFACE("promisc",	&opt_iff_promisc)
 	IF_READLINE("prompt",	&opt_prompt)
 #ifdef SO_PROTOTYPE
 	IF_SOCKET ("protocol",	&opt_so_prototype)
@@ -1401,7 +1421,7 @@ const struct optname optionnames[] = {
 #ifdef IPV6_RTHDR
 	IF_IP6    ("rthdr",	&opt_ipv6_rthdr)
 #endif
-	IF_TUN    ("running",	&opt_iff_running)
+	IF_INTERFACE("running",	&opt_iff_running)
 #ifdef TCP_SACK_DISABLE
 	IF_TCP    ("sack-disable",	&opt_tcp_sack_disable)
 #endif
@@ -1484,7 +1504,9 @@ const struct optname optionnames[] = {
 	IF_SOCKET ("siocspgrp",	&opt_siocspgrp)
 #endif
 	IF_PTY    ("sitout-eio", 	&opt_sitout_eio)
-	IF_TUN    ("slave",	&opt_iff_slave)
+#ifdef IFF_SLAVE
+	IF_INTERFACE("slave",	&opt_iff_slave)
+#endif
 	IF_SOCKET ("sndbuf",	&opt_so_sndbuf)
 	IF_SOCKET ("sndbuf-late",	&opt_so_sndbuf_late)
 #ifdef SO_SNDLOWAT
@@ -1797,7 +1819,7 @@ const struct optname optionnames[] = {
 #if WITH_FS && defined(FS_UNRM_FL)
 	IF_ANY    ("unrm",		&opt_fs_unrm)
 #endif
-	IF_TUN    ("up",	&opt_iff_up)
+	IF_INTERFACE("up",	&opt_iff_up)
 #ifdef SO_USE_IFBUFS
 	IF_SOCKET ("use-ifbufs",	&opt_so_use_ifbufs)
 	IF_SOCKET ("useifbufs",		&opt_so_use_ifbufs)
@@ -3745,7 +3767,7 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	/*Error1("applyopts(): function %d not implemented",
 	  opt->desc->func);*/
 	 if (opt->desc->func != OFUNC_EXT && opt->desc->func != OFUNC_SIGNAL) {
-	    Error1("applyopts(): option \"%s\" does not apply",
+	    Error1("applyopts(): internal error: option \"%s\" does not apply",
 		   opt->desc->defname);
 	    opt->desc = ODESC_ERROR;
 	    ++opt;

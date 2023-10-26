@@ -192,7 +192,8 @@ typedef struct single {
       END_SHUTDOWN,	/* shutdown() */
       END_KILL,		/* has subprocess */
       END_CLOSE_KILL,	/* first close fd, then kill subprocess */
-      END_SHUTDOWN_KILL	/* first shutdown fd, then kill subprocess */
+      END_SHUTDOWN_KILL,/* first shutdown fd, then kill subprocess */
+      END_INTERFACE	/* restore interface flags, then close fd */
    } howtoend;
 #if _WITH_SOCKET
    union sockaddr_union peersa;
@@ -276,11 +277,13 @@ typedef struct single {
 #endif
       } openssl;
 #endif /* WITH_OPENSSL */
-#if WITH_TUN
+#if _WITH_INTERFACE
       struct {
+	 char name[IFNAMSIZ];	/* name of interface */
+	 short save_iff; 	/* for restoring old settings on exit */
 	 short iff_opts[2];	/* ifr flags, using OFUNC_OFFSET_MASKS */
-      } tun;
-#endif /* WITH_TUN */
+      } interface;
+#endif /* _WITH_INTERFACE */
    } para;
 #if WITH_STATS
    unsigned long long blocks_read;

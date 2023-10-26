@@ -16,6 +16,10 @@
 #include "utils.h"
 #include "sysutils.h"
 
+#if _WITH_INTERFACE
+const int one = 1;
+#endif
+
 /* Substitute for Write():
    Try to write all bytes before returning; this handles EINTR,
    EAGAIN/EWOULDBLOCK, and partial write situations. The drawback is that this

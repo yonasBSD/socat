@@ -83,6 +83,9 @@ Corrections:
 	Now Socat handles EPIPE and ECONNRESET as errors to indicate possible
 	failure of data transfer.
 
+	INTERFACE addresses did not accept options of INTERFACE group (for
+	historical reasons they were only available with TUN addresses).
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 

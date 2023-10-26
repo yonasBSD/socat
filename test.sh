@@ -8395,34 +8395,42 @@ tl="$td/test$N.lock"
 da="$(date) $RANDOM"
 TUNNET=10.255.255
 TUNNAME=tun9
-CMD1="$TRACE $SOCAT $opts -L $tl TUN:$TUNNET.1/24,iff-up=1,tun-type=tun,tun-name=$TUNNAME echo"
-CMD="$TRACE $SOCAT $opts - INTERFACE:$TUNNAME"
+CMD0="$TRACE $SOCAT $opts -L $tl TUN:$TUNNET.1/24,iff-up=1,tun-type=tun,tun-name=$TUNNAME PIPE"
+CMD1="$TRACE $SOCAT $opts - INTERFACE:$TUNNAME"
 printf "test $F_n $TEST... " $N
-$CMD1 2>"${te}1" &
-pid1="$!"
+$CMD0 2>"${te}1" &
+pid0="$!"
 #waitinterface "$TUNNAME"
-sleep 1
-echo "$da" |$CMD >"$tf" 2>"${te}"
-kill $pid1 2>/dev/null
+usleep $MICROS
+{ echo "$da"; usleep $MICROS ; } |$CMD1 >"$tf" 2>"${te}"
+rc1=$?
+usleep $MICROS
+kill $pid0 2>/dev/null
 wait
-if [ $? -ne 0 ]; then
-    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD &"
+if [ "$rc1" -ne 0 ]; then
+    $PRINTF "$FAILED (rc1=$rc1):\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}" "${te}1"
+    cat "${te}1" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-    $PRINTF "$FAILED\n"
-    echo "$CMD &"
+    $PRINTF "$FAILED (diff)\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
     echo "$CMD1"
+    cat "${te}1" >&2
+    echo "// diff:"
     cat "$tdiff"
-    cat "${te}" "${te}1"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-    if [ -n "$debug" ]; then cat "${te}" "${te}1"; fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
 fi
 fi ;; # NUMCOND, feats
@@ -13720,7 +13728,7 @@ elif [ $rc1 -ne 0 ]; then
     cat "${te}1" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
-elif echo "$da" |diff - ${tf}1 >${tfdiff}$N; then
+elif echo "$da" |diff - ${tf}1 >${tdiff}$N; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
 else

@@ -5,6 +5,11 @@
 #ifndef __sysincludes_h_included
 #define __sysincludes_h_included 1
 
+/* Sorry for this... */
+#if defined(__sun) || defined(__sun__) || defined(__SunOS)
+#  define BSD_COMP 1 			/* for SIOCGIFFLAGS */
+#endif
+
 #include <stddef.h>	/* ptrdiff_t */
 #if HAVE_STDBOOL_H
 #include <stdbool.h>	/* bool, true, false */

@@ -11,40 +11,21 @@
 #include "xio-named.h"
 #include "xio-socket.h"
 #include "xio-ip.h"
+#include "xio-interface.h"
 
 #include "xio-tun.h"
 
 
 static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
-/****** TUN addresses ******/
+/****** TUN options ******/
 const struct optdesc opt_tun_device    = { "tun-device",     NULL,      OPT_TUN_DEVICE,      GROUP_TUN,       PH_OPEN, TYPE_FILENAME, OFUNC_SPEC };
 const struct optdesc opt_tun_name      = { "tun-name",       NULL,      OPT_TUN_NAME,        GROUP_INTERFACE, PH_FD,   TYPE_STRING,   OFUNC_SPEC };
 const struct optdesc opt_tun_type      = { "tun-type",       NULL,      OPT_TUN_TYPE,        GROUP_INTERFACE, PH_FD,   TYPE_STRING,   OFUNC_SPEC };
-const struct optdesc opt_iff_no_pi     = { "iff-no-pi",       "no-pi",       OPT_IFF_NO_PI,         GROUP_TUN,       PH_FD,   TYPE_BOOL,   OFUNC_SPEC };
-/*0 const struct optdesc opt_interface_addr    = { "interface-addr",    "address", OPT_INTERFACE_ADDR,    GROUP_INTERFACE, PH_FD, TYPE_STRING,   OFUNC_SPEC };*/
-/*0 const struct optdesc opt_interface_netmask = { "interface-netmask", "netmask", OPT_INTERFACE_NETMASK, GROUP_INTERFACE, PH_FD, TYPE_STRING,   OFUNC_SPEC };*/
-const struct optdesc opt_iff_up          = { "iff-up",          "up",          OPT_IFF_UP,          GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_UP };
-const struct optdesc opt_iff_broadcast   = { "iff-broadcast",   NULL,          OPT_IFF_BROADCAST,   GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_BROADCAST };
-const struct optdesc opt_iff_debug       = { "iff-debug"    ,   NULL,          OPT_IFF_DEBUG,       GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_DEBUG };
-const struct optdesc opt_iff_loopback    = { "iff-loopback" ,   "loopback",    OPT_IFF_LOOPBACK,    GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_LOOPBACK };
-const struct optdesc opt_iff_pointopoint = { "iff-pointopoint", "pointopoint",OPT_IFF_POINTOPOINT, GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_POINTOPOINT };
-const struct optdesc opt_iff_notrailers  = { "iff-notrailers",  "notrailers",  OPT_IFF_NOTRAILERS,  GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_NOTRAILERS };
-const struct optdesc opt_iff_running     = { "iff-running",     "running",     OPT_IFF_RUNNING,     GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_RUNNING };
-const struct optdesc opt_iff_noarp       = { "iff-noarp",       "noarp",       OPT_IFF_NOARP,       GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_NOARP };
-const struct optdesc opt_iff_promisc     = { "iff-promisc",     "promisc",     OPT_IFF_PROMISC,     GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_PROMISC };
-const struct optdesc opt_iff_allmulti    = { "iff-allmulti",    "allmulti",    OPT_IFF_ALLMULTI,    GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_ALLMULTI };
-const struct optdesc opt_iff_master      = { "iff-master",      "master",      OPT_IFF_MASTER,      GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_MASTER };
-const struct optdesc opt_iff_slave       = { "iff-slave",       "slave",       OPT_IFF_SLAVE,       GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_SLAVE };
-const struct optdesc opt_iff_multicast   = { "iff-multicast",   NULL,          OPT_IFF_MULTICAST,   GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_MULTICAST };
-const struct optdesc opt_iff_portsel     = { "iff-portsel",     "portsel",     OPT_IFF_PORTSEL,     GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_PORTSEL };
-const struct optdesc opt_iff_automedia   = { "iff-automedia",   "automedia",   OPT_IFF_AUTOMEDIA,   GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(para.tun.iff_opts), IFF_AUTOMEDIA };
-/*const struct optdesc opt_iff_dynamic   = { "iff-dynamic",     "dynamic",     OPT_IFF_DYNAMIC,     GROUP_INTERFACE, PH_FD,   TYPE_BOOL,     OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.tun.iff_opts), XIO_SIZEOF(short), IFF_DYNAMIC };*/
-#if LATER
-const struct optdesc opt_route           = { "route",           NULL,          OPT_ROUTE,           GROUP_INTERFACE, PH_INIT, TYPE_STRING,   OFUNC_SPEC };
-#endif
+const struct optdesc opt_iff_no_pi     = { "iff-no-pi",      "no-pi",   OPT_IFF_NO_PI,       GROUP_TUN,       PH_FD,   TYPE_BOOL,     OFUNC_SPEC };
 
-const struct addrdesc xioaddr_tun    = { "TUN",    3, xioopen_tun, GROUP_FD|GROUP_CHR|GROUP_NAMED|GROUP_OPEN|GROUP_TUN, 0, 0, 0 HELP("[:<ip-addr>/<bits>]") };
+/****** TUN addresses ******/
+const struct addrdesc xioaddr_tun    = { "TUN",    3, xioopen_tun, GROUP_FD|GROUP_CHR|GROUP_OPEN|GROUP_TUN, 0, 0, 0 HELP("[:<ip-addr>/<bits>]") };
 /* "if-name"=tun3
 // "route"=address/netmask
 // "ip6-route"=address/netmask
@@ -103,7 +84,7 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
    xfd->stream.fd = result;
 
    /* prepare configuration of the new network interface */
-   memset(&ifr, 0,sizeof(ifr));
+   memset(&ifr, 0, sizeof(ifr));
 
    if (retropt_string(opts, OPT_TUN_NAME, &tunname) == 0) {
       strncpy(ifr.ifr_name, tunname, IFNAMSIZ);	/* ok */
@@ -136,6 +117,7 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
 	     xfd->stream.fd, ifr.ifr_name, strerror(errno));
       Close(xfd->stream.fd);
    }
+   Notice1("TUN: new device \"%s\"", ifr.ifr_name);
 
    /*===================== setting interface properties =====================*/
 
@@ -174,29 +156,8 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
    /*--------------------- setting interface flags --------------------------*/
    applyopts_single(&xfd->stream, opts, PH_FD);
 
-   if (Ioctl(sockfd, SIOCGIFFLAGS, &ifr) < 0) {
-      Error3("ioctl(%d, SIOCGIFFLAGS, {\"%s\"}: %s",
-	     sockfd, ifr.ifr_name, strerror(errno));
-   }
-   Debug2("\"%s\": system set flags: 0x%hx", ifr.ifr_name, ifr.ifr_flags);
-   ifr.ifr_flags |= xfd->stream.para.tun.iff_opts[0];
-   ifr.ifr_flags &= ~xfd->stream.para.tun.iff_opts[1];
-   Debug2("\"%s\": xio merged flags: 0x%hx", ifr.ifr_name, ifr.ifr_flags);
-   if (Ioctl(sockfd, SIOCSIFFLAGS, &ifr) < 0) {
-      Error4("ioctl(%d, SIOCSIFFLAGS, {\"%s\", %hd}: %s",
-	     sockfd, ifr.ifr_name, ifr.ifr_flags, strerror(errno));
-   }
-   ifr.ifr_flags = 0;
-   if (Ioctl(sockfd, SIOCGIFFLAGS, &ifr) < 0) {
-      Error3("ioctl(%d, SIOCGIFFLAGS, {\"%s\"}: %s",
-	     sockfd, ifr.ifr_name, strerror(errno));
-   }
-   Debug2("\"%s\": resulting flags: 0x%hx", ifr.ifr_name, ifr.ifr_flags);
+   _xiointerface_apply_iff(sockfd, ifr.ifr_name, xfd->stream.para.interface.iff_opts);
 
-
-#if LATER
-   applyopts_named(tundevice, opts, PH_FD);
-#endif
    applyopts(xfd->stream.fd, opts, PH_FD);
    applyopts_cloexec(xfd->stream.fd, opts);
 

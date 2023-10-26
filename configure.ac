@@ -312,6 +312,7 @@ AC_ARG_ENABLE(genericsocket, [  --disable-genericsocket disable generic socket s
 	       *) AC_DEFINE(WITH_GENERICSOCKET) AC_MSG_RESULT(yes);;
 	       esac],
 	       [AC_DEFINE(WITH_GENERICSOCKET) AC_MSG_RESULT(yes)])
+
 AC_MSG_CHECKING(whether to include generic network interface support)
 AC_ARG_ENABLE(interface, [  --disable-interface  disable network interface support],
 	      [case "$enableval" in

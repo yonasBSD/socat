@@ -1084,7 +1084,7 @@ label(ADDRESS_TUN)dit(bf(tt(TUN[:<if-addr>/<bits>])))
    Note: If you intend to transfer packets between two Socat "wire sides" you
    need a protocol that keeps packet boundaries, e.g.UDP; TCP might work with
    option link(nodelay)(OPTION_TCP_NODELAY).nl()
-   Option groups: link(FD)(GROUP_FD),link(NAMED)(GROUP_NAMED),link(OPEN)(GROUP_OPEN),link(TUN)(GROUP_TUN) nl()
+   Option groups: link(FD)(GROUP_FD),link(NAMED)(GROUP_NAMED),link(OPEN)(GROUP_OPEN),link(TUN)(GROUP_INTERFACE) nl()
    Useful options:
    link(iff-up)(OPTION_IFF_UP),
    link(tun-device)(OPTION_TUN_DEVICE),
@@ -3002,27 +3002,11 @@ enddit()
 startdit()enddit()nl()
 
 
-label(GROUP_TUN)em(bf(TUN option group))
+label(GROUP_INTERFACE)em(bf(INTERFACE option group))
 
-Options that control Linux TUN/TAP interface device addresses.
+Options that control Linux INTERFACE addresses.
 
 startdit()
-label(OPTION_TUN_DEVICE)dit(bf(tt(tun-device=<device-file>)))
-   Instructs socat to take another path for the TUN clone device. Default is
-   tt(/dev/net/tun).
-label(OPTION_TUN_NAME)dit(bf(tt(tun-name=<if-name>)))
-   Gives the resulting network interface a specific name instead of the system
-   generated (tun0, tun1, etc.)
-label(OPTION_TUN_TYPE)dit(bf(tt(tun-type=[tun|tap])))
-   Sets the type of the TUN device; use this option to generate a TAP
-   device. See the Linux docu for the difference between these types.
-   When you try to establish a tunnel between two TUN devices, their types
-   should be the same.
-label(OPTION_IFF_NO_PI)dit(bf(tt(iff-no-pi)))
-   Sets the IFF_NO_PI flag which controls if the device includes additional
-   packet information in the tunnel.
-   When you try to establish a tunnel between two TUN devices, these flags
-   should have the same values.
 label(OPTION_IFF_UP)dit(bf(tt(iff-up)))
    Sets the TUN network interface status UP. Strongly recommended.
 label(OPTION_IFF_BROADCAST)dit(bf(tt(iff-broadcast)))
@@ -3055,6 +3039,32 @@ label(OPTION_IFF_AUTOMEDIA)dit(bf(tt(iff-automedia)))
    Sets the AUTOMEDIA flag of the TUN device.
 label(OPTION_IFF_DYNAMIC)dit(bf(tt(iff-dynamic)))
    Sets the DYNAMIC flag of the TUN device.
+enddit()
+
+startdit()enddit()nl()
+
+
+label(GROUP_TUN)em(bf(TUN option group))
+
+Options that control Linux TUN/TAP interface device addresses.
+
+startdit()
+label(OPTION_TUN_DEVICE)dit(bf(tt(tun-device=<device-file>)))
+   Instructs socat to take another path for the TUN clone device. Default is
+   tt(/dev/net/tun).
+label(OPTION_TUN_NAME)dit(bf(tt(tun-name=<if-name>)))
+   Gives the resulting network interface a specific name instead of the system
+   generated (tun0, tun1, etc.)
+label(OPTION_TUN_TYPE)dit(bf(tt(tun-type=[tun|tap])))
+   Sets the type of the TUN device; use this option to generate a TAP
+   device. See the Linux docu for the difference between these types.
+   When you try to establish a tunnel between two TUN devices, their types
+   should be the same.
+label(OPTION_IFF_NO_PI)dit(bf(tt(iff-no-pi)))
+   Sets the IFF_NO_PI flag which controls if the device includes additional
+   packet information in the tunnel.
+   When you try to establish a tunnel between two TUN devices, these flags
+   should have the same values.
 enddit()
 
 startdit()enddit()nl()

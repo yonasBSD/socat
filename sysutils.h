@@ -43,6 +43,10 @@ struct xiorange {
 } ;
 #endif /* _WITH_SOCKET */
 
+#if _WITH_INTERFACE
+extern const int one;
+#endif
+
 extern ssize_t writefull(int fd, const void *buff, size_t bytes);
 
 #if _WITH_SOCKET

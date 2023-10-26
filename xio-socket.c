@@ -1055,6 +1055,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
    applyopts_offset(xfd, opts);
    applyopts_single(xfd, opts, PH_PASTSOCKET);
    applyopts(xfd->fd, opts, PH_PASTSOCKET);
+   applyopts_single(xfd, opts, PH_FD);
    applyopts(xfd->fd, opts, PH_FD);
 
    applyopts_cloexec(xfd->fd, opts);

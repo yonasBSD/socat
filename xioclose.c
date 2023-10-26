@@ -10,6 +10,7 @@
 #include "xiolockfile.h"
 
 #include "xio-termios.h"
+#include "xio-interface.h"
 
 
 /* close the xio fd; must be valid and "simple" (not dual) */
@@ -77,6 +78,15 @@ int xioclose1(struct single *pipe) {
 	     Info3("shutdown(%d, %d): %s", pipe->fd, 2, strerror(errno)); }
          break;
 #endif /* _WITH_SOCKET */
+#if WITH_INTERFACE
+      case END_INTERFACE:
+	 {
+	    _xiointerface_set_iff(pipe->fd, pipe->para.interface.name, pipe->para.interface.save_iff);
+	    if (Close(pipe->fd) < 0) {
+	       Info2("close(%d): %s", pipe->fd, strerror(errno)); } break;
+	 }
+	 break;
+#endif /* WITH_INTERFACE */
       case END_NONE: default: break;
       }
    }

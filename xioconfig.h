@@ -67,7 +67,13 @@
 #  undef WITH_LIBWRAP
 #endif
 
-#if WITH_GENERICSOCKET || WITH_TUN
+#if WITH_INTERFACE || WITH_TUN
+#  define _WITH_INTERFACE 1
+#else
+#  define _WITH_INTERFACE 0
+#endif
+
+#if WITH_GENERICSOCKET || _WITH_INTERFACE
 #  define _WITH_SOCKET 1
 #endif
 
@@ -79,11 +85,11 @@
 #  define _WITH_IP6 1
 #endif
 
-#if WITH_NAMED || WITH_TUN
+#if WITH_NAMED
 #  define _WITH_NAMED 1
 #endif
 
-#if WITH_FILE || WITH_TUN
+#if WITH_FILE
 #  define _WITH_FILE 1
 #endif
 
