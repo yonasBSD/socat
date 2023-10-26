@@ -66,7 +66,7 @@ const struct optdesc opt_o_trunc     = { "o-trunc",     "trunc",  OPT_O_TRUNC,  
 
 #if _WITH_FILE	/*! inconsistent name FILE vs. OPEN */
 
-const struct addrdesc addr_open   = { "open",   3, xioopen_open, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_REG|GROUP_NAMED|GROUP_OPEN|GROUP_FILE|GROUP_TERMIOS, 0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_open   = { "OPEN",   3, xioopen_open, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_REG|GROUP_NAMED|GROUP_OPEN|GROUP_FILE|GROUP_TERMIOS, 0, 0, 0 HELP(":<filename>") };
 
 /* open for writing:
    if the filesystem entry already exists, the data is appended

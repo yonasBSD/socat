@@ -20,17 +20,17 @@ static int xioopen_stdfd(int argc, const char *argv[], struct opt *opts, int xio
 /* we specify all option groups that we can imagine for a FD, becasue the
    changed parsing mechanism does not allow us to check the type of FD before
    applying the options */
-const struct addrdesc addr_stdio  = { "stdio",  3, xioopen_stdio, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 0, 0, 0 HELP(NULL) };
-const struct addrdesc addr_stdin  = { "stdin",  1, xioopen_stdfd, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 0, 0, 0 HELP(NULL) };
-const struct addrdesc addr_stdout = { "stdout", 2, xioopen_stdfd, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 1, 0, 0 HELP(NULL) };
-const struct addrdesc addr_stderr = { "stderr", 2, xioopen_stdfd, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 2, 0, 0 HELP(NULL) };
+const struct addrdesc xioaddr_stdio  = { "STDIO",  3, xioopen_stdio, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 0, 0, 0 HELP(NULL) };
+const struct addrdesc xioaddr_stdin  = { "STDIN",  1, xioopen_stdfd, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 0, 0, 0 HELP(NULL) };
+const struct addrdesc xioaddr_stdout = { "STDOUT", 2, xioopen_stdfd, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 1, 0, 0 HELP(NULL) };
+const struct addrdesc xioaddr_stderr = { "STDERR", 2, xioopen_stdfd, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_FILE|GROUP_SOCKET|GROUP_TERMIOS|GROUP_SOCK_UNIX|GROUP_SOCK_IP|GROUP_IPAPP, 2, 0, 0 HELP(NULL) };
 
 
 /* process a bidirectional "stdio" or "-" argument with options.
    generate a dual address. */
 int xioopen_stdio_bi(xiofile_t *sock) {
    struct opt *optspr;
-   groups_t groups1 = addr_stdio.groups;
+   groups_t groups1 = xioaddr_stdio.groups;
    int result;
 
    if (xioopen_makedual(sock) < 0) {

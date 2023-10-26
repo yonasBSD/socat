@@ -20,7 +20,7 @@
 
 static int xioopen_pty(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
-const struct addrdesc addr_pty = { "pty",   3, xioopen_pty, GROUP_NAMED|GROUP_FD|GROUP_TERMIOS|GROUP_PTY, 0, 0, 0 HELP("") };
+const struct addrdesc xioaddr_pty = { "PTY",   3, xioopen_pty, GROUP_NAMED|GROUP_FD|GROUP_TERMIOS|GROUP_PTY, 0, 0, 0 HELP("") };
 
 const struct optdesc opt_symbolic_link = { "symbolic-link", "link", OPT_SYMBOLIC_LINK, GROUP_PTY, PH_LATE, TYPE_FILENAME, OFUNC_SPEC, 0, 0 };
 #if HAVE_POLL

@@ -20,7 +20,7 @@ static int xioopen_exec(int argc, const char *argv[], struct opt *opts,
 		int dummy1, int dummy2, int dummy3
 		);
 
-const struct addrdesc addr_exec = { "exec",   3, xioopen_exec, GROUP_FD|GROUP_FORK|GROUP_EXEC|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_TERMIOS|GROUP_FIFO|GROUP_PTY|GROUP_PARENT, 0, 0, 0 HELP(":<command-line>") };
+const struct addrdesc xioaddr_exec = { "EXEC",   3, xioopen_exec, GROUP_FD|GROUP_FORK|GROUP_EXEC|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_TERMIOS|GROUP_FIFO|GROUP_PTY|GROUP_PARENT, 0, 0, 0 HELP(":<command-line>") };
 
 const struct optdesc opt_dash = { "dash", "login", OPT_DASH, GROUP_EXEC, PH_PREEXEC, TYPE_BOOL, OFUNC_SPEC };
 

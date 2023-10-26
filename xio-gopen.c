@@ -17,7 +17,7 @@
 static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3);
 
 
-const struct addrdesc addr_gopen  = { "gopen",  3, xioopen_gopen, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_REG|GROUP_NAMED|GROUP_OPEN|GROUP_FILE|GROUP_TERMIOS|GROUP_SOCKET|GROUP_SOCK_UNIX, 0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_gopen  = { "GOPEN",  3, xioopen_gopen, GROUP_FD|GROUP_FIFO|GROUP_CHR|GROUP_BLK|GROUP_REG|GROUP_NAMED|GROUP_OPEN|GROUP_FILE|GROUP_TERMIOS|GROUP_SOCKET|GROUP_SOCK_UNIX, 0, 0, 0 HELP(":<filename>") };
 
 static int xioopen_gopen(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *fd, groups_t groups, int dummy1, int dummy2, int dummy3) {
    const char *filename = argv[1];

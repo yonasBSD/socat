@@ -22,15 +22,9 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
 
 static void xiolog_vsock_cid(void);
 
-const struct addrdesc addr_vsock_connect = { "vsock-connect", 1 + XIO_RDWR,
-    xioopen_vsock_connect,
-    GROUP_FD|GROUP_SOCKET|GROUP_CHILD|GROUP_RETRY,
-    0, 0, 0 HELP(":<cid>:<port>") };
+const struct addrdesc xioaddr_vsock_connect = { "VSOCK-CONNECT", 1+XIO_RDWR, xioopen_vsock_connect, GROUP_FD|GROUP_SOCKET|GROUP_CHILD|GROUP_RETRY,              0, 0, 0 HELP(":<cid>:<port>") };
 #if WITH_LISTEN
-const struct addrdesc addr_vsock_listen  = { "vsock-listen", 1 + XIO_RDWR,
-    xioopen_vsock_listen,
-    GROUP_FD|GROUP_SOCKET|GROUP_LISTEN|GROUP_CHILD|GROUP_RETRY,
-    0, 0, 0 HELP(":<port>") };
+const struct addrdesc xioaddr_vsock_listen  = { "VSOCK-LISTEN",  1+XIO_RDWR, xioopen_vsock_listen,  GROUP_FD|GROUP_SOCKET|GROUP_LISTEN|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<port>") };
 #endif /* WITH_LISTEN */
 
 

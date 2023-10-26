@@ -16,7 +16,7 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
 static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts);
 
 
-const struct addrdesc addr_pipe   = { "pipe",   3, xioopen_fifo,  GROUP_FD|GROUP_NAMED|GROUP_OPEN|GROUP_FIFO, 0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_pipe   = { "PIPE",   3, xioopen_fifo,  GROUP_FD|GROUP_NAMED|GROUP_OPEN|GROUP_FIFO, 0, 0, 0 HELP("[:<filename>]") };
 
 
 /* process an unnamed bidirectional "pipe" or "fifo" or "echo" argument with

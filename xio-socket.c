@@ -78,14 +78,14 @@ static int xiobind(
 
 #if WITH_GENERICSOCKET
 /* generic socket addresses */
-const struct addrdesc xioaddr_socket_connect = { "socket-connect",     1, xioopen_socket_connect,  GROUP_FD|GROUP_SOCKET|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<domain>:<protocol>:<remote-address>") };
+const struct addrdesc xioaddr_socket_connect = { "SOCKET-CONNECT",     1, xioopen_socket_connect,  GROUP_FD|GROUP_SOCKET|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<domain>:<protocol>:<remote-address>") };
 #if WITH_LISTEN
-const struct addrdesc xioaddr_socket_listen  = { "socket-listen",      1, xioopen_socket_listen,   GROUP_FD|GROUP_SOCKET|GROUP_LISTEN|GROUP_RANGE|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<domain>:<protocol>:<local-address>") };
+const struct addrdesc xioaddr_socket_listen  = { "SOCKET-LISTEN",      1, xioopen_socket_listen,   GROUP_FD|GROUP_SOCKET|GROUP_LISTEN|GROUP_RANGE|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<domain>:<protocol>:<local-address>") };
 #endif /* WITH_LISTEN */
-const struct addrdesc xioaddr_socket_sendto  = { "socket-sendto",      3, xioopen_socket_sendto,   GROUP_FD|GROUP_SOCKET,                         0, 0, 0 HELP(":<domain>:<type>:<protocol>:<remote-address>") };
-const struct addrdesc xioaddr_socket_datagram= { "socket-datagram",    3, xioopen_socket_datagram, GROUP_FD|GROUP_SOCKET|GROUP_RANGE,             0, 0, 0 HELP(":<domain>:<type>:<protocol>:<remote-address>") };
-const struct addrdesc xioaddr_socket_recvfrom= { "socket-recvfrom",    3, xioopen_socket_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_RANGE|GROUP_CHILD, 0, 0, 0 HELP(":<domain>:<type>:<protocol>:<local-address>") };
-const struct addrdesc xioaddr_socket_recv    = { "socket-recv",        1, xioopen_socket_recv,     GROUP_FD|GROUP_SOCKET|GROUP_RANGE,             0, 0, 0 HELP(":<domain>:<type>:<protocol>:<local-address>") };
+const struct addrdesc xioaddr_socket_sendto  = { "SOCKET-SENDTO",      3, xioopen_socket_sendto,   GROUP_FD|GROUP_SOCKET,                         0, 0, 0 HELP(":<domain>:<type>:<protocol>:<remote-address>") };
+const struct addrdesc xioaddr_socket_datagram= { "SOCKET-DATAGRAM",    3, xioopen_socket_datagram, GROUP_FD|GROUP_SOCKET|GROUP_RANGE,             0, 0, 0 HELP(":<domain>:<type>:<protocol>:<remote-address>") };
+const struct addrdesc xioaddr_socket_recvfrom= { "SOCKET-RECVFROM",    3, xioopen_socket_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_RANGE|GROUP_CHILD, 0, 0, 0 HELP(":<domain>:<type>:<protocol>:<local-address>") };
+const struct addrdesc xioaddr_socket_recv    = { "SOCKET-RECV",        1, xioopen_socket_recv,     GROUP_FD|GROUP_SOCKET|GROUP_RANGE,             0, 0, 0 HELP(":<domain>:<type>:<protocol>:<local-address>") };
 #endif /* WITH_GENERICSOCKET */
 
 

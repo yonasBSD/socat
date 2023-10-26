@@ -424,7 +424,7 @@ void socat_usage(FILE *fd) {
    fputs(copyright_socat, fd); fputc('\n', fd);
    fputs("Usage:\n", fd);
    fputs("socat [options] <bi-address> <bi-address>\n", fd);
-   fputs("   options:\n", fd);
+   fputs("   options (general command line options):\n", fd);
    fputs("      -V     print version and feature information to stdout, and exit\n", fd);
 #if WITH_HELP
    fputs("      -h|-?  print a help text describing command line options and addresses\n", fd);

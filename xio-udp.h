@@ -5,24 +5,24 @@
 #ifndef __xio_udp_h_included
 #define __xio_udp_h_included 1
 
-extern const struct addrdesc addr_udp_connect;
-extern const struct addrdesc addr_udp_listen;
-extern const struct addrdesc addr_udp_sendto;
-extern const struct addrdesc addr_udp_datagram;
-extern const struct addrdesc addr_udp_recvfrom;
-extern const struct addrdesc addr_udp_recv;
-extern const struct addrdesc addr_udp4_connect;
-extern const struct addrdesc addr_udp4_listen;
-extern const struct addrdesc addr_udp4_sendto;
-extern const struct addrdesc addr_udp4_datagram;
-extern const struct addrdesc addr_udp4_recvfrom;
-extern const struct addrdesc addr_udp4_recv;
-extern const struct addrdesc addr_udp6_connect;
-extern const struct addrdesc addr_udp6_listen;
-extern const struct addrdesc addr_udp6_sendto;
-extern const struct addrdesc addr_udp6_datagram;
-extern const struct addrdesc addr_udp6_recvfrom;
-extern const struct addrdesc addr_udp6_recv;
+extern const struct addrdesc xioaddr_udp_connect;
+extern const struct addrdesc xioaddr_udp_listen;
+extern const struct addrdesc xioaddr_udp_sendto;
+extern const struct addrdesc xioaddr_udp_datagram;
+extern const struct addrdesc xioaddr_udp_recvfrom;
+extern const struct addrdesc xioaddr_udp_recv;
+extern const struct addrdesc xioaddr_udp4_connect;
+extern const struct addrdesc xioaddr_udp4_listen;
+extern const struct addrdesc xioaddr_udp4_sendto;
+extern const struct addrdesc xioaddr_udp4_datagram;
+extern const struct addrdesc xioaddr_udp4_recvfrom;
+extern const struct addrdesc xioaddr_udp4_recv;
+extern const struct addrdesc xioaddr_udp6_connect;
+extern const struct addrdesc xioaddr_udp6_listen;
+extern const struct addrdesc xioaddr_udp6_sendto;
+extern const struct addrdesc xioaddr_udp6_datagram;
+extern const struct addrdesc xioaddr_udp6_recvfrom;
+extern const struct addrdesc xioaddr_udp6_recv;
 
 extern int _xioopen_ipdgram_listen(struct single *sfd,
 	int xioflags, union sockaddr_union *us, socklen_t uslen,

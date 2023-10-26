@@ -622,7 +622,7 @@ case "$TESTS" in
 # test if address options array ("optionnames") is sorted alphabetically:
 $ECHO "testing if address options are sorted...\c"
 TF="$TD/socat-qq"
-$SOCAT -??? |sed '1,/opt:/ d' |awk '{print($1);}' >"$TF"
+$SOCAT -hhh |sed '1,/opt:/ d' |awk '{print($1);}' >"$TF"
 LC_ALL=C sort "$TF" |diff "$TF" - >"$TF-diff"
 if [ -s "$TF-diff" ]; then
     $ECHO "\n*** option array is not sorted. Wrong entries:" >&2
@@ -776,7 +776,7 @@ testoptions () {
     local a A;
     for a in $@; do
 	A=$(echo "$a" |tr 'a-z' 'A-Z')
-	if $SOCAT -??? |grep "[^a-z0-9-]$a[^a-z0-9-]" >/dev/null; then
+	if $SOCAT -hhh |grep "[^a-z0-9-]$a[^a-z0-9-]" >/dev/null; then
 	    shift
 	    continue
 	fi
@@ -933,35 +933,35 @@ runsip6 () {
 # check if TCP on IPv4 is available on host
 runstcp4 () {
     runsip4 >/dev/null || { echo TCP4; return 1; }
-    $SOCAT -h |grep ' tcp4-' >/dev/null || return 1
+    $SOCAT -h |grep -i ' TCP4-' >/dev/null || return 1
     return 0;
 }
 
 # check if TCP on IPv6 is available on host
 runstcp6 () {
     runsip6 >/dev/null || { echo TCP6; return 1; }
-    $SOCAT -h |grep ' tcp6-' >/dev/null || return 1
+    $SOCAT -h |grep -i ' TCP6-' >/dev/null || return 1
     return 0;
 }
 
 # check if UDP on IPv4 is available on host
 runsudp4 () {
     runsip4 >/dev/null || { echo UDP4; return 1; }
-    $SOCAT -h |grep ' udp4-' >/dev/null || return 1
+    $SOCAT -h |grep -i ' UDP4-' >/dev/null || return 1
     return 0;
 }
 
 # check if UDP on IPv6 is available on host
 runsudp6 () {
     runsip6 >/dev/null || { echo UDP6; return 1; }
-    $SOCAT -h |grep ' udp6-' >/dev/null || return 1
+    $SOCAT -h |grep -i ' UDP6-' >/dev/null || return 1
     return 0;
 }
 
 # check if SCTP on IPv4 is available on host
 runssctp4 () {
     runsip4 >/dev/null || { echo SCTP4; return 1; }
-    $SOCAT -h |grep ' sctp4-' >/dev/null || return 1
+    $SOCAT -h |grep -i ' SCTP4-' >/dev/null || return 1
     $SOCAT /dev/null SCTP4-L:0,accept-timeout=0.001 2>/dev/null || return 1;
     return 0;
 }
@@ -969,7 +969,7 @@ runssctp4 () {
 # check if SCTP on IPv6 is available on host
 runssctp6 () {
     runsip6 >/dev/null || { echo SCTP6; return 1; }
-    $SOCAT -h |grep ' sctp6-' >/dev/null || return 1
+    $SOCAT -h |grep ' SCTP6-' >/dev/null || return 1
     $SOCAT /dev/null SCTP6-L:0,accept-timeout=0.001 2>/dev/null || return 1;
     return 0;
 }

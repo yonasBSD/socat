@@ -20,7 +20,7 @@ static int xioopen_system(int arg, const char *argv[], struct opt *opts,
 		int dummy1, int dummy2, int dummy3
 		);
 
-const struct addrdesc addr_system = { "system", 3, xioopen_system, GROUP_FD|GROUP_FORK|GROUP_EXEC|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_TERMIOS|GROUP_FIFO|GROUP_PTY|GROUP_PARENT, 1, 0, 0 HELP(":<shell-command>") };
+const struct addrdesc xioaddr_system = { "SYSTEM", 3, xioopen_system, GROUP_FD|GROUP_FORK|GROUP_EXEC|GROUP_SOCKET|GROUP_SOCK_UNIX|GROUP_TERMIOS|GROUP_FIFO|GROUP_PTY|GROUP_PARENT, 1, 0, 0 HELP(":<shell-command>") };
 
 
 static int xioopen_system(int argc, const char *argv[], struct opt *opts,

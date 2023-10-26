@@ -8,8 +8,8 @@
 
 #if WITH_VSOCK
 
-extern const struct addrdesc addr_vsock_connect;
-extern const struct addrdesc addr_vsock_listen;
+extern const struct addrdesc xioaddr_vsock_connect;
+extern const struct addrdesc xioaddr_vsock_listen;
 
 extern int xiosetsockaddrenv_vsock(int idx, char *namebuff, size_t namelen,
 				   char *valuebuff, size_t valuelen,

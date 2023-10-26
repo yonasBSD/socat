@@ -42,35 +42,35 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
 			int xioflags, xiofile_t *xxfd, groups_t groups,
 			int pf, int socktype, int ipproto);
 
-const struct addrdesc addr_udp_connect  = { "udp-connect",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_UNSPEC HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp_connect  = { "UDP-CONNECT",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_UNSPEC HELP(":<host>:<port>") };
 #if WITH_LISTEN
-const struct addrdesc addr_udp_listen   = { "udp-listen", 3, xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, IPPROTO_UDP, PF_UNSPEC HELP(":<port>") };
+const struct addrdesc xioaddr_udp_listen   = { "UDP-LISTEN", 3, xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, IPPROTO_UDP, PF_UNSPEC HELP(":<port>") };
 #endif /* WITH_LISTEN */
-const struct addrdesc addr_udp_sendto   = { "udp-sendto",   3, xioopen_udp_sendto,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
-const struct addrdesc addr_udp_recvfrom = { "udp-recvfrom",   3, xioopen_udp_recvfrom,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP HELP(":<port>") };
-const struct addrdesc addr_udp_recv     = { "udp-recv",       1, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE,             PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
-const struct addrdesc addr_udp_datagram = { "udp-datagram", 3, xioopen_udp_datagram,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE, PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp_sendto   = { "UDP-SENDTO",   3, xioopen_udp_sendto,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp_recvfrom = { "UDP-RECVFROM",   3, xioopen_udp_recvfrom,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP HELP(":<port>") };
+const struct addrdesc xioaddr_udp_recv     = { "UDP-RECV",       1, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE,             PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
+const struct addrdesc xioaddr_udp_datagram = { "UDP-DATAGRAM", 3, xioopen_udp_datagram,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE, PF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
 
 #if WITH_IP4
-const struct addrdesc addr_udp4_connect = { "udp4-connect",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_INET HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp4_connect  = { "UDP4-CONNECT",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_INET HELP(":<host>:<port>") };
 #if WITH_LISTEN
-const struct addrdesc addr_udp4_listen  = { "udp4-listen", 3, xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_INET, IPPROTO_UDP, PF_INET HELP(":<port>") };
+const struct addrdesc xioaddr_udp4_listen   = { "UDP4-LISTEN", 3, xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_INET, IPPROTO_UDP, PF_INET HELP(":<port>") };
 #endif /* WITH_LISTEN */
-const struct addrdesc addr_udp4_sendto  = { "udp4-sendto",     3, xioopen_udp_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP, PF_INET, SOCK_DGRAM, IPPROTO_UDP  HELP(":<host>:<port>") };
-const struct addrdesc addr_udp4_datagram = { "udp4-datagram",3, xioopen_udp_datagram,  GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_RANGE, PF_INET, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
-const struct addrdesc addr_udp4_recvfrom= { "udp4-recvfrom",   3, xioopen_udp_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_INET, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
-const struct addrdesc addr_udp4_recv    = { "udp4-recv",       1, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_RANGE,             PF_INET, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
+const struct addrdesc xioaddr_udp4_sendto   = { "UDP4-SENDTO",     3, xioopen_udp_sendto,   GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP, PF_INET, SOCK_DGRAM, IPPROTO_UDP  HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp4_datagram = { "UDP4-DATAGRAM",3, xioopen_udp_datagram,  GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_RANGE, PF_INET, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp4_recvfrom = { "UDP4-RECVFROM",   3, xioopen_udp_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_INET, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
+const struct addrdesc xioaddr_udp4_recv     = { "UDP4-RECV",       1, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_IP_UDP|GROUP_RANGE,             PF_INET, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
 #endif /* WITH_IP4 */
 
 #if WITH_IP6
-const struct addrdesc addr_udp6_connect = { "udp6-connect",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_INET6 HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp6_connect  = { "UDP6-CONNECT",    3, xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_INET6 HELP(":<host>:<port>") };
 #if WITH_LISTEN
-const struct addrdesc addr_udp6_listen  = { "udp6-listen", 3, xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_INET6, IPPROTO_UDP, 0 HELP(":<port>") };
+const struct addrdesc xioaddr_udp6_listen   = { "UDP6-LISTEN", 3, xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_INET6, IPPROTO_UDP, 0 HELP(":<port>") };
 #endif /* WITH_LISTEN */
-const struct addrdesc addr_udp6_sendto  = { "udp6-sendto",     3, xioopen_udp_sendto, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP, PF_INET6, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
-const struct addrdesc addr_udp6_datagram= { "udp6-datagram",   3, xioopen_udp_datagram,GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE, PF_INET6, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
-const struct addrdesc addr_udp6_recvfrom= { "udp6-recvfrom",   3, xioopen_udp_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_INET6, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
-const struct addrdesc addr_udp6_recv    = { "udp6-recv",       1, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE,             PF_INET6, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
+const struct addrdesc xioaddr_udp6_sendto   = { "UDP6-SENDTO",     3, xioopen_udp_sendto, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP, PF_INET6, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp6_datagram = { "UDP6-DATAGRAM",   3, xioopen_udp_datagram,GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE, PF_INET6, SOCK_DGRAM, IPPROTO_UDP HELP(":<host>:<port>") };
+const struct addrdesc xioaddr_udp6_recvfrom = { "UDP6-RECVFROM",   3, xioopen_udp_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_INET6, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
+const struct addrdesc xioaddr_udp6_recv     = { "UDP6-RECV",       1, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE,             PF_INET6, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
 #endif /* WITH_IP6 */
 
 

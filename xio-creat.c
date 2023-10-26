@@ -17,7 +17,7 @@ static int xioopen_creat(int arg, const char *argv[], struct opt *opts, int rw, 
 
 
 /*! within stream model, this is a write-only address - use 2 instead of 3 */
-const struct addrdesc addr_creat  = { "create", 3, xioopen_creat, GROUP_FD|GROUP_NAMED|GROUP_FILE, 0, 0, 0 HELP(":<filename>") };
+const struct addrdesc xioaddr_creat  = { "CREATE", 3, xioopen_creat, GROUP_FD|GROUP_NAMED|GROUP_FILE, 0, 0, 0 HELP(":<filename>") };
 
 
 /* retrieve the mode option and perform the creat() call.

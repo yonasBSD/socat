@@ -28,8 +28,11 @@ Corrections:
 	Now catching the case of empty SNI host to prevent OpenSSL error.
 	This is related to Red Hat issue 2081414.
 
+	Better formatted help output; address keywords in help output are now
+	printed in uppercase.
+
 Coding:
-	Introduced groups_t instead of uint32_t, for more flexibility
+	Introduced groups_t instead of uint32_t, for more flexibility.
 
 	Rearranged option group bits to only require 32 bits on older systems.
 

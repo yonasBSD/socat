@@ -35,9 +35,9 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
 const struct optdesc opt_socksport = { "socksport", NULL, OPT_SOCKSPORT, GROUP_IP_SOCKS4, PH_LATE, TYPE_STRING, OFUNC_SPEC };
 const struct optdesc opt_socksuser = { "socksuser", NULL, OPT_SOCKSUSER, GROUP_IP_SOCKS4, PH_LATE, TYPE_NAME, OFUNC_SPEC };
 
-const struct addrdesc addr_socks4_connect = { "socks4", 3, xioopen_socks4_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_IP_SOCKS4|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<socks-server>:<host>:<port>") };
+const struct addrdesc xioaddr_socks4_connect = { "SOCKS4", 3, xioopen_socks4_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_IP_SOCKS4|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<socks-server>:<host>:<port>") };
 
-const struct addrdesc addr_socks4a_connect = { "socks4a", 3, xioopen_socks4_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_IP_SOCKS4|GROUP_CHILD|GROUP_RETRY, 1, 0, 0 HELP(":<socks-server>:<host>:<port>") };
+const struct addrdesc xioaddr_socks4a_connect = { "SOCKS4A", 3, xioopen_socks4_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_IP_SOCKS4|GROUP_CHILD|GROUP_RETRY, 1, 0, 0 HELP(":<socks-server>:<host>:<port>") };
 
 static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts,
 				  int xioflags, xiofile_t *xxfd,

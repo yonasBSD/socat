@@ -62,7 +62,7 @@ static int openssl_delete_cert_info(void);
 
 /* description record for ssl connect */
 const struct addrdesc xioaddr_openssl = {
-   "openssl",	/* keyword for selecting this address type in xioopen calls
+   "OPENSSL",	/* keyword for selecting this address type in xioopen calls
 		   (canonical or main name) */
    3,		/* data flow directions this address supports on API layer:
 		   1..read, 2..write, 3..both */
@@ -83,7 +83,7 @@ const struct addrdesc xioaddr_openssl = {
 #if WITH_LISTEN
 /* description record for ssl listen */
 const struct addrdesc xioaddr_openssl_listen = {
-   "openssl-listen",	/* keyword for selecting this address type in xioopen calls
+   "OPENSSL-LISTEN",	/* keyword for selecting this address type in xioopen calls
 		   (canonical or main name) */
    3,		/* data flow directions this address supports on API layer:
 		   1..read, 2..write, 3..both */
@@ -102,9 +102,9 @@ const struct addrdesc xioaddr_openssl_listen = {
 } ;
 #endif /* WITH_LISTEN */
 
-const struct addrdesc xioaddr_openssl_dtls_client = { "openssl-dtls-client", 3, xioopen_openssl_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_OPENSSL|GROUP_RETRY, 1, 0, 0  HELP(":<host>:<port>") } ;
+const struct addrdesc xioaddr_openssl_dtls_client = { "OPENSSL-DTLS-CLIENT", 3, xioopen_openssl_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_OPENSSL|GROUP_RETRY, 1, 0, 0  HELP(":<host>:<port>") } ;
 #if WITH_LISTEN
-const struct addrdesc xioaddr_openssl_dtls_server = { "openssl-dtls-server", 3, xioopen_openssl_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE|GROUP_OPENSSL|GROUP_RETRY, 1, 0, 0  HELP(":<port>") } ;
+const struct addrdesc xioaddr_openssl_dtls_server = { "OPENSSL-DTLS-SERVER", 3, xioopen_openssl_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE|GROUP_OPENSSL|GROUP_RETRY, 1, 0, 0  HELP(":<port>") } ;
 #endif
 
 /* both client and server */

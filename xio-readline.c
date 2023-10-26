@@ -30,7 +30,7 @@ static int xioopen_readline(int argc, const char *argv[], struct opt *opts,
 			    int dummy1, int dummy2, int dummy3);
 
 
-const struct addrdesc addr_readline = { "readline", 3, xioopen_readline, GROUP_FD|GROUP_TERMIOS|GROUP_READLINE, 0, 0, 0 HELP(NULL) };
+const struct addrdesc xioaddr_readline = { "READLINE", 3, xioopen_readline, GROUP_FD|GROUP_TERMIOS|GROUP_READLINE, 0, 0, 0 HELP(NULL) };
 
 const struct optdesc opt_history_file = { "history-file", "history", OPT_HISTORY_FILE, GROUP_READLINE, PH_LATE, TYPE_STRING, OFUNC_OFFSET, XIO_OFFSETOF(para.readline.history_file) };
 const struct optdesc opt_prompt       = { "prompt",       NULL,      OPT_PROMPT,       GROUP_READLINE, PH_LATE, TYPE_STRING, OFUNC_OFFSET, XIO_OFFSETOF(para.readline.prompt) };

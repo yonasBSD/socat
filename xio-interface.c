@@ -19,7 +19,7 @@ int xioopen_interface(int argc, const char *argv[], struct opt *opts,
 		      int xioflags, xiofile_t *xfd, groups_t groups, int pf,
 		      int dummy2, int dummy3);
 
-const struct addrdesc xioaddr_interface= { "interface",    3, xioopen_interface, GROUP_FD|GROUP_SOCKET, PF_PACKET, 0, 0 HELP(":<interface>") };
+const struct addrdesc xioaddr_interface= { "INTERFACE",    3, xioopen_interface, GROUP_FD|GROUP_SOCKET, PF_PACKET, 0, 0 HELP(":<interface>") };
 
 
 static

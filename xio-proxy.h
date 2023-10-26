@@ -21,7 +21,7 @@ extern const struct optdesc opt_proxy_resolve;
 extern const struct optdesc opt_proxy_authorization;
 extern const struct optdesc opt_proxy_authorization_file;
 
-extern const struct addrdesc addr_proxy_connect;
+extern const struct addrdesc xioaddr_proxy_connect;
 
 int _xioopen_proxy_prepare(struct proxyvars *proxyvars, struct opt *opts,
 			   const char *targetname, const char *targetport);

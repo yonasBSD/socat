@@ -31,7 +31,7 @@ const struct optdesc opt_proxy_resolve   = { "proxy-resolve",   "resolve", OPT_P
 const struct optdesc opt_proxy_authorization  = { "proxy-authorization",  "proxyauth", OPT_PROXY_AUTHORIZATION,  GROUP_HTTP, PH_LATE, TYPE_STRING,  OFUNC_SPEC };
 const struct optdesc opt_proxy_authorization_file  = { "proxy-authorization-file",  "proxyauthfile", OPT_PROXY_AUTHORIZATION_FILE,  GROUP_HTTP, PH_LATE, TYPE_STRING,  OFUNC_SPEC };
 
-const struct addrdesc addr_proxy_connect = { "proxy", 3, xioopen_proxy_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_HTTP|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<proxy-server>:<host>:<port>") };
+const struct addrdesc xioaddr_proxy_connect = { "PROXY", 3, xioopen_proxy_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_HTTP|GROUP_CHILD|GROUP_RETRY, 0, 0, 0 HELP(":<proxy-server>:<host>:<port>") };
 
 
 /*0#define CONNLEN 40*/	/* "CONNECT 123.156.189.123:65432 HTTP/1.0\r\n\0" */
