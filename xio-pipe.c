@@ -153,7 +153,7 @@ static int xioopen_fifo(int argc, const char *argv[], struct opt *opts, int xiof
       }
    } else {
       /* exists */
-      Debug1("xioopen_fifo(\"%s\"): already exist, opening it", pipename);
+      Info1("xioopen_fifo(\"%s\"): already exist, opening it", pipename);
       Notice3("opening %s \"%s\" for %s",
 	      filetypenames[(pipstat.st_mode&S_IFMT)>>12],
 	      pipename, ddirection[rw]);

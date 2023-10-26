@@ -93,7 +93,7 @@ int xioclose1(struct single *pipe) {
       free(pipe->unlink_close);
    }
 
-   pipe->tag = XIO_TAG_INVALID;
+   pipe->tag |= XIO_TAG_CLOSED;
    return 0;	/*! */
 }
 
@@ -111,7 +111,7 @@ int xioclose(xiofile_t *file) {
    if (file->tag == XIO_TAG_DUAL) {
       result  = xioclose1(file->dual.stream[0]);
       result |= xioclose1(file->dual.stream[1]);
-      file->tag = XIO_TAG_INVALID;
+      file->tag |= XIO_TAG_CLOSED;
    } else {
       result = xioclose1(&file->stream);
    }

@@ -22,7 +22,7 @@ ssize_t xiowrite(xiofile_t *file, const void *buff, size_t bytes) {
    struct single *pipe;
    int _errno;
 
-   if (file->tag == XIO_TAG_INVALID) {
+   if (file->tag == XIO_TAG_INVALID || file->tag & XIO_TAG_CLOSED) {
       Error1("xiowrite(): invalid xiofile descriptor %p", file);
       errno = EINVAL;
       return -1;
@@ -30,7 +30,7 @@ ssize_t xiowrite(xiofile_t *file, const void *buff, size_t bytes) {
 
    if (file->tag == XIO_TAG_DUAL) {
       pipe = file->dual.stream[1];
-      if (pipe->tag == XIO_TAG_INVALID) {
+      if (pipe->tag == XIO_TAG_INVALID || file->tag & XIO_TAG_CLOSED) {
 	 Error1("xiowrite(): invalid xiofile sub descriptor %p[1]", file);
 	 errno = EINVAL;
 	 return -1;

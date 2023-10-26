@@ -278,7 +278,7 @@ tolower () {
 psleep () {
     local T="$1"
     [ "$T" = 0 ] && T=0.000002
-    $SOCAT -T "$T" pipe pipe
+    $SOCAT -T "$T" pipe pipe 2>/dev/null
 }
 # time in microseconds to wait in some situations
 if ! type usleep >/dev/null 2>&1 ||
@@ -289,7 +289,7 @@ if ! type usleep >/dev/null 2>&1 ||
 	*???????) S="${n%??????}"; uS="${n:${#n}-6}" ;;
 	*) S=0; uS="00000$n"; uS="${uS:${#uS}-6}" ;;
 	esac
-	$SOCAT -T "$S.$uS" pipe pipe
+	$SOCAT -T "$S.$uS" pipe pipe 2>/dev/null
     }
 fi
 #USLEEP=usleep
@@ -971,6 +971,12 @@ runssctp6 () {
     runsip6 >/dev/null || { echo SCTP6; return 1; }
     $SOCAT -h |grep ' SCTP6-' >/dev/null || return 1
     $SOCAT /dev/null SCTP6-L:0,accept-timeout=0.001 2>/dev/null || return 1;
+    return 0;
+}
+
+# check if UNIX domain sockets work
+runsunix () {
+    # for now...
     return 0;
 }
 
@@ -13399,7 +13405,7 @@ N=$((N+1))
 # Test the OpenSSL SNI feature
 NAME=OPENSSL_SNI
 case "$TESTS" in
-*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%foreign%*|*%$NAME%*)
 TEST="$NAME: Test the OpenSSL SNI feature"
 # Connect to a server that is known to use SNI. Use an SNI name, not the
 # certifications default name. When the TLS connection is established
@@ -13446,7 +13452,7 @@ N=$((N+1))
 # Test the openssl-no-sni option
 NAME=OPENSSL_NO_SNI
 case "$TESTS" in
-*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%foreign%*|*%$NAME%*)
 TEST="$NAME: Test the openssl-no-sni option"
 # Connect to a server that is known to use SNI. Use an SNI name, not the
 # certifications default name, and use option openssl-no-sni.
@@ -14498,7 +14504,7 @@ CMD="$TRACE $SOCAT $opts -d -d -d -d /dev/null UDP4-SENDTO:$LOCALHOST:$PORT,lowp
 printf "test $F_n $TEST... " $N
 $CMD >/dev/null 2>"${te}"
 rc1=$?
-LOWPORT=$(grep 'D bind(.*:' $te |sed 's/.*:\([0-9][0-9]*\),.*/\1/')
+LOWPORT=$(grep '[DE] bind(.*:' $te |sed 's/.*:\([0-9][0-9]*\),.*/\1/')
 #echo "LOWPORT=\"$LOWPORT\"" >&2
 #type socat >&2
 if  [[ $LOWPORT =~ [0-9][0-9]* ]] && [ "$LOWPORT" -ge 640 -a "$LOWPORT" -le 1023 ]; then
@@ -14966,7 +14972,6 @@ N=$((N+1))
 
 while read KEYW FEAT RUNS ADDR IPPORT; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
-RUNS=$(tolower $KEYW)
 PROTO=$KEYW
 proto="$(echo "$PROTO" |tr A-Z a-z)"
 feat="$(tolower "$FEAT")"
@@ -15054,8 +15059,8 @@ fi # NUMCOND
 esac
 N=$((N+1))
 done <<<"
-UDP4  UDP  udp4  127.0.0.1 PORT
-UDP6  UDP  udp4  [::1]     PORT
+UDP4  UDP  ip4  127.0.0.1 PORT
+UDP6  UDP  ip6  [::1]     PORT
 UNIX  unix unix   $td/test\$N.server -
 "
 
@@ -15395,6 +15400,127 @@ esac
 N=$((N+1))
 
 
+# Test logging of statistics on Socat option --statistics
+NAME=OPTION_STATISTICS
+case "$TESTS" in
+*%$N%*|*%functions%*|*%stats%*|*%system%*|*%stdio%*|*%$NAME%*)
+TEST="$NAME: Socat option --statistics"
+# Invoke Socat with option --statistics, transfer some date, and check the log
+# file for the values
+if ! eval $NUMCOND; then :;
+elif ! $(type  >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}tee not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats STATS STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions pty cfmakeraw) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts --statistics STDIO SYSTEM:'tee /dev/stdout',pty,cfmakeraw"
+printf "test $F_n $TEST... " $N
+echo "$da" |eval "$CMD0" >"${tf}0" 2>"${te}0"
+rc0=$?
+if [ $rc0 -ne 0 ]; then
+    # The test could not run meaningfully
+    $PRINTF "$CANT\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ $(grep STATISTICS "${te}0" |wc -l) -eq 2 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test logging of statistics on SIGUSR1
+NAME=SIGUSR1_STATISTICS
+case "$TESTS" in
+*%$N%*|*%functions%*|*%signal%*|*%stats%*|*%system%*|*%stdio%*|*%$NAME%*)
+TEST="$NAME: statistics on SIGUSR1"
+# Invoke Socat without option --statistics, transfer some date, send signal
+# USR1,and check the log file for the values
+if ! eval $NUMCOND; then :;
+elif ! $(type tee >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}tee not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! $(type pkill >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}pkill not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats STATS STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO SYSTEM); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions pty cfmakeraw) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts STDIO SYSTEM:'tee /dev/stdout 2>/dev/null',pty,cfmakeraw"
+#set -vx
+printf "test $F_n $TEST... " $N
+{ echo "$da"; relsleep 3; } |eval "$CMD0" >"${tf}0" 2>"${te}0" &
+pid0=$!
+relsleep 2
+TTY=$(tty |sed 's|/dev/||')
+pkill -USR1 -t $TTY socat || { echo "pkill -t $TTY -USR1 socat"; }
+relsleep 1
+pkill -t $TTY socat
+wait
+if [ "$(grep STATISTICS "${te}0" |wc -l)" -eq 2 ]; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -15528,6 +15654,7 @@ exit
 NAME=SHORT_UNIQUE_TESTNAME
 case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%$NAME%*)
+#*%foreign%*|*%root%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%bug%*|...
 TEST="$NAME: give a one line description of test"
 # Describe how the test is performed, and what's the success criteria
 if ! eval $NUMCOND; then :;

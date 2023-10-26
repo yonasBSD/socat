@@ -18,7 +18,8 @@ void xioexit(void) {
    diag_in_handler = 0;
    Debug("starting xioexit()");
    for (i = 0; i < XIO_MAXSOCK; ++i) {
-      if (sock[i] != NULL && sock[i]->tag != XIO_TAG_INVALID) {
+      if (sock[i] != NULL && sock[i]->tag != XIO_TAG_INVALID &&
+	  !(sock[i]->tag & XIO_TAG_CLOSED)) {
 	 xioclose(sock[i]);
       }
    }

@@ -163,6 +163,14 @@ AC_ARG_ENABLE(help, [  --disable-help          disable help],
 	       esac],
 	       [AC_DEFINE(WITH_HELP) AC_MSG_RESULT(yes)])
 
+AC_MSG_CHECKING(whether to include transfer statistics)
+AC_ARG_ENABLE(stats, [  --disable-stats         disable stats],
+	      [case "$enableval" in
+	       no) AC_MSG_RESULT(no);;
+	       *) AC_DEFINE(WITH_STATS) AC_MSG_RESULT(yes);;
+	       esac],
+	       [AC_DEFINE(WITH_STATS) AC_MSG_RESULT(yes)])
+
 AC_MSG_CHECKING(whether to include STDIO support)
 AC_ARG_ENABLE(stdio, [  --disable-stdio         disable STDIO support],
 	      [case "$enableval" in

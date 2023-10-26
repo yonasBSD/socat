@@ -25,7 +25,7 @@ static void signal_kill_pid(int dummy) {
 int xioshutdown(xiofile_t *sock, int how) {
    int result = 0;
 
-   if (sock->tag == XIO_TAG_INVALID) {
+   if (sock->tag == XIO_TAG_INVALID || sock->tag & XIO_TAG_CLOSED) {
       Error("xioshutdown(): invalid file descriptor");
       errno = EINVAL;
       return -1;

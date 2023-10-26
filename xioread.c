@@ -23,7 +23,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
    struct single *pipe;
    int _errno;
 
-   if (file->tag == XIO_TAG_INVALID) {
+   if (file->tag == XIO_TAG_INVALID || file->tag & XIO_TAG_CLOSED) {
       Error1("xioread(): invalid xiofile descriptor %p", file);
       errno = EINVAL;
       return -1;
@@ -31,7 +31,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 
    if (file->tag == XIO_TAG_DUAL) {
       pipe = file->dual.stream[0];
-      if (pipe->tag == XIO_TAG_INVALID) {
+      if (pipe->tag == XIO_TAG_INVALID || file->tag & XIO_TAG_CLOSED) {
 	 Error1("xioread(): invalid xiofile sub descriptor %p[0]", file);
 	 errno = EINVAL;
 	 return -1;
@@ -433,7 +433,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 ssize_t xiopending(xiofile_t *file) {
    struct single *pipe;
 
-   if (file->tag == XIO_TAG_INVALID) {
+   if (file->tag == XIO_TAG_INVALID || file->tag & XIO_TAG_CLOSED) {
       Error1("xiopending(): invalid xiofile descriptor %p", file);
       errno = EINVAL;
       return -1;
@@ -441,7 +441,7 @@ ssize_t xiopending(xiofile_t *file) {
 
    if (file->tag == XIO_TAG_DUAL) {
       pipe = file->dual.stream[0];
-      if (pipe->tag == XIO_TAG_INVALID) {
+      if (pipe->tag == XIO_TAG_INVALID || file->tag & XIO_TAG_CLOSED) {
 	 Error1("xiopending(): invalid xiofile sub descriptor %p[0]", file);
 	 errno = EINVAL;
 	 return -1;

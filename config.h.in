@@ -672,6 +672,7 @@
 #undef HAVE_GETGROUPLIST
 
 #undef WITH_HELP
+#undef WITH_STATS
 #undef WITH_STDIO
 #undef WITH_FDNUM
 #undef WITH_FILE

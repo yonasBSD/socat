@@ -197,7 +197,10 @@ int _xioopen_open(const char *path, int rw, struct opt *opts) {
 
    retropt_modet(opts, OPT_PERM,      &mode);
 
-   if ((fd = Open(path, flags, mode)) < 0) {
+   do {
+      fd = Open(path, flags, mode);
+   } while (fd < 0 && errno == EINTR);
+   if (fd < 0) {
       Error4("open(\"%s\", 0%lo, 0%03o): %s",
 	     path, flags, mode, strerror(errno));
       return STAT_RETRYLATER;

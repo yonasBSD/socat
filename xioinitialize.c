@@ -121,22 +121,27 @@ void xiodroplocks(void) {
    int i;
 
    for (i = 0; i < XIO_MAXSOCK; ++i) {
-      if (sock[i] != NULL && sock[i]->tag != XIO_TAG_INVALID) {
+      if (sock[i] != NULL && sock[i]->tag != XIO_TAG_INVALID &&
+	  !(sock[i]->tag & XIO_TAG_CLOSED)) {
 	 xiofiledroplock(sock[i]);
       }
    }
 }
 
 
-/* consider an invokation like this:
-   socat -u exec:'some program that accepts data' tcp-l:...,fork
-   we do not want the program to be killed by the first tcp-l sub process, it's
+/* Consider an invocation like this:
+   socat -u EXEC:'some program that accepts data' TCP-L:...,fork
+   we do not want the program to be killed by the first TCP-L sub process, it's
    better if it survives all sub processes. Thus, it must not be killed when
    the sub process delivers EOF. Also, a socket that is reused in sub processes
    should not be shut down (affects the connection), but closed (affects only
    sub processes copy of file descriptor) */
 static int xio_nokill(xiofile_t *sock) {
    int result = 0;
+
+   if (sock->tag & XIO_TAG_CLOSED) {
+      return -1;
+   }
    switch (sock->tag) {
    case XIO_TAG_INVALID:
    default:

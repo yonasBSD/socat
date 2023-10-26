@@ -158,6 +158,9 @@ int procan(FILE *outfile) {
 #ifdef SIZE_MAX
       fprintf(outfile, "SIZE_MAX                  = %-24lu\n", SIZE_MAX);
 #endif
+#ifdef PIPE_BUF
+      fprintf(outfile, "PIPE_BUF                  = %-24d\n", PIPE_BUF);
+#endif
    }
 
    /* file descriptors */

@@ -38,6 +38,7 @@ struct {
    bool righttoleft;	/* first addr wo, second addr ro */
    xiolock_t lock;	/* a lock file */
    unsigned long log_sigs;	/* signals to be caught just for logging */
+   bool statistics; 	/* log statistics on exit */
 } socat_opts = {
    8192,	/* bufsiz */
    false,	/* verbose */
@@ -52,6 +53,7 @@ struct {
    false,	/* righttoleft */
    { NULL, 0 },	/* lock */
    1<<SIGHUP | 1<<SIGINT | 1<<SIGQUIT | 1<<SIGILL | 1<<SIGABRT | 1<<SIGBUS | 1<<SIGFPE | 1<<SIGSEGV | 1<<SIGTERM, 	/* log_sigs */
+   false	/* statistics */
 };
 
 void socat_usage(FILE *fd);
@@ -61,6 +63,7 @@ int socat(const char *address1, const char *address2);
 int _socat(void);
 int cv_newline(unsigned char *buff, ssize_t *bytes, int lineterm1, int lineterm2);
 void socat_signal(int sig);
+void socat_signal_logstats(int sig);
 static int socat_sigchild(struct single *file);
 
 void lftocrlf(char **in, ssize_t *len, size_t bufsiz);
@@ -69,6 +72,7 @@ void crlftolf(char **in, ssize_t *len, size_t bufsiz);
 static int socat_lock(void);
 static void socat_unlock(void);
 static int socat_newchild(void);
+static void socat_print_stats(void);
 
 static const char socatversion[] =
 #include "./VERSION"
@@ -323,6 +327,8 @@ int main(int argc, const char *argv[]) {
       case '-':
 	 if (!strcmp("experimental", &arg1[0][2])) {
 	    xioparms.experimental = true;
+	 } else if (!strcmp("statistics", &arg1[0][2])) {
+	    socat_opts.statistics = true;
 	 } else {
 	    Error1("unknown option \"%s\"; use option \"-h\" for help", arg1[0]);
 	 }
@@ -374,7 +380,9 @@ int main(int argc, const char *argv[]) {
 #endif /* WITH_MSGLEVEL <= E_DEBUG */
 
    {
+#if HAVE_SIGACTION
       struct sigaction act;
+#endif
       int i, m;
 
       sigfillset(&act.sa_mask); 	/* while in sighandler block all signals */
@@ -383,9 +391,20 @@ int main(int argc, const char *argv[]) {
       /* not sure which signals should be caught and print a message */
       for (i = 0, m = 1; i < 8*sizeof(unsigned long); ++i, m <<= 1) {
 	 if (socat_opts.log_sigs & m) {
+#if HAVE_SIGACTION
 	    Sigaction(i,  &act, NULL);
+#else
+	    Signal(i, socat_signal);
+#endif
 	 }
       }
+
+#if HAVE_SIGACTION
+      act.sa_handler = socat_signal_logstats;
+      Sigaction(SIGUSR1, &act, NULL);
+#else
+      Signal(SIGUSR1, socat_signal_logstats);
+#endif
    }
    Signal(SIGPIPE, SIG_IGN);
 
@@ -400,6 +419,9 @@ int main(int argc, const char *argv[]) {
    }
 
    Atexit(socat_unlock);
+   if (socat_opts.statistics) {
+      Atexit(socat_print_stats);
+   }
 
    result = socat(arg1[0], arg1[1]);
    if (result == EXIT_SUCCESS && engine_result != EXIT_SUCCESS) {
@@ -428,6 +450,7 @@ void socat_usage(FILE *fd) {
    fputs("      -D     analyze file descriptors before loop\n", fd);
 #endif
    fputs("      --experimental enable experimental features\n", fd);
+   fputs("      --statistics   output transfer statistics on exit\n", fd);
    fputs("      -ly[facility]  log to syslog, using facility (default is daemon)\n", fd);
    fputs("      -lf<logfile>   log to file\n", fd);
    fputs("      -ls            log to stderr (default if no other log)\n", fd);
@@ -472,6 +495,16 @@ void socat_version(FILE *fd) {
    fprintf(fd, "   running on %s version %s, release %s, machine %s\n",
 	   ubuf.sysname, ubuf.version, ubuf.release, ubuf.machine);
    fputs("features:\n", fd);
+#ifdef WITH_HELP
+   fprintf(fd, "  #define WITH_HELP %d\n", WITH_HELP);
+#else
+   fputs("  #undef WITH_HELP\n", fd);
+#endif
+#ifdef WITH_STATS
+   fprintf(fd, "  #define WITH_STATS %d\n", WITH_STATS);
+#else
+   fputs("  #undef WITH_STATS\n", fd);
+#endif
 #ifdef WITH_STDIO
    fprintf(fd, "  #define WITH_STDIO %d\n", WITH_STDIO);
 #else
@@ -1339,6 +1372,10 @@ int xiotransfer(xiofile_t *inpipe, xiofile_t *outpipe,
 	 }
 
 	 if (bytes > 0) {
+#if WITH_STATS
+	    ++XIO_RDSTREAM(inpipe)->blocks_read;
+	    XIO_RDSTREAM(inpipe)->bytes_read += bytes;
+#endif
 	    /* handle escape char */
 	    if (XIO_RDSTREAM(inpipe)->escape != -1) {
 	       /* check input data for escape char */
@@ -1490,6 +1527,10 @@ int xiotransfer(xiofile_t *inpipe, xiofile_t *outpipe,
 	    } else {
 	       Info3("transferred "F_Zu" bytes from %d to %d",
 		     writt, XIO_GETRDFD(inpipe), XIO_GETWRFD(outpipe));
+#if WITH_STATS
+	       ++XIO_WRSTREAM(outpipe)->blocks_written;
+	       XIO_WRSTREAM(outpipe)->bytes_written += writt;
+#endif
 	    }
 	 }
    return writt;
@@ -1671,3 +1712,66 @@ static int socat_newchild(void) {
    havelock = false;
    return 0;
 }
+
+
+#if WITH_STATS
+void socat_signal_logstats(int signum) {
+   diag_in_handler = 1;
+   Notice1("socat_signal_logstats(): handling signal %d", signum);
+   socat_print_stats();
+   Notice1("socat_signal_logstats(): finishing signal %d", signum);
+   diag_in_handler = 0;
+}
+#endif /* WITH_STATS */
+
+#if WITH_STATS
+static void socat_print_stats(void)
+{
+	const char ltorf0[] = "STATISTICS: left to right: %%%ullu packets(s), %%%ullu byte(s)";
+	const char rtolf0[] = "STATISTICS: right to left: %%%ullu packets(s), %%%ullu byte(s)";
+	char ltorf1[sizeof(ltorf0)];	/* final printf format with lengths of number */
+	char rtolf1[sizeof(rtolf0)];	/* final printf format with lengths of number */
+	unsigned int blocksd = 1, bytesd = 1;	/* number of digits in output */
+	struct single *sock1w, *sock2w;
+	int savelevel;
+
+	if (sock1 == NULL || sock2 == NULL) {
+		Warn("transfer engine not yet started, statistics not available");
+		return;
+	}
+	if ((sock1->tag & ~XIO_TAG_CLOSED) == XIO_TAG_DUAL) {
+		sock1w = sock1->dual.stream[1];
+	} else {
+		sock1w = &sock1->stream;
+	}
+	if ((sock2->tag & ~XIO_TAG_CLOSED) == XIO_TAG_DUAL) {
+		sock2w = sock2->dual.stream[1];
+	} else {
+		sock2w = &sock2->stream;
+	}
+	if (!socat_opts.righttoleft && !socat_opts.righttoleft) {
+		/* Both directions - format output */
+		unsigned long long int maxblocks =
+			Max(sock1w->blocks_written, sock2w->blocks_written);
+		unsigned long long int maxbytes =
+			Max(sock1w->bytes_written,  sock2w->bytes_written);
+		/* Calculate number of digits */
+		while (maxblocks >= 10) { ++blocksd; maxblocks /= 10; }
+		while (maxbytes  >= 10) { ++bytesd;  maxbytes  /= 10; }
+	}
+	snprintf(ltorf1, sizeof(ltorf1), ltorf0, blocksd, bytesd);
+	snprintf(rtolf1, sizeof(rtolf1), rtolf0, blocksd, bytesd);
+	/* Statistics are E_INFO level; make sure they are printed anyway */
+	savelevel = diag_get_int('d');
+	diag_set_int('d', E_INFO);
+	Warn("statistics are experimental");
+	if (!socat_opts.righttoleft) {
+		Info2(ltorf1, sock2w->blocks_written, sock2w->bytes_written);
+	}
+	if (!socat_opts.lefttoright) {
+		Info2(rtolf1, sock1w->blocks_written, sock1w->bytes_written);
+	}
+	diag_set_int('d', savelevel);
+	return;
+}
+#endif /* WITH_STATs */

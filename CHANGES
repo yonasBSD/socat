@@ -41,6 +41,10 @@ Features:
 	references.
 	Test: VARS_IN_SNIFFPATH
 
+	Socat option --statistics logs final byte and packet counter values
+	before exit. Signal USR1 logs actual values.
+	Tests: OPTION_STATISTICS SIGUSR1_STATISTICS
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

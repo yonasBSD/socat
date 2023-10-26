@@ -223,6 +223,11 @@ label(option_4)dit(bf(tt(-4)))
 label(option_6)dit(bf(tt(-6)))
    Use IP version 6 in case that the addresses do not implicitly or explicitly
    specify a version.
+label(option_statistics)dit(bf(tt(--statistics)))
+   Logs transfer statistics (bytes and blocks counters for both directions)
+   before terminating Socat.nl()
+   See also link(signal USR1)(signal_usr1).nl()
+   This feature is experimental and might change in future versions.
 enddit()
 
 
@@ -4055,6 +4060,16 @@ manpagefiles()
 /usr/bin/socat nl()
 /usr/bin/filan nl()
 /usr/bin/procan
+
+
+label(SIGNALS)
+manpagesection(SIGNALS)
+
+description(
+label(signal_usr1)dit(SIGUSR1:) Causes logging of current transfer statistics.
+nl()
+See also link(option --statistics)(option_statistics)
+)
 
 
 label(ENVIRONMENT_VARIABLES)

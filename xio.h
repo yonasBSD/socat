@@ -85,8 +85,9 @@ enum xiotag {
    XIO_TAG_RDONLY,	/* this is a single read-only stream */
    XIO_TAG_WRONLY,	/* this is a single write-only stream */
    XIO_TAG_RDWR,	/* this is a single read-write stream */
-   XIO_TAG_DUAL		/* this is a dual stream, consisting of two single
+   XIO_TAG_DUAL,	/* this is a dual stream, consisting of two single
 			   streams */
+   XIO_TAG_CLOSED=8,	/* close, additional bit */
 } ;
 
 /* Keep condition consistent with xioopts.h:GROUP_*! */
@@ -278,6 +279,12 @@ typedef struct single {
       } tun;
 #endif /* WITH_TUN */
    } para;
+#if WITH_STATS
+   unsigned long long blocks_read;
+   unsigned long long bytes_read;
+   unsigned long long blocks_written;
+   unsigned long long bytes_written;
+#endif /* WITH_STATS */
 } xiosingle_t;
 
 /* rw: 0..read, 1..write, 2..r/w */
