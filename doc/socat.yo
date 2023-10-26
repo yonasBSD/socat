@@ -586,7 +586,7 @@ label(ADDRESS_OPENSSL_LISTEN)dit(bf(tt(OPENSSL-LISTEN:<port>)))
    link(range)(OPTION_RANGE),
    link(tcpwrap)(OPTION_TCPWRAPPERS),
    link(su)(OPTION_SUBSTUSER),
-   link(reuseaddr)(OPTION_REUSEADDR),
+   link(reuseaddr)(OPTION_SO_REUSEADDR),
    link(retry)(OPTION_RETRY)nl()
    See also:
    link(OPENSSL)(ADDRESS_OPENSSL_CONNECT),
@@ -652,7 +652,7 @@ label(ADDRESS_OPENSSL_DTLS_SERVER)dit(bf(tt(OPENSSL-DTLS-SERVER:<port>)))
    link(range)(OPTION_RANGE),
    link(tcpwrap)(OPTION_TCPWRAPPERS),
    link(su)(OPTION_SUBSTUSER),
-   link(reuseaddr)(OPTION_REUSEADDR),
+   link(reuseaddr)(OPTION_SO_REUSEADDR),
    link(retry)(OPTION_RETRY)nl()
    link(rcvtimeo)(OPTION_SO_RCVTIMOE)nl()
    See also:
@@ -788,7 +788,7 @@ label(ADDRESS_SCTP_LISTEN)dit(bf(tt(SCTP-LISTEN:<port>)))
    link(sctp-maxseg)(OPTION_SCTP_MAXSEG),
    link(sctp-nodelay)(OPTION_SCTP_NODELAY),
    link(su)(OPTION_SUBSTUSER),
-   link(reuseaddr)(OPTION_REUSEADDR),
+   link(reuseaddr)(OPTION_SO_REUSEADDR),
    link(retry)(OPTION_RETRY)nl()
    See also:
    link(SCTP4-LISTEN)(ADDRESS_SCTP4_LISTEN),
@@ -1053,7 +1053,7 @@ label(ADDRESS_TCP_LISTEN)dit(bf(tt(TCP-LISTEN:<port>)))
    link(accept-timeout)(OPTION_ACCEPT_TIMEOUT),
    link(mss)(OPTION_MSS),
    link(su)(OPTION_SUBSTUSER),
-   link(reuseaddr)(OPTION_REUSEADDR),
+   link(reuseaddr)(OPTION_SO_REUSEADDR),
    link(retry)(OPTION_RETRY),
    link(cool-write)(OPTION_COOL_WRITE)nl()
    See also:
@@ -1413,7 +1413,7 @@ label(ADDRESS_VSOCK_LISTEN)dit(bf(tt(VSOCK-LISTEN:<port>)))
    link(max-children)(OPTION_MAX_CHILDREN),
    link(backlog)(OPTION_BACKLOG),
    link(su)(OPTION_SUBSTUSER),
-   link(reuseaddr)(OPTION_REUSEADDR),
+   link(reuseaddr)(OPTION_SO_REUSEADDR),
    link(retry)(OPTION_RETRY)nl()
    See also:
    link(VSOCK-CONNECT)(ADDRESS_VSOCK_CONNECT)
@@ -2004,9 +2004,16 @@ label(OPTION_SO_RCVTIMOE)dit(bf(tt(so-rcvtimeo=<time>, rcvtimeo=<time>)))
 label(OPTION_SO_SNDTIMOE)dit(bf(tt(so-sndtimeo=<time>, sndtimeo=<time>)))
    Like link(so-recvtimeo)(OPTION_SO_RCVTIMOE), but for code(send). Not usecase
    known.
-label(OPTION_REUSEADDR)dit(bf(tt(reuseaddr)))
+label(OPTION_RCVLOWAT)dit(bf(tt(rcvlowat=<bytes>)))
+   Specifies the minimum number of received bytes [link(int)(TYPE_INT)] until
+   the socket layer will pass the buffered data to socat(). 
+label(OPTION_SO_REUSEADDR)dit(bf(tt(reuseaddr[=[0|1]])))
    Allows other sockets to bind to an address even if parts of it (e.g. the
-   local port) are already in use by socat() (link(example)(EXAMPLE_OPTION_REUSEADDR)). 
+   local port) are already in use by socat().nl()
+   With version 1.7.5, this socket option is set automatically for TCP LISTEN
+   addresses. If you prefer the system default (no related
+   tt(setsockopt(...SO_REUSEADDR...)) call at all), use form tt(reuseaddr=).nl()
+   (link(example)(EXAMPLE_OPTION_SO_REUSEADDR)).
 label(OPTION_SNDBUF)dit(bf(tt(sndbuf=<bytes>)))
    Sets the size of the send buffer after the code(socket()) call to
    <bytes> [link(int)(TYPE_INT)].
@@ -3295,7 +3302,7 @@ connection comes in, accepts it, then connects to the remote host
 a second connection. 
 
 label(EXAMPLE_OPTION_BIND_TCP4)
-label(EXAMPLE_OPTION_REUSEADDR)
+label(EXAMPLE_OPTION_SO_REUSEADDR)
 label(EXAMPLE_OPTION_FORK)
 label(EXAMPLE_OPTION_SUBSTUSER)
 label(EXAMPLE_OPTION_RANGE)
@@ -3319,7 +3326,7 @@ link(fork)(OPTION_FORK)'ing a new
 process after each code(accept()). It provides a little security by
 link(su)(OPTION_SUBSTUSER)'ing to user 
 nobody after forking; it only permits connections from the private 10 network
-(link(range)(OPTION_RANGE)); due to link(reuseaddr)(OPTION_REUSEADDR), it
+(link(range)(OPTION_RANGE)); due to link(reuseaddr)(OPTION_SO_REUSEADDR), it
 allows immediate restart after master process's termination, even if some child
 sockets are not completely shut down.
 With link(-lmlocal2)(option_lm), socat logs to stderr until successfully
@@ -3512,7 +3519,7 @@ implements a simple network based message collector.
 For each client connecting to port 3334, a new child process is generated (option link(fork)(OPTION_FORK)).
 All data sent by the clients are link(append)(OPTION_APPEND)'ed to the file /tmp/in.log.
 If the file does not exist, socat link(creat)(OPTION_O_CREAT)'s it. 
-Option link(reuseaddr)(OPTION_REUSEADDR) allows immediate restart of the server
+Option link(reuseaddr)(OPTION_SO_REUSEADDR) allows immediate restart of the server
 process. 
 
 COMMENT(
@@ -3523,7 +3530,7 @@ For each client connecting to port 3335, a new child process is generated
 (option link(fork)(OPTION_FORK)).
 The contents of the file /tmp/motd is sent to each client.
 Messages sent by clients result in an error due to option link(rdonly)(OPTION_RDONLY).
-Option link(reuseaddr)(OPTION_REUSEADDR) allows immediate restart of the server
+Option link(reuseaddr)(OPTION_SO_REUSEADDR) allows immediate restart of the server
 process.  
 )
 COMMENT(

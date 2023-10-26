@@ -133,24 +133,30 @@ int _xioopen_ipdgram_listen(struct single *sfd,
    while (true) {	/* we loop with fork or prohibited packets */
       /* now wait for some packet on this datagram socket, get its sender
 	 address, connect there, and return */
-      int reuseaddr = dofork;
+      union integral notnull;
+      union integral reuseaddr;
       int doreuseaddr = (dofork != 0);
       char infobuff[256];
       union sockaddr_union _sockname;
       union sockaddr_union *la = &_sockname;	/* local address */
 
+      reuseaddr.u_int = dofork;
+
       if ((sfd->fd = xiosocket(opts, pf, socktype, ipproto, E_ERROR)) < 0) {
 	 return STAT_RETRYLATER;
       }
-      doreuseaddr |= (retropt_int(opts, OPT_SO_REUSEADDR, &reuseaddr) >= 0);
+      doreuseaddr |= (retropt_2integrals(opts, OPT_SO_REUSEADDR,
+					 &reuseaddr, &notnull) >= 0);
       applyopts(sfd->fd, opts, PH_PASTSOCKET);
+
+      /* SO_REUSEADDR handling of UDP sockets is helpful on Solaris */
       if (doreuseaddr) {
 	 if (Setsockopt(sfd->fd, opt_so_reuseaddr.major,
-			opt_so_reuseaddr.minor, &reuseaddr, sizeof(reuseaddr))
+			opt_so_reuseaddr.minor, &reuseaddr.u_int, sizeof(reuseaddr.u_int))
 	     < 0) {
 	    Warn6("setsockopt(%d, %d, %d, {%d}, "F_Zd"): %s",
 		  sfd->fd, opt_so_reuseaddr.major,
-		  opt_so_reuseaddr.minor, reuseaddr, sizeof(reuseaddr),
+		  opt_so_reuseaddr.minor, reuseaddr.u_int, sizeof(reuseaddr.u_int),
 		  strerror(errno));
 	 }
       }

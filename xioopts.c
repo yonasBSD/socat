@@ -2094,6 +2094,21 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	 Info2("setting option \"%s\" to %d", ent->desc->defname,
 	       (*opts)[i].value.u_int);
 	 break;
+      case TYPE_INT_NULL:
+	 (*opts)[i].value2.u_bool = true;
+	 if (assign && token[0] != '\0') {
+	    char *rest;
+	    (*opts)[i].value.u_int = Strtoul(token, &rest, 0, a0);
+	 } else if (assign) {
+	    (*opts)[i].value2.u_bool = false; 	/* NULL / no value */
+	    Info1("setting option \"%s\" to NULL", ent->desc->defname);
+	    break;
+	 } else {
+	    (*opts)[i].value.u_int = 1;
+	 }
+	 Info2("setting option \"%s\" to %d", ent->desc->defname,
+	       (*opts)[i].value.u_int);
+	 break;
       case TYPE_BOOL:
 	 if (!assign) {
 	    (*opts)[i].value.u_bool = 1;
@@ -2924,11 +2939,41 @@ int retropt_int(struct opt *opts, int optcode, int *result) {
 	 case TYPE_INT: *result = opt->value.u_int; break;
 	 case TYPE_STRING: *result = strtol(opt->value.u_string, &rest, 0);
 	    if (*rest != '\0') {
-	       Error1("retropts: trailing garbage in numerical arg of option \"%s\"",
+	       Error1("retropts_int(): trailing garbage in numerical arg of option \"%s\"",
 		      opt->desc->defname);
 	    }
 	    break;
 	 default: Error2("cannot convert type %d of option %s to int",
+			 opt->desc->type, opt->desc->defname);
+	    opt->desc = ODESC_ERROR;
+	    return -1;
+	 }
+	 opt->desc = ODESC_DONE;
+	 return 0;
+      }
+      ++opt;
+   }
+   return -1;
+}
+
+/* Looks for the first option of type <optcode>. If the option is found,
+   this function stores its int value in *result, "consumes" the
+   option, and returns 0.
+   If the option is not found, *result is not modified, and -1 is returned. */
+int retropt_2integrals(struct opt *opts, int optcode,
+		       union integral *value1, union integral *value2)
+{
+   struct opt *opt = opts;
+
+   while (opt->desc != ODESC_END) {
+      if (opt->desc != ODESC_DONE && opt->desc->optcode == optcode) {
+	 switch (opt->desc->type) {
+	 case TYPE_INT_NULL:
+	 /* ...and many more types */
+	    *value1 = opt->value;
+	    *value2 = opt->value2;
+	    break;
+	 default: Error2("cannot convert type %d of option %s to int/NULL",
 			 opt->desc->type, opt->desc->defname);
 	    opt->desc = ODESC_ERROR;
 	    return -1;
@@ -3328,6 +3373,16 @@ int applyopts(int fd, struct opt *opts, enum e_phase phase) {
 	       break;
 	    case TYPE_INT:
 	       if (Setsockopt(fd, opt->desc->major, opt->desc->minor,
+			      &opt->value.u_int, sizeof(int)) < 0) {
+		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
+			 fd, opt->desc->major, opt->desc->minor,
+			 opt->value.u_int, sizeof(int), strerror(errno));
+		  opt->desc = ODESC_ERROR; ++opt; continue;
+	       }
+	       break;
+	    case TYPE_INT_NULL:
+	       if (opt->value2.u_bool &&
+		   Setsockopt(fd, opt->desc->major, opt->desc->minor,
 			      &opt->value.u_int, sizeof(int)) < 0) {
 		  Error6("setsockopt(%d, %d, %d, {%d}, "F_Zu"): %s",
 			 fd, opt->desc->major, opt->desc->minor,

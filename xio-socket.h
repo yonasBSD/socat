@@ -135,5 +135,6 @@ extern int
 xiosocket(struct opt *opts, int pf, int socktype, int proto, int level);
 extern int
 xiosocketpair(struct opt *opts, int pf, int socktype, int proto, int sv[2]);
+extern int xiosock_reuseaddr(int fd, int ipproto, struct opt *opts);
 
 #endif /* !defined(__xio_socket_h_included) */

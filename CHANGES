@@ -66,6 +66,10 @@ Features:
 	With this option Socat restores the VLAN tag.
 	Feature inspired by Zhao Dong.
 
+	Socket option SO_REUSEADDR is now automatically applied to TCP LISTEN
+	addresses. reuseaddr= restores the old behaviour.
+	Tests: TCP4_REUSEADDR OPENSSL_6_REUSEADDR REUSEADDR_NULL
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

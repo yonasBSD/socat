@@ -153,7 +153,10 @@ int _xioopen_listen(struct single *xfd, int xioflags, struct sockaddr *us, sockl
    applyopts_offset(xfd, opts);
    applyopts_cloexec(xfd->fd, opts);
 
+   /* Phase prebind */
+   xiosock_reuseaddr(xfd->fd, proto, opts);
    applyopts(xfd->fd, opts, PH_PREBIND);
+
    applyopts(xfd->fd, opts, PH_BIND);
    if (Bind(xfd->fd, (struct sockaddr *)us, uslen) < 0) {
       Msg4(level, "bind(%d, {%s}, "F_socklen"): %s", xfd->fd,

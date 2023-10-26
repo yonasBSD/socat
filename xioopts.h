@@ -27,6 +27,7 @@ enum e_types {
    TYPE_BYTE,		/* unsigned char */
 
    TYPE_INT,		/* int */
+   TYPE_INT_NULL,	/* int, or opt= for no action (instead of default) */
    TYPE_LONG,		/* long */
    TYPE_STRING,		/* char * */
    TYPE_NAME = TYPE_STRING,
@@ -125,7 +126,7 @@ enum e_func {
    groups. to keep the search for options simple, we allow each option to
    belong to at most one group only. (we have a dummy GROUP_NONE for those
    that don't want to belong to any...)
-   The caller of parseopts() specifies per bitpatter a set of groups where it
+   The caller of parseopts() specifies per bit pattern a set of groups where it
    accepts options from.
 */
 
@@ -946,6 +947,7 @@ extern int retropt_bool(struct opt *opts, int optcode, bool *result);
 extern int retropt_short(struct opt *opts, int optcode, short *result);
 extern int retropt_ushort(struct opt *opts, int optcode, unsigned short *result);
 extern int retropt_int(struct opt *opts, int optcode, int *result);
+extern int retropt_2integrals(struct opt *opts, int optcode, union integral *value1, union integral *value2);
 extern int retropt_uint(struct opt *opts, int optcode, unsigned int *result);
 extern int retropt_long(struct opt *opts, int optcode, long *result);
 extern int retropt_ulong(struct opt *opts, int optcode, unsigned long *result);
