@@ -42,7 +42,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 
    if (pipe->readbytes) {
       if (pipe->actbytes == 0) {
-	 Info("xioread(): readbytes consumed, inserting EOF");
+	 Info1("xioread(%d, ...): readbytes consumed, inserting EOF", pipe->fd);
 	 return 0;	/* EOF by count */
       }
 
@@ -135,6 +135,10 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 #if _WITH_SOCKET
    case XIOREAD_RECV:
      if (pipe->dtype & XIOREAD_RECV_FROM) {
+      /* Receiving packets in addresses of RECVFROM types, the sender address
+	   has already been determined in OPEN phase. */
+      Debug1("%s(): XIOREAD_RECV and XIOREAD_RECV_FROM (peer checks already done)",
+	     __func__);
 #if WITH_RAWIP || WITH_UDP || WITH_UNIX
       struct msghdr msgh = {0};
       union sockaddr_union from = {{0}};
@@ -151,8 +155,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 #if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
       msgh.msg_controllen = sizeof(ctrlbuff);
 #endif
-
-      while ((rc = xiogetpacketsrc(pipe->fd, &msgh,
+      while ((rc = xiogetancillary(pipe->fd, &msgh,
 			  MSG_PEEK
 #ifdef MSG_TRUNC
 			  |MSG_TRUNC
@@ -160,6 +163,9 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 				   )) < 0 &&
 	     errno == EINTR) ;
       if (rc < 0)  return -1;
+
+      /* Note: we do not call xiodopacketinfo() and xiocheckpeer() here because
+	 that already happened in xioopen() / _xioopen_dgram_recvfrom() ... */
 
       do {
 	 bytes =
@@ -175,16 +181,22 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	 errno = _errno;
 	 return -1;
       }
-      /* on packet type we also receive outgoing packets, this is not desired
-       */
-#if defined(PF_PACKET) && defined(PACKET_OUTGOING)
+
+#if defined(PF_PACKET) && !defined(PACKET_IGNORE_OUTGOING) && defined(PACKET_OUTGOING)
+      /* In future versions there may be an option that controls receiving of
+	 outgoing packets, but currently it is hardcoded that we try to avoid
+	 them - either by once setting socket option PACKET_IGNORE_OUTGOING
+	 when available, otherwise by checking flag PACKET_OUTGOING per packet.
+      */
       if (from.soa.sa_family == PF_PACKET) {
-	 if ((from.ll.sll_pkttype & PACKET_OUTGOING)
-	    == 0) {
-	    errno = EAGAIN;  return -1;
+	 if ((from.ll.sll_pkttype & PACKET_OUTGOING) != 0) {
+	    Info2("%s(fd=%d): ignoring outgoing packet", __func__, pipe->fd);
+	    errno = EAGAIN;
+	    return -1;
 	 }
+	 Debug2("%s(fd=%d): packet is not outgoing - process it", __func__, pipe->fd);
       }
-#endif /* defined(PF_PACKET) && defined(PACKET_OUTGOING) */
+#endif /* defined(PF_PACKET) && !defined(PACKET_IGNORE_OUTGOING) && defined(PACKET_OUTGOING) */
 
       Notice2("received packet with "F_Zu" bytes from %s",
 	      bytes,
@@ -336,19 +348,24 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	 continue;
       }
 #endif
-#else /* !WITH_RAWIP */
+#else /* !(WITH_RAWIP || WITH_UDP || WITH_UNIX) */
       Fatal("address requires raw sockets, but they are not compiled in");
       return -1;
-#endif /* !WITH_RAWIP || WITH_UDP || WITH_UNIX */
+#endif /* !(WITH_RAWIP || WITH_UDP || WITH_UNIX) */
 
      } else /* ~XIOREAD_RECV_FROM */ {
-      union sockaddr_union from;  socklen_t fromlen = sizeof(from);
-      char infobuff[256];
+	/* Receiving packets without planning to answer to the sender, but we
+	   might need sender info for some checks, thus we use recvfrom() */
       struct msghdr msgh = {0};
+      union sockaddr_union from = {{ 0 }};
+      socklen_t fromlen = sizeof(from);
+      char infobuff[256];
       char ctrlbuff[1024];	/* ancillary messages */
       int rc;
 
-      socket_init(pipe->para.socket.la.soa.sa_family, &from);
+      Debug1("%s(): XIOREAD_RECV and not XIOREAD_RECV_FROM (peer checks to be done)",
+	     __func__);
+
       /* get source address */
       msgh.msg_name = &from;
       msgh.msg_namelen = fromlen;
@@ -358,7 +375,7 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 #if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
       msgh.msg_controllen = sizeof(ctrlbuff);
 #endif
-      while ((rc = xiogetpacketsrc(pipe->fd, &msgh,
+      while ((rc = xiogetancillary(pipe->fd, &msgh,
 			  MSG_PEEK
 #ifdef MSG_TRUNC
 			  |MSG_TRUNC
@@ -390,9 +407,23 @@ ssize_t xioread(xiofile_t *file, void *buff, size_t bufsiz) {
 	 errno = _errno;
 	 return -1;
       }
+
+#if defined(PF_PACKET) && !defined(PACKET_IGNORE_OUTGOING) && defined(PACKET_OUTGOING)
+      /* For remarks see similar section above */
+      if (from.soa.sa_family == PF_PACKET) {
+	 if ((from.ll.sll_pkttype & PACKET_OUTGOING) != 0) {
+	     Info2("%s(fd=%d): ignoring outgoing packet", __func__, pipe->fd);
+	    errno = EAGAIN;
+	    return -1;
+	 }
+	 Debug2("%s(fd=%d): packet is not outgoing - process it", __func__, pipe->fd);
+      }
+#endif /* defined(PF_PACKET) && !defined(PACKET_IGNORE_OUTGOING) && defined(PACKET_OUTGOING) */
+
       Notice2("received packet with "F_Zu" bytes from %s",
 	      bytes,
 	      sockaddr_info(&from.soa, fromlen, infobuff, sizeof(infobuff)));
+
       if (bytes == 0) {
 	 if (!pipe->para.socket.null_eof) {
 	    errno = EAGAIN; return -1;

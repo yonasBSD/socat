@@ -141,8 +141,8 @@
 #if HAVE_LINUX_ERRQUEUE_H
 #include <linux/errqueue.h>	/* struct sock_extended_err */
 #endif
-#if HAVE_NETPACKET_PACKET_H
-#include <netpacket/packet.h>
+#if HAVE_LINUX_IF_PACKET_H
+#include <linux/if_packet.h>
 #endif
 #if HAVE_NETINET_IF_ETHER_H
 #include <netinet/if_ether.h>

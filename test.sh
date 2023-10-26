@@ -760,7 +760,8 @@ testaddrs () {
     local a A;
     for a in $@; do
 	A=$(echo "$a" |tr 'a-z' 'A-Z')
-	if ! $SOCAT $A /dev/null 2>&1 </dev/null |grep -q "E unknown device/address"; then
+	# the ::::: forces syntax errer and prevents the address from doing anything
+	if ! $SOCAT $A::::: /dev/null 2>&1 </dev/null |grep -q "E unknown device/address"; then
 	    shift
 	    continue
 	fi
@@ -9468,9 +9469,10 @@ elif ! grep "ancillary message: $SCM_TYPE: $SCM_NAME=$SCM_VALUE\$" ${te}0 >/dev/
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-    if [ -n "$debug" ]; then
-	grep " $LEVELS " "${te}0"; echo; grep " $LEVELS " "${te}1";
-    fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then grep " $LEVELS " "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "echo XYZ |$CMD1"; fi
+    if [ "$DEBUG" ];   then grep " $LEVELS " "${te}1" >&2; fi
     numOK=$((numOK+1))
 fi
 else # option is not supported
@@ -9716,9 +9718,10 @@ elif ! expr "$(cat "$tf")" : "$SCM_VALUE\$" >/dev/null; then
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-    if [ -n "$debug" ]; then
-	cat "${te}0"; echo; cat "${te}1";
-    fi
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "{ echo XYZ; sleep 0.1; } |$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
 fi
 else # option is not supported
@@ -13148,7 +13151,6 @@ fi
 fi ;; # NUMCOND, feats
 esac
 N=$((N+1))
-set +vx
 
 # test the DTLS server feature
 NAME=OPENSSL_DTLS_SERVER
@@ -15590,6 +15592,99 @@ esac
 N=$((N+1))
 
 
+# Socats INTERFACE address has to ignore outgoing packets if possible.
+# On Linux is uses socket option PACKET_IGNORE_OUTGOING or it queries per
+# packet the PACKET_OUTGOING flag of struct sockaddr_ll.sll_pkttype
+NAME=INTERFACE_IGNOREOUTGOING
+case "$TESTS" in
+*%$N%*|*%functions%*|*%interface%*|*%tun%*|*%root%*|*%$NAME%*)
+TEST="$NAME: INTERFACE ignores outgoing packets"
+#idea: create a TUN interface and hook with INTERFACE.
+# Send a packet out the interface, should not be seen by INTERFACE
+if ! eval $NUMCOND; then :;
+elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}must be root${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! $(type ping >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}ping not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! feat=$(testfeats TUN STDIO INTERFACE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - TUN STDIO INTERFACE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions iff-up tun-type tun-name ) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+tl="$td/test$N.lock"
+da="$(date) $RANDOM"
+TUNNET=10.255.255
+TUNNAME=tun9
+CMD0="$TRACE $SOCAT $opts -L $tl TUN:$TUNNET.1/24,iff-up=1,tun-type=tun,tun-name=$TUNNAME -"
+CMD1="$TRACE $SOCAT $opts -u INTERFACE:$TUNNAME -"
+CMD2="ping -c 1 -w 1 -b $TUNNET.255"
+printf "test $F_n $TEST... " $N
+sleep 1 |$CMD0 2>"${te}0" >/dev/null &
+pid0="$!"
+#waitinterface "$TUNNAME"
+usleep $MICROS
+$CMD1 >"${tf}1" 2>"${te}1" &
+pid1="$!"
+usleep $MICROS
+$CMD2 2>"${te}2" 1>&2
+kill $pid1 2>/dev/null
+usleep $MICROS
+kill $pid0 2>/dev/null
+wait
+if [ $? -ne 0 ]; then
+    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif test -s "${tf}1"; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi ;; # NUMCOND, feats
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
 # end of common tests
 
 ##################################################################################
@@ -15694,9 +15789,11 @@ if [ "$OPT_EXPECT_FAIL" ]; then
     grep "^< " "$td/failed.diff" |awk '{print($2);}' >"$td/ok.unexp"
     ln -s "$td/ok.unexp" .
     echo "OK unexpected: $(cat "$td/ok.unexp" |xargs echo)"
+else
+    touch "$td/failed.diff"
 fi
-listFAIL=$(cat "$td/failed.lst" |xargs echo)
-numFAIL="$(wc -l "$td/failed.lst" |awk '{print($1);}')"
+#listFAIL=$(cat "$td/failed.lst" |xargs echo)
+#numFAIL="$(wc -l "$td/failed.lst" |awk '{print($1);}')"
 
 ! test -s "$td/failed.unexp"
 exit

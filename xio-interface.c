@@ -111,13 +111,14 @@ int _xioopen_interface(const char *ifname,
    _xiointerface_apply_iff(xfd->fd, ifname, xfd->para.interface.iff_opts);
 
 #ifdef PACKET_IGNORE_OUTGOING
-   /* Raw socket may even provide packets that are outbound - we are not
+   /* Raw socket might also provide packets that are outbound - we are not
       interested in these and disable this "feature" in kernel if possible */
    if (Setsockopt(xfd->fd, SOL_PACKET, PACKET_IGNORE_OUTGOING, &one, sizeof(one)) < 0) {
       Warn2("setsockopt(%d, SOL_PACKET, PACKET_IGNORE_OUTGOING, {1}): %s",
 	    xfd->fd, strerror(errno));
    }
-#endif
+#endif /*defined(PACKET_IGNORE_OUTGOING) */
+
    return 0;
 }
 

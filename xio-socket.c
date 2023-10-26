@@ -25,6 +25,7 @@
 #endif /* WITH_IP6 */
 #include "xio-ip.h"
 #include "xio-listen.h"
+#include "xio-interface.h"
 #include "xio-ipapp.h"	/*! not clean */
 #include "xio-tcpwrap.h"
 
@@ -733,7 +734,7 @@ int xiogetpacketinfo(int fd)
 #if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
    msgh.msg_controllen = sizeof(ctrlbuff);
 #endif
-   if (xiogetpacketsrc(fd,
+   if (xiogetancillary(fd,
 		       &msgh,
 		       MSG_ERRQUEUE
 #ifdef MSG_TRUNC
@@ -1078,7 +1079,7 @@ int _xioopen_dgram_sendto(/* them is already in xfd->peersa */
       applyopts_named(us->un.sun_path, opts, PH_LATE);
    }
 #endif
-   applyopts(xfd->fd, opts, PH_LATE);
+   /*applyopts(xfd->fd, opts, PH_LATE);*/
 
    /* xfd->dtype = DATA_RECVFROM; *//* no, the caller must set this (ev _SKIPIP) */
    Notice1("successfully prepared local socket %s",
@@ -1244,7 +1245,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 #if HAVE_STRUCT_MSGHDR_MSGCONTROLLEN
       msgh.msg_controllen = sizeof(ctrlbuff);
 #endif
-      while ((rc = xiogetpacketsrc(xfd->fd,
+      while ((rc = xiogetancillary(xfd->fd,
 			  &msgh,
 			  MSG_PEEK
 #ifdef MSG_TRUNC
@@ -1431,8 +1432,9 @@ int retropt_socket_pf(struct opt *opts, int *pf) {
    In msgh the msg_name pointer must refer to an (empty) sockaddr storage.
    Returns STAT_OK on success, or STAT_RETRYLATER when an error occurred,
    including EINTR.
+   (recvmsg() retrieves just meta info, not the data)
  */
-int xiogetpacketsrc(int fd, struct msghdr *msgh, int flags) {
+int xiogetancillary(int fd, struct msghdr *msgh, int flags) {
    char peekbuff[1];
 #if HAVE_STRUCT_IOVEC
    struct iovec iovec;
@@ -1473,6 +1475,8 @@ int xiodopacketinfo(struct msghdr *msgh, bool withlog, bool withenv) {
       char valbuff[256], *valp;
       char envbuff[256], *envp;
 
+      Info3("ancillary message in xiodopacketinfo(): len="F_Zu", level=%d, type=%d",
+	    cmsg->cmsg_len, cmsg->cmsg_level, cmsg->cmsg_type);
       if (withlog) {
 	 xiodump(CMSG_DATA(cmsg),
 		 cmsg->cmsg_len-((char *)CMSG_DATA(cmsg)-(char *)cmsg),

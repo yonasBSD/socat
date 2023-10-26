@@ -389,7 +389,7 @@ label(ADDRESS_IP_SENDTO)dit(bf(tt(IP-SENDTO:<host>:<protocol>)))
 label(ADDRESS_INTERFACE)dit(bf(tt(INTERFACE:<interface>)))
    Communicates with a network connected on an interface using raw packets
    including link level data. link(<interface>)(TYPE_INTERFACE) is the name of
-   the network interface. Currently only available on Linux.
+   the network interface. Currently only available on Linux.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET) nl()
    Useful options:
    link(pf)(OPTION_PROTOCOL_FAMILY),

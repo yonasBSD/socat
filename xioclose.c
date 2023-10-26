@@ -81,7 +81,10 @@ int xioclose1(struct single *pipe) {
 #if WITH_INTERFACE
       case END_INTERFACE:
 	 {
-	    _xiointerface_set_iff(pipe->fd, pipe->para.interface.name, pipe->para.interface.save_iff);
+	    if (pipe->para.interface.name[0] != '\0') {
+	       _xiointerface_set_iff(pipe->fd, pipe->para.interface.name,
+				     pipe->para.interface.save_iff);
+	    }
 	    if (Close(pipe->fd) < 0) {
 	       Info2("close(%d): %s", pipe->fd, strerror(errno)); } break;
 	 }

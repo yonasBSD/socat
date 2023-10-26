@@ -108,6 +108,10 @@ Porting:
 	Removed Config/ because its contents have not been maintained for many
 	years.
 
+	Try to not receive outgoing packets on raw (PF_PACKET) sockets - use
+	PACKET_IGNORE_OUTGOING socket options when available.
+	Test: INTERFACE_IGNOREOUTGOING
+
 Testing:
 	Removed obselete parts from test.sh
 
@@ -116,6 +120,8 @@ Documentation:
 
 	Added doc for option ipv6-join-group (ipv6-add-membership)
 	Thanks to Martin Buck for sending the patch.
+
+	Renamed xiogetpacketsrc() to xiogetancillary()
 
 ####################### V 1.7.4.5 (not released):
 

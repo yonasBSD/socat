@@ -321,10 +321,10 @@ AC_ARG_ENABLE(interface, [  --disable-interface  disable network interface suppo
 	       esac],
 	       [AC_MSG_RESULT(yes);  WITH_INTERFACE=1 ])
 if test "$WITH_INTERFACE"; then
-  AC_CHECK_HEADER(netpacket/packet.h,
-    AC_DEFINE(HAVE_NETPACKET_PACKET_H),
+  AC_CHECK_HEADER(linux/if_packet.h,
+    AC_DEFINE(HAVE_LINUX_IF_PACKET_H),
     [WITH_INTERFACE=;
-     AC_MSG_WARN([include file netpacket/packet.h not found, disabling interface])])
+     AC_MSG_WARN([include file linux/if_packet.h not found, disabling interface])])
 fi
 if test "$WITH_INTERFACE"; then
   AC_CHECK_HEADER(netinet/if_ether.h,

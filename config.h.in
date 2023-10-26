@@ -285,8 +285,8 @@
 /* Define if you have the <linux/vm_sockets.h> header file.  */
 #undef HAVE_LINUX_VM_SOCKETS_H
 
-/* Define if you have the <netpacket/packet.h> header file.  */
-#undef HAVE_NETPACKET_PACKET_H
+/* Define if you have the <linux/if_packet.h> header file.  */
+#undef HAVE_LINUX_IF_PACKET_H
 
 /* Define if you have the <netinet/if_ether.h> header file.  */
 #undef HAVE_NETINET_IF_ETHER_H

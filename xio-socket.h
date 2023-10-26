@@ -84,6 +84,7 @@ extern
 char *xiogetifname(int ind, char *val, int ins);
 
 extern int retropt_socket_pf(struct opt *opts, int *pf);
+extern int xiogetancillary(int fd, struct msghdr *msgh, int flags);
 
 extern int xioopen_connect(struct single *fd,
 			    union sockaddr_union *us, size_t uslen,
