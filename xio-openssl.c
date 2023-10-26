@@ -448,8 +448,9 @@ int _xioopen_openssl_connect(struct single *xfd,
 
 #if defined(HAVE_SSL_set_tlsext_host_name) || defined(SSL_set_tlsext_host_name)
    if (!no_sni) {
-      /*Warn1("_xioopen_openssl_connect(): calling SSL_set_tlsext_host_name(snihost=\"%s\")", snihost?snihost:"NULL");*/
-      if (!SSL_set_tlsext_host_name(ssl, snihost)) {
+      if (snihost == NULL || strlen(snihost) == 0) {
+	 Warn("refusing to set empty SNI host name");
+      } else if (!SSL_set_tlsext_host_name(ssl, snihost)) {
 	 Error1("Failed to set SNI host \"%s\"", snihost);
 	 sycSSL_free(xfd->para.openssl.ssl);
 	 xfd->para.openssl.ssl = NULL;

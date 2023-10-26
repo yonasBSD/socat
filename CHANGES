@@ -25,6 +25,9 @@ Corrections:
 	but remembers the failure and allows further processing.
 	Thanks to Luke Jones for reporting this issue.
 
+	Now catching the case of empty SNI host to prevent OpenSSL error.
+	This is related to Red Hat issue 2081414.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility
 

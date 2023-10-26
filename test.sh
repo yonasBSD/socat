@@ -11178,6 +11178,12 @@ esac
 N=$((N+1))
 
 
+# Does Socat have -d0 option?
+opt_d0=
+if $SOCAT -h |grep -e -d0 >/dev/null; then
+    opt_d0="-d0"
+fi
+
 # socat up to 1.7.2.1 did only shutdown() but not close() an accept() socket 
 # that was rejected due to range, tcpwrap, lowport, or sourceport option.
 # This file descriptor leak could be used for a denial of service attack.
@@ -11202,7 +11208,7 @@ if [ $RLIMIT_NOFILE -gt 1024 ]; then
     RLIMIT_NOFILE="$(ulimit -n)"
 fi
 newport tcp4
-CMD0="$TRACE $SOCAT -d0 $opts TCP-LISTEN:$PORT,$REUSEADDR,range=$LOCALHOST:255.255.255.255 PIPE"
+CMD0="$TRACE $SOCAT $opt_d0 $opts TCP-LISTEN:$PORT,$REUSEADDR,range=$LOCALHOST:255.255.255.255 PIPE"
 CMD1="$TRACE $SOCAT $opts -t 0 /dev/null TCP:$SECONDADDR:$PORT,bind=$SECONDADDR"
 CMD2="$TRACE $SOCAT $opts - TCP:$LOCALHOST:$PORT,bind=$LOCALHOST"
 printf "test $F_n $TEST... " $N
@@ -14997,7 +15003,7 @@ pid2=$!
 sleep 2
 cpids="$(childpids $pid0 </dev/null)"
 kill $pid1 $pid2 $cpids $pid0 2>/dev/null; wait
-if echo -e "$da 2\n$da 1" |diff - $tf >$tdiff; then
+if $ECHO "$da 2\n$da 1" |diff - $tf >$tdiff; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
@@ -15039,19 +15045,29 @@ TEST="$NAME: Option -S can turn off logging of SIGTERM"
 # Start Socat with option -S 0x0000, kill it with SIGTERM
 # When no logging entry regarding this signal is there, the test succeeded
 if ! eval $NUMCOND; then :;
+elif ! $SOCAT -h | grep -e " -S\>" >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option -S not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-da="test$N $(date) $RANDOM"
-newport tcp4 	# or whatever proto, or drop this line
 CMD0="$TRACE $SOCAT $opts -S 0x0000 PIPE PIPE"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 relsleep 1 	# give process time to start
 kill -TERM $pid0 2>/dev/null; wait
-if ! grep -q "exiting on signal" ${te}0; then
+if ! grep "exiting on signal" ${te}0 >/dev/null; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
@@ -15079,19 +15095,30 @@ TEST="$NAME: Option -S can turn on logging of signal 31"
 # Start Socat with option -S 0x80000000, kill it with -31
 # When a logging entry regarding this signal is there, the test succeeded
 if ! eval $NUMCOND; then :;
+elif ! $SOCAT -h | grep -e " -S\>" >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option -S not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-newport tcp4 	# or whatever proto, or drop this line
 CMD0="$TRACE $SOCAT $opts -S 0x80000000 PIPE PIPE"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 relsleep 1 	# give process time to start
 kill -31 $pid0 2>/dev/null; wait
-if grep -q "exiting on signal" ${te}0; then
+if grep "exiting on signal" ${te}0 >/dev/null; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
