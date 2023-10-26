@@ -110,7 +110,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 	    level = E_WARN;	/* most users won't expect a problem here,
 				   so Notice is too weak */
 	 }
-	 while ((pid = xio_fork(false, level)) < 0) {
+	 while ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
 	    if (xfd->forever || --xfd->retry) {
 	       Nanosleep(&xfd->intervall, NULL); continue;
 	    }

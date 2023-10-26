@@ -53,6 +53,10 @@ Features:
 	Socat now installs as socat1 and is referenced by symbolic link socat,
 	same with man page (socat1.1 by socat.1)
 
+	New option children-shutup[=1|2...] decreases severity of log
+	messages in LISTEN and CONNECT type sub processes.
+	Test: CHILDREN_SHUTUP
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/
@@ -76,7 +80,7 @@ Corrections:
 
 	In previous Socat versions errors on shutdown() were ignored (info
 	level).
-	Now Socat handles EPIPE and ECONNRESET as error to indicate possible
+	Now Socat handles EPIPE and ECONNRESET as errors to indicate possible
 	failure of data transfer.
 
 Coding:

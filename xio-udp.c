@@ -214,7 +214,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 	    sockaddr_info(&them->soa, themlen, infobuff, sizeof(infobuff)));
 
       if (dofork) {
-	 pid = xio_fork(false, E_ERROR);
+	 pid = xio_fork(false, E_ERROR, sfd->para.socket.shutup);
 	 if (pid < 0) {
 	    return STAT_RETRYLATER;
 	 }

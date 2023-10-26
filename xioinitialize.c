@@ -205,7 +205,10 @@ int xio_forked_inchild(void) {
 /* subchild != 0 means that the current process is already a child process of
    the master process and thus the new sub child process should not set the
    SOCAT_PID variable */
-pid_t xio_fork(bool subchild, int level) {
+pid_t xio_fork(bool subchild,
+	       int level, 	/* log level */
+	       int shutup) 	/* decrease log level in child process */
+{
    pid_t pid;
    const char *forkwaitstring;
    int forkwaitsecs = 0;
@@ -240,6 +243,7 @@ pid_t xio_fork(bool subchild, int level) {
       if (xio_forked_inchild() != 0) {
 	 Exit(1);
       }
+      diag_set_int('u', shutup);
       return 0;
    }
 

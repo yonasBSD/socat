@@ -993,7 +993,7 @@ int xioopen_connect(struct single *xfd, union sockaddr_union *us, size_t uslen,
 				   so Notice is too weak */
 	 }
 
-	 while ((pid = xio_fork(false, level)) < 0) {
+	 while ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
 	    --xfd->retry;
 	    if (xfd->forever || xfd->retry) {
 	       dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);
@@ -1287,7 +1287,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 	    Error1("socketpair(PF_UNIX, SOCK_STREAM, 0, ...): %s", strerror(errno));
 	 }
 
-	 if ((pid = xio_fork(false, level)) < 0) {
+	 if ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
 	    Close(trigger[0]);
 	    Close(trigger[1]);
 	    Close(xfd->fd);

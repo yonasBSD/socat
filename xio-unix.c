@@ -315,7 +315,7 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
 				   so Notice is too weak */
 	 }
 
-	 while ((pid = xio_fork(false, level)) < 0) {
+	 while ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
 	    --xfd->retry;
 	    if (xfd->forever || xfd->retry) {
 	       dropopts(opts, PH_ALL); opts = copyopts(opts0, GROUP_ALL);

@@ -29,6 +29,7 @@ int syslevel[] = {
 struct diag_opts {
    const char *progname;
    int msglevel;
+   int shutup;		/* decrease msglevel by this value */
    int exitlevel;
    int syslog;
    FILE *logfile;
@@ -45,7 +46,7 @@ static void _diag_exit(int status);
 
 
 struct diag_opts diagopts =
-  { NULL, E_WARN, E_ERROR, 0, NULL, LOG_DAEMON, false, 0, false, NULL, true } ;
+   { NULL, E_WARN, 0, E_ERROR, 0, NULL, LOG_DAEMON, false, 0, false, NULL, true } ;
 
 static void msg2(
 #if HAVE_CLOCK_GETTIME
@@ -215,6 +216,10 @@ void diag_set_int(char what, int arg) {
 	 diagopts.hostname = strdup(ubuf.nodename);
       }
       break;
+   case 'u':
+      diagopts.shutup = arg;
+      diagopts.exitlevel -= arg;
+      break;
    default: msg(E_ERROR, "unknown diagnostic option %c", what);
    }
 }
@@ -283,7 +288,12 @@ void msg(int level, const char *format, ...) {
       diag_flush();
    }
 
-   if (level < diagopts.msglevel)  { return; }
+   level -= diagopts.shutup;	/* decrease severity of messages? */
+
+   /* Just ignore this call when level too low for both logging and exiting */
+   if (level < diagopts.msglevel && level < diagopts.exitlevel)
+      return;
+
    va_start(ap, format);
 
    /* we do only a minimum in the outer parts which may run in a signal handler
@@ -299,7 +309,10 @@ void msg(int level, const char *format, ...) {
 #endif
    diag_dgram.level = level;
    diag_dgram.exitcode = diagopts.exitstatus;
-   vsnprintf_r(diag_dgram.text, sizeof(diag_dgram.text), format, ap);
+   if (level >= diagopts.msglevel)
+      vsnprintf_r(diag_dgram.text, sizeof(diag_dgram.text), format, ap);
+   else
+      diag_dgram.text[0] = '\0';
    if (diagopts.signalsafe && diag_in_handler && !diag_immediate_msg) {
       send(diag_sock_send, &diag_dgram, sizeof(diag_dgram)-TEXTLEN + strlen(diag_dgram.text)+1,
 	   0 	/* for canonical reasons */
@@ -337,9 +350,10 @@ void msg2(
    struct tm struct_tm;
 #endif
 #define MSGLEN 512
-   char buff[MSGLEN+2], *bufp = buff, *syslp;
+   char buff[MSGLEN+2], *bufp = buff, *syslp = NULL;
    size_t bytes;
 
+   if (text[0] != '\0') {
 #if HAVE_CLOCK_GETTIME
    epoch = now->tv_sec;
 #elif HAVE_PROTOTYPE_LIB_gettimeofday
@@ -391,8 +405,9 @@ void msg2(
    bufp = strchr(bufp, '\0');
    strcpy(bufp, "\n");
    _msg(level, buff, syslp);
+  }
    if (level >= diagopts.exitlevel) {
-      if (E_NOTICE >= diagopts.msglevel) {
+      if (E_NOTICE >= diagopts.msglevel && text[0] != '\0') {
 	 if ((syslp - buff) + 16 > MSGLEN+1)
 	    syslp = buff + MSGLEN - 15;
 	 snprintf_r(syslp, 16, "N exit(%d)\n", exitcode?exitcode:(diagopts.exitstatus?diagopts.exitstatus:1));

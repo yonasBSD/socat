@@ -15521,6 +15521,67 @@ esac
 N=$((N+1))
 
 
+# Test the children-shutup option
+NAME=CHILDREN_SHUTUP
+case "$TESTS" in
+*%$N%*|*%functions%*|*%exec%*|*%fork%*|*%socket%*|*%unix%*|*%$NAME%*)
+TEST="$NAME: test the children-shutup option"
+# Run a UNIX domain listening server with options fork and children-shutup, and
+# an TCP client to invalid port that will fail.
+# Connect to the server and check if it logs the connect failure as warning.
+if ! eval $NUMCOND; then :;
+elif ! F=$(testfeats UNIX LISTEN EXEC FILE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs UNIX-LISTEN TCP4 FILE UNIX-CONNECT); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions fork children-shutup) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+newport tcp4
+ts="$td/test$N.sock"
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+CMD0="$TRACE $SOCAT $opts UNIX-LISTEN:$ts,fork,children-shutup TCP4:localhost:$PORT"
+CMD1="$TRACE $SOCAT $opts -u FILE:/dev/null UNIX-CONNECT:$ts"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+waitunixport $ts 1
+$CMD1 2>"${te}1"
+rc1=$?
+kill $pid0 2>/dev/null; wait
+relsleep 1 	# child process might need more time
+if grep -q " W connect" ${te}0; then
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################

@@ -199,7 +199,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 	 if (xfd->forever || xfd->retry) {
 	    level = E_WARN;
 	 }
-	 while ((pid = xio_fork(false, level)) < 0) {
+	 while ((pid = xio_fork(false, level, xfd->para.socket.shutup)) < 0) {
 	    if (xfd->forever || --xfd->retry) {
 	       Nanosleep(&xfd->intervall, NULL); continue;
 	    }

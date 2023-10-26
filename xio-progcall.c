@@ -385,7 +385,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
    if (withfork) {
       Socketpair(PF_UNIX, SOCK_STREAM, 0, trigger);
-      pid = xio_fork(true, E_ERROR);
+      pid = xio_fork(true, E_ERROR, 0);
       if (pid < 0) {
 	 return -1;
       }

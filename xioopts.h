@@ -247,6 +247,7 @@ enum e_optcode {
 #  endif
    OPT_BSDLY,		/* termios.c_oflag */
 #endif
+   OPT_CHILDREN_SHUTUP,
    OPT_CHROOT,		/* chroot() past file system access */
    OPT_CHROOT_EARLY,	/* chroot() before file system access */
    /*OPT_CIBAUD,*/		/* termios.c_cflag */

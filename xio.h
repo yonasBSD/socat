@@ -223,6 +223,7 @@ typedef struct single {
 #if _WITH_IP4 || _WITH_IP6
 	 struct para_ip ip;
 #endif /* _WITH_IP4 || _WITH_IP6 */
+	 int 		 shutup;
 	 /* up to here, keep consistent copy in openssl part !!! */
 #if WITH_UNIX
 	 struct {
@@ -263,6 +264,7 @@ typedef struct single {
 #if _WITH_IP4 || _WITH_IP6
 	 struct para_ip ip;
 #endif /* _WITH_IP4 || _WITH_IP6 */
+	 int 		 shutup;
 	 /* end of the para.socket structure copy */
 	 SSL_CTX* ctx; 	/* for freeing on close */
 	 SSL *ssl;
@@ -440,7 +442,7 @@ extern int num_child;
 
 extern int xioinitialize(void);
 extern int xioinitialize2(void);
-extern pid_t xio_fork(bool subchild, int level);
+extern pid_t xio_fork(bool subchild, int level, int shutup);
 extern int xio_forked_inchild(void);
 extern int xiosetopt(char what, const char *arg);
 extern int xioinqopt(char what, char *arg, size_t n);

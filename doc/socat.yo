@@ -1628,6 +1628,8 @@ label(OPTION_COOL_WRITE)dit(bf(tt(cool-write[=<bool>])))
    abort the connection. Use this option only with option
    link(fork)(OPTION_FORK) because otherwise it might cause socat() to exit
    with code 0 even on failure.nl()
+   This option is deprecated, consider using
+   link(option children-shutup)(OPTION_CHILDRED_SHUTUP) instead.
 label(OPTION_END_CLOSE)dit(bf(tt(end-close[=<bool>])))
    Changes the (address dependent) method of ending a connection to just close
    the file descriptors. This is useful when the connection is to be reused by
@@ -2514,16 +2516,15 @@ label(OPTION_BACKLOG)dit(bf(tt(backlog=<count>)))
 label(OPTION_ACCEPT_TIMEOUT)dit(bf(tt(accept-timeout=<seconds>)))
    End waiting for a connection after <seconds> [link(timeval)(TYPE_TIMEVAL)]
    with error status.
-label(OPTION_MAX_CHILDREN)dit(bf(tt(max-children=<count>)))
-   Limits the number of concurrent child processes [link(int)(TYPE_INT)].
-    Default is no limit. 
 enddit()
 startdit()enddit()nl()
 
 
 label(GROUP_CHILD)em(bf(CHILD option group))
 
-Options for addresses with multiple connections via child processes.
+Addresses of LISTEN and CONNECT type take the
+link(fork)(OPTION_FORK) option to handle multiple connections via child
+processes.
 startdit()
 label(OPTION_FORK)dit(bf(tt(fork)))
    After establishing a connection, handles its channel in a child process and
@@ -2537,6 +2538,17 @@ label(OPTION_FORK)dit(bf(tt(fork)))
    inherited by the child process.nl()
    On some operating systems (e.g. FreeBSD) this option does not work for
    UDP-LISTEN addresses.nl()
+label(OPTION_MAX_CHILDREN)dit(bf(tt(max-children=<count>)))
+   Limits the number of concurrent child processes [link(int)(TYPE_INT)].
+   Default is no limit.
+label(OPTION_CHILDRED_SHUTUP)dit(bf(tt(children-shutup[=1|2|..])))
+   Decreases the severity of log messages produced by child processes. For
+   example, with value 1 notices are logged as info (or dropped depending on
+   link(option -dX)(option_d)), and errors are logged as warnings but still
+   cause termination of the child process.nl()
+   This option is intended to reduce logging of high volume servers or
+   proxies.nl()
+   This option succeeds link(option cool-write)(OPTION_COOL_WRITE).
 enddit()
 
 startdit()enddit()nl()

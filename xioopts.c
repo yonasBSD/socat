@@ -289,6 +289,7 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("cert",	&opt_openssl_certificate)
 	IF_OPENSSL("certificate",	&opt_openssl_certificate)
 	IF_TERMIOS("cfmakeraw",		&opt_termios_cfmakeraw)
+	IF_ANY    ("children-shutup",	&opt_children_shutup)
 	IF_ANY    ("chroot",	&opt_chroot)
 	IF_ANY    ("chroot-early",	&opt_chroot_early)
 	/*IF_TERMIOS("cibaud",	&opt_cibaud)*/
