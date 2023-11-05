@@ -386,9 +386,9 @@ xiofile_t *xioopen(const char *addr,	/* address specification */
 		   int xioflags) {
    xiofile_t *xfd;
 
-   if (xioinitialize() < 0) {
-      return NULL;
-   }
+   //if (xioinitialize() < 0) {
+   //   return NULL;
+   //}
 
    Debug1("xioopen(\"%s\")", addr);
 

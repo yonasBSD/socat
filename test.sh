@@ -2483,20 +2483,29 @@ waittcp6port $tsl 1
 echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
 if [ $? -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
+   echo "SOCAT_DEFAULT_LISTEN_IP=6 $CMD1 &"
+   cat "${te}1" >&2
    echo "$CMD2"
-   cat "${te}1" "${te}2"
+   cat "${te}2" >&2
    numFAIL=$((numFAIL+1))
    listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED: diff:\n"
-   cat "$tdiff"
+   $PRINTF "$FAILED (diff):\n"
+   echo "SOCAT_DEFAULT_LISTEN_IP=6 $CMD1 &"
+   cat "${te}1" >&2
+   echo "$CMD2"
+   cat "${te}2" >&2
+   echo "// diff:" >&2
+   cat "$tdiff" >&2
    numFAIL=$((numFAIL+1))
    listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null; wait
 fi
@@ -3870,26 +3879,30 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 # we have a normal tcp echo listening - so the socks header must appear in answer
 newport tcp6 	# provide free port number in $PORT
-CMD2="$TRACE $SOCAT $opts TCP6-L:$PORT,$REUSEADDR exec:\"./socks4echo.sh\""
-CMD="$TRACE $SOCAT $opts - socks4:$LOCALHOST6:32.98.76.54:32109,socksport=$PORT",socksuser="nobody"
+CMD0="$TRACE $SOCAT $opts TCP6-L:$PORT,$REUSEADDR exec:\"./socks4echo.sh\""
+CMD1="$TRACE $SOCAT $opts - socks4:$LOCALHOST6:32.98.76.54:32109,socksport=$PORT",socksuser="nobody"
 printf "test $F_n $TEST... " $N
-eval "$CMD2 2>\"${te}1\" &"
+eval "$CMD0 2>\"${te}0\" &"
 pid=$!	# background process id
 waittcp6port $PORT 1
-echo "$da" |$CMD >$tf 2>"${te}2"
-if ! echo "$da" |diff - "$tf" >"$tdiff"; then
+echo "$da" |$CMD1 >${tf}1 2>"${te}1"
+if ! echo "$da" |diff - "${tf}1" >"$tdiff"; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD2 &"
-    echo "$CMD"
-    cat "${te}1"
-    cat "${te}2"
-    cat "$tdiff"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null
 wait
@@ -7885,24 +7898,34 @@ rc1=$?
 rc2=$?
 kill $pid0 2>/dev/null; wait
 if [ $rc1 != 0 -o $rc2 != 0 ]; then
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (client(s) failed)\n"
     echo "$CMD0 &"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}0"
-    cat "${te}1"
-    cat "${te}2"
+    cat "${te}1" >&2
+    echo "$CMD1"
+    cat "${te}2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif echo "$da" |diff - "${tf}" >"$tdiff"; then
     $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
 else
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (diff)\n"
     echo "$CMD0 &"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}0"
-    cat "${te}1"
-    cat "${tdiff}"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo "// diff:" >&2
+    cat "${tdiff}" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 fi

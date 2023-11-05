@@ -821,12 +821,12 @@ AC_ARG_ENABLE(msglevel, [  --enable-msglevel=N     set max verbosity to debug,in
 	       [AC_DEFINE(WITH_MSGLEVEL,0) AC_MSG_RESULT(debug)])
 
 AC_MSG_CHECKING(default IP version)
-AC_ARG_ENABLE(ip-version, [  --enable-ip-version=N     set default IP version to undef, "4", "6"],
+AC_ARG_ENABLE(default-ipv, [  --enable-default-ipv=N     set default/preferred IP version to "0" (none), "4", "6"],
 	      [case "$enableval" in
-	       "") AC_DEFINE(WITH_DEFAULT_IPV, 0) AC_MSG_RESULT("0");;
+	       "") AC_DEFINE(WITH_DEFAULT_IPV, '0') AC_MSG_RESULT("0");;
 	       4) AC_DEFINE(WITH_DEFAULT_IPV, '4') AC_MSG_RESULT("4");;
 	       6) AC_DEFINE(WITH_DEFAULT_IPV, '6') AC_MSG_RESULT("6");;
-	       *) AC_DEFINE(WITH_DEFAULT_IPV, 0) AC_MSG_RESULT("0");;
+	       *) AC_DEFINE(WITH_DEFAULT_IPV, '0') AC_MSG_RESULT("0");;
 	       esac],
 	       [AC_DEFINE(WITH_DEFAULT_IPV, '0') AC_MSG_RESULT("0")])
 

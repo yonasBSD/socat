@@ -28,5 +28,6 @@ extern int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 			 groups_t groups, int socktype,
 				 int ipproto, int protname);
 extern int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0, const char *portname, int *pf, int ipproto, const int ai_flags[2], const unsigned long res_opts[2], union sockaddr_union *us, socklen_t *uslen, int socktype);
+extern int _xio_sort_ip_addresses(struct addrinfo *themlist, struct addrinfo **ai_sorted);
 
 #endif /* !defined(__xio_ipapp_h_included) */

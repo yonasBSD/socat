@@ -38,11 +38,13 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    int level;
    int result;
 
+   struct addrinfo **ai_sorted;
+   int i;
+
    if (argc != 3) {
       Error2("%s: wrong number of parameters (%d instead of 2)", argv[0], argc-1);
    }
 
-   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
@@ -69,18 +71,32 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       Info("starting connect loop");
    }
 
+   /* Count addrinfo entries */
+   themp = themlist;
+   i = 0;
+   while (themp != NULL) {
+      ++i;
+      themp = themp->ai_next;
+   }
+   ai_sorted = Calloc((i+1), sizeof(struct addrinfo *));
+   if (ai_sorted == NULL)
+      return STAT_RETRYLATER;
+   /* Generate a list of addresses sorted by preferred ip version */
+   _xio_sort_ip_addresses(themlist, ai_sorted);
+
    do {	/* loop over retries, and forks */
 
-      themp = themlist;
-      /* Loop over themlist */
+      /* Loop over themlist - no, over ai_sorted */
       result = STAT_RETRYLATER;
+      i = 0;
+      themp = ai_sorted[i++];
       while (themp != NULL) {
 	 Notice1("opening connection to %s",
 		 sockaddr_info(themp->ai_addr, themp->ai_addrlen,
 			       infobuff, sizeof(infobuff)));
 
 #if WITH_RETRY
-	 if (xfd->forever || xfd->retry || themp->ai_next != NULL) {
+	 if (xfd->forever || xfd->retry || ai_sorted[i] != NULL) {
 	    level = E_INFO;
          } else
 #endif /* WITH_RETRY */
@@ -94,7 +110,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 			  lowport, level);
        if (result == STAT_OK)
 	  break;
-       themp = themp->ai_next;
+       themp = ai_sorted[i++];
        if (themp == NULL) {
 	  result = STAT_RETRYLATER;
        }
@@ -114,7 +130,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 	 }
 #endif /* WITH_RETRY */
       default:
-	 xiofreeaddrinfo(themlist);
+	 free(ai_sorted);
 	 free(opts0);free(opts);
 	 return result;
       }
@@ -131,7 +147,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 	    if (xfd->forever || --xfd->retry) {
 	       Nanosleep(&xfd->intervall, NULL); continue;
 	    }
-	    xiofreeaddrinfo(themlist);
+	    free(ai_sorted);
 	    free(opts0);
 	    return STAT_RETRYLATER;
 	 }
@@ -154,13 +170,14 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       }
    } while (true);
    /* only "active" process breaks (master without fork, or child) */
+   free(ai_sorted);
    xiofreeaddrinfo(themlist);
 
    if ((result = _xio_openlate(xfd, opts)) < 0) {
 	   free(opts0);free(opts);
       return result;
    }
-   free(opts0);free(opts);
+   free(opts0); free(opts);
    return 0;
 }
 
@@ -191,12 +208,14 @@ int
 
    retropt_socket_pf(opts, pf);
 
-   if ((result =
+   if (hostname != NULL || portname != NULL) {
+    if ((result =
 	xiogetaddrinfo(hostname, portname,
 		       *pf, socktype, protocol,
 		       themlist, ai_flags, res_opts))
        != STAT_OK) {
       return STAT_NORETRY;	/*! STAT_RETRYLATER? */
+    }
    }
 
    applyopts(-1, opts, PH_EARLY);
@@ -299,7 +318,7 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   xioinit_ip(&pf, xioparms.default_ip);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
       switch (xioparms.default_ip) {
@@ -337,5 +356,61 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
    return 0;
 }
 #endif /* WITH_IP4 && WITH_TCP && WITH_LISTEN */
+
+
+/* Sort the records of an addrinfo list themp (as returned by getaddrinfo),
+   return the sorted list in the array ai_sorted (takes at most n entries
+   including the terminating NULL)
+   Returns 0 on success. */
+int _xio_sort_ip_addresses(
+	struct addrinfo *themlist,
+	struct addrinfo **ai_sorted)
+{
+	struct addrinfo *themp;
+	int i;
+	int ipv[3];
+	int ipi = 0;
+
+	/* Make a simple array of IP version preferences */
+	switch (xioparms.preferred_ip) {
+	case '0':
+		ipv[0] = PF_UNSPEC;
+		ipv[1] = -1;
+		break;
+	case '4':
+		ipv[0] = PF_INET;
+		ipv[1] = PF_INET6;
+		ipv[2] = -1;
+		break;
+	case '6':
+		ipv[0] = PF_INET6;
+		ipv[1] = PF_INET;
+		ipv[2] = -1;
+		break;
+	default:
+		Error("INTERNAL: undefined preferred_ip value");
+		return -1;
+	}
+
+	/* Create the sorted list */
+	ipi = 0;
+	i = 0;
+	while (ipv[ipi] >= 0) {
+		themp = themlist;
+		while (themp != NULL) {
+			if (ipv[ipi] == PF_UNSPEC) {
+				ai_sorted[i] = themp;
+				++i;
+			} else if (ipv[ipi] == themp->ai_family) {
+				ai_sorted[i] = themp;
+				++i;
+			}
+			themp = themp->ai_next;
+		}
+		++ipi;
+	}
+	ai_sorted[i] = NULL;
+	return 0;
+}
 
 #endif /* WITH_TCP || WITH_UDP */

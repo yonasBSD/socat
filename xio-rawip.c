@@ -74,7 +74,7 @@ int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&xxfd->stream, &pf);
+   xioinit_ip(&pf, xioparms.preferred_ip);
    if ((result = _xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
 				       groups, &pf)) != STAT_OK) {
       return result;
@@ -165,7 +165,7 @@ int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(xfd, &pf);
+   xioinit_ip(&pf, xioparms.preferred_ip);
    if ((result =
 	_xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
 				groups, &pf)) != STAT_OK) {
@@ -220,7 +220,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   xioinit_ip(&pf, xioparms.default_ip);
    if ((ipproto = strtoul(protname, &garbage, 0)) >= 256) {
       Error2("xioopen_rawip_recvfrom(\"%s\",,): protocol number exceeds 255 (%u)",
 	     protname, ipproto);
@@ -284,7 +284,7 @@ int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   xioinit_ip(&pf, xioparms.default_ip);
    if ((ipproto = strtoul(protname, &garbage, 0)) >= 256) {
       Error2("xioopen_rawip_recv(\"%s\",,): protocol number exceeds 255 (%u)",
 	     protname, ipproto);

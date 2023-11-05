@@ -297,7 +297,7 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   xioinit_ip(&pf, xioparms.default_ip);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
       switch (xioparms.default_ip) {
@@ -354,7 +354,7 @@ int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   //xioinit_ip(&pf, xioparms.preferred_ip);
    retropt_socket_pf(opts, &pf);
    if ((result = _xioopen_udp_sendto(argv[1], argv[2], opts, xioflags, xfd,
 				     groups, pf, socktype, ipproto))
@@ -451,7 +451,7 @@ int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(xfd, &pf);
+   //xioinit_ip(&pf, xioparms.preferred_ip);
    if ((hostname = strdup(argv[1])) == NULL) {
       Error1("strdup(\"%s\"): out of memory", argv[1]);
       return STAT_RETRYLATER;
@@ -516,7 +516,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   xioinit_ip(&pf, xioparms.default_ip);
    xfd->stream.howtoend = END_NONE;
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
@@ -541,8 +541,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
 
    if ((result =
 	xioresolve(NULL, argv[1], pf, socktype, ipproto, &us, &uslen,
-		   ai_flags2,
-		   xfd->stream.para.socket.ip.res_opts))
+		   ai_flags2, xfd->stream.para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
    }
@@ -602,7 +601,7 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&xfd->stream, &pf);
+   //xioinit_ip(&pf, xioparms.default_ip);
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6

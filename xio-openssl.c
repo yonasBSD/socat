@@ -252,7 +252,9 @@ static int
    struct addrinfo *themlist, *themp;
    bool needbind = false;
    bool lowport = false;
-   int level;
+   int level = E_ERROR;
+   struct addrinfo **ai_sorted;
+   int i;
    SSL_CTX* ctx;
    bool opt_ver = true;	/* verify peer certificate */
    char *opt_cert = NULL;	/* file name of client certificate */
@@ -280,7 +282,6 @@ static int
       return STAT_NORETRY;
    }
 
-   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
@@ -340,19 +341,34 @@ static int
       Info("starting connect loop");
    }
 
+   /* Count addrinfo entries */
+   themp = themlist;
+   i = 0;
+   while (themp != NULL) {
+      ++i;
+      themp = themp->ai_next;
+   }
+   ai_sorted = Calloc((i+1), sizeof(struct addrinfo *));
+   if (ai_sorted == NULL)
+      return STAT_RETRYLATER;
+   /* Generate a list of addresses sorted by preferred ip version */
+   _xio_sort_ip_addresses(themlist, ai_sorted);
+
    do {	/* loop over failed connect and SSL handshake attempts */
 
-#if WITH_RETRY
-      if (xfd->forever || xfd->retry) {
-	 level = E_INFO;
-      } else
-#endif /* WITH_RETRY */
-	 level = E_ERROR;
-
-      themp = themlist;
-      /* loop over themlist */
+      /* Loop over ai_sorted list */
+      i = 0;
+      themp = ai_sorted[i++];
       while (themp != NULL) {
-       /* This cannot fork because we retrieved fork option above */
+
+#if WITH_RETRY
+	 if (xfd->forever || xfd->retry || ai_sorted[i] != NULL) {
+	    level = E_INFO;
+	 } else
+#endif /* WITH_RETRY */
+	    level = E_ERROR;
+
+	 /* This cannot fork because we retrieved fork option above */
        result =
 	 _xioopen_connect(xfd,
 			  needbind?us:NULL, uslen,
@@ -360,7 +376,7 @@ static int
 			  opts, pf?pf:themp->ai_addr->sa_family, socktype, ipproto, lowport, level);
        if (result == STAT_OK)
 	  break;
-       themp = themp->ai_next;
+       themp = ai_sorted[i++];
        if (themp == NULL) {
 	  result = STAT_RETRYLATER;
       }
@@ -378,16 +394,16 @@ static int
 	    --xfd->retry;
 	    continue;
 	 }
-	 xiofreeaddrinfo(themlist);
+	 free(ai_sorted);
 	 return STAT_NORETRY;
 #endif /* WITH_RETRY */
       default:
-	 xiofreeaddrinfo(themlist);
+	 free(ai_sorted);
 	 return result;
       }
       /*! isn't this too early? */
       if ((result = _xio_openlate(xfd, opts)) < 0) {
-	 xiofreeaddrinfo(themlist);
+	 free(ai_sorted);
 	 return result;
       }
 
@@ -449,6 +465,7 @@ static int
 #endif /* WITH_RETRY */
       break;
    } while (true);	/* drop out on success */
+   free(ai_sorted);
    xiofreeaddrinfo(themlist);
 
    openssl_conn_loginfo(xfd->para.openssl.ssl);
@@ -572,7 +589,6 @@ static int
       return STAT_NORETRY;
    }
 
-   xioinit_ip(xfd, &pf);
 #if WITH_IP4 && WITH_IP6
    switch (xioparms.default_ip) {
    case '4': pf = PF_INET; break;

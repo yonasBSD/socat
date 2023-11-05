@@ -93,6 +93,8 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    union sockaddr_union us_sa,   *us = &us_sa;
    socklen_t uslen = sizeof(us_sa);
    struct addrinfo *themlist, *themp;
+   struct addrinfo **ai_sorted;
+   int i;
    const char *proxyname; char *proxyport = NULL;
    const char *targetname, *targetport;
    int ipproto = IPPROTO_TCP;
@@ -110,7 +112,6 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    targetname = argv[2];
    targetport = argv[3];
 
-   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
@@ -128,32 +129,53 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    result = _xioopen_proxy_prepare(proxyvars, opts, targetname, targetport,
 				   xfd->para.socket.ip.ai_flags,
 				   xfd->para.socket.ip.res_opts);
-   if (result != STAT_OK)  return result;
+   if (result != STAT_OK)
+      return result;
 
-   result =
+   Notice4("opening connection to %s:%u via proxy %s:%s",
+      proxyvars->targetaddr, proxyvars->targetport, proxyname, proxyport);
+
+   i = 0;
+   do {      /* loop over retries (failed connect and proxy-request attempts) */
+
+    level = E_INFO;
+
+    result =
       _xioopen_ipapp_prepare(opts, &opts0, proxyname, proxyport,
 			     &pf, ipproto,
 			     xfd->para.socket.ip.ai_flags,
 			     xfd->para.socket.ip.res_opts,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
-   if (result != STAT_OK)  return result;
+   if (result != STAT_OK)
+      return result;
 
-   Notice4("opening connection to %s:%u via proxy %s:%s",
-	   proxyvars->targetaddr, proxyvars->targetport, proxyname, proxyport);
-
-   do {	/* loop over failed connect and proxy connect attempts */
-
-#if WITH_RETRY
-      if (xfd->forever || xfd->retry) {
-         level = E_INFO;
-      } else
-#endif /* WITH_RETRY */
-         level = E_ERROR;
-
+    /* Count addrinfo entries */
       themp = themlist;
-      /* Loop over themlist */
+      i = 0;
       while (themp != NULL) {
+	 ++i;
+	 themp = themp->ai_next;
+      }
+      ai_sorted = Calloc((i+1), sizeof(struct addrinfo *));
+      if (ai_sorted == NULL)
+	 return STAT_RETRYLATER;
+      /* Generate a list of addresses sorted by preferred ip version */
+      _xio_sort_ip_addresses(themlist, ai_sorted);
+
+      /* Loop over themlist */
+      i = 0;
+      themp = ai_sorted[i++];
+      while (themp != NULL) {
+	 Notice4("opening connection to %s:%u via proxy %s:%s",
+		 proxyvars->targetaddr, proxyvars->targetport, proxyname, proxyport);
+#if WITH_RETRY
+	 if (xfd->forever || xfd->retry || ai_sorted[i] != NULL) {
+	    level = E_INFO;
+	 } else
+#endif /* WITH_RETRY */
+	    level = E_ERROR;
+
    result =
       _xioopen_connect(xfd,
 		       needbind?us:NULL, sizeof(*us),
@@ -161,7 +183,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 		       opts, pf?pf:themp->ai_family, socktype, IPPROTO_TCP, lowport, level);
        if (result == STAT_OK)
 	  break;
-       themp = themp->ai_next;
+       themp = ai_sorted[i++];
        if (themp == NULL) {
 	  result = STAT_RETRYLATER;
       }
@@ -170,18 +192,19 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 #if WITH_RETRY
       case STAT_RETRYLATER:
       case STAT_RETRYNOW:
-	 if (xfd->forever || xfd->retry--) {
-	    if (result == STAT_RETRYLATER)  Nanosleep(&xfd->intervall, NULL);
+	 if (xfd->forever || xfd->retry) {
+	    --xfd->retry;
+	    if (result == STAT_RETRYLATER)
+	       Nanosleep(&xfd->intervall, NULL);
 	    continue;
 	 }
 #endif /* WITH_RETRY */
       default:
+	 free(ai_sorted);
 	 xiofreeaddrinfo(themlist);
 	 return result;
       }
       }
-      xiofreeaddrinfo(themlist);
-      applyopts(xfd->fd, opts, PH_ALL);
 
       if ((result = _xio_openlate(xfd, opts)) < 0)
 	 return result;

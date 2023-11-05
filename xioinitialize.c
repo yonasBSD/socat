@@ -95,9 +95,11 @@ int xioinitialize(void) {
 	 switch (preferred_ip[0]) {
 	 case '4':
 	 case '6':
-	    xioparms.preferred_ip = preferred_ip[0]; break;
+	    xioparms.preferred_ip = preferred_ip[0];
+	    break;
 	 default:
-	    xioparms.preferred_ip = '0'; break;
+	    xioparms.preferred_ip = '0';
+	    break;
 	 }
       }
    }

@@ -75,14 +75,22 @@ Features:
 	Tests: TRY_ADDRS_4 TRY_ADDRS_4_6
 	Feature recommended by Anand Buddhdev.
 
-	configure option --with-default-ipv allows to specify at build time if
-	IPv4, IPv6, or none of these is the preferred default.
+	configure option --enable-default-ipv allows to specify at build time if
+	IPv4, IPv6, or none of these is the preferred default; this is related
+	to environment variables SOCAT_PREFERRED_RESOLVE_IP and
+	SOCAT_DEFAULT_LISTEN_IP, and to Socat option -4, -6.
+	Furthermore, mechanism of IPv4 vs.IPv6 selection has been reworked.
+	When no IP version is preferred by these mechanism, passive Socat
+	addresses (LISTEN, RECV, RECVFROM) default to IPv6 because it might
+	support both versions (but checkout option ipv6-v6only).
+	For client addresses, when one of these mechanisms applies and name
+	resolution gives addresses of both IP versions, the addresses of the
+	preferred versions are tried first.
 
-	Socat options -4 and -6 have been reworked.
-	Tests: TCP_ENV6 TCP_DASH6
-
-	New option ai-addrconfig disables name resolution to protocol families
-	that are not configured on the computer (e.g. IPv6)
+	New option ai-addrconfig sets or unsets the AI_ADDRCONFIG flag of the
+	resolver to prevent name resolution to address families that are not
+	available in the network configuration. Default value is 1 in case the
+	resolver does not get an address family hint.
 
 	Flag AI_PASSIVE is now automatically applied for LISTEN, RECV, and
 	RECVFROM type addresses, and with bind option. In addition to its

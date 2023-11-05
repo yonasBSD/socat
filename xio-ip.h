@@ -42,7 +42,7 @@ extern const struct optdesc opt_res_defnames;
 extern const struct optdesc opt_res_stayopen;
 extern const struct optdesc opt_res_dnsrch;
 
-extern int xioinit_ip(struct single *sfd, int *pf);
+extern int xioinit_ip(int *pf, char ipv);
 
 extern int xiogetaddrinfo(const char *node, const char *service, int family, int socktype, int protocol, struct addrinfo **res, const int ai_flags[2], const unsigned long res_opts[2]);
 extern void xiofreeaddrinfo(struct addrinfo *res);

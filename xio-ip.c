@@ -112,11 +112,11 @@ const struct optdesc opt_res_dnsrch   = { "res-dnsrch",   "dnsrch",   OPT_RES_DN
 
 
 int xioinit_ip(
-	struct single *sfd,
-	int *pf)
+	int *pf,
+	char ipv)
 {
 	if (*pf == PF_UNSPEC) {
-		switch (xioparms.preferred_ip) {
+		switch (ipv) {
 		case '0': *pf = PF_UNSPEC; break;
 #if WITH_IP4
 		case '4': *pf = PF_INET; break;
@@ -254,7 +254,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 	}
 	if (error_num == EAI_SERVICE && protocol != 0) {
 	   if (hints.ai_protocol == 0) {
-	      Error7("getaddrinfo\"%s\", \"%s\", {%d,%d,%d,%d}, {}): %s",
+	      Error7("getaddrinfo\"%s\", \"%s\", {0x%02x,%d,%d,%d}, {}): %s",
 		     node?node:"NULL", service?service:"NULL",
 		     hints.ai_flags, hints.ai_family,
 		     hints.ai_socktype, hints.ai_protocol,
@@ -290,7 +290,7 @@ int xiogetaddrinfo(const char *node, const char *service,
       while (record) {
 	 char buff[256/*!*/];
 	 sockaddr_info(record->ai_addr, record->ai_addrlen, buff, sizeof(buff));
-	 Debug5("getaddrinfo() -> flags=%d family=%d socktype=%d protocol=%d addr=%s", record->ai_flags, record->ai_family, record->ai_socktype, record->ai_protocol, buff);
+	 Debug5("getaddrinfo() -> flags=0x%02x family=%d socktype=%d protocol=%d addr=%s", record->ai_flags, record->ai_family, record->ai_socktype, record->ai_protocol, buff);
 	 record = record->ai_next;
       }
 #endif /* WITH_MSGLEVEL <= E_DEBUG */
@@ -425,7 +425,7 @@ void xiofreeaddrinfo(struct addrinfo *res) {
 
 /* A simple resolver interface that just returns one address,
    the first found by calling xiogetaddrinfo().
-   family may be AF_INET, AF_INET6, or AF_UNSPEC.
+   family may be AF_INET, AF_INET6, or AF_UNSPEC;
    Returns -1 when an error occurred or when no result found.
 */
 int xioresolve(const char *node, const char *service,
@@ -434,6 +434,7 @@ int xioresolve(const char *node, const char *service,
 	       const int ai_flags[2], const unsigned long res_opts[2])
 {
    struct addrinfo *res = NULL;
+   struct addrinfo *aip;
    int rc;
 
    rc = xiogetaddrinfo(node, service, family, socktype, protocol,
@@ -455,8 +456,23 @@ int xioresolve(const char *node, const char *service,
    if (res->ai_next != NULL) {
       Info4("xioresolve(node=\"%s\", service=%s%s%s, ...): More than one address found", node?node:"NULL", service?"\"":"", service?service:"NULL", service?"\"":"");
    }
-   memcpy(addr, res->ai_addr, res->ai_addrlen);
-   *addrlen = res->ai_addrlen;
+
+   aip = res;
+   if (ai_flags[0] & AI_PASSIVE && family == PF_UNSPEC) {
+      /* We select the first IPv6 address, if available,
+	 because this might accept IPv4 connections too */
+      struct addrinfo *aip = res;
+      while (aip != NULL) {
+	 if (aip->ai_family == PF_INET6)
+	    break;
+	 aip = aip->ai_next;
+      }
+      if (aip == NULL)
+	 aip = res;
+   }
+
+   memcpy(addr, aip->ai_addr, aip->ai_addrlen);
+   *addrlen = aip->ai_addrlen;
    xiofreeaddrinfo(res);
    return 0;
 }
