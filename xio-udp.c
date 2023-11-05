@@ -107,7 +107,10 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &sfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, pf, &sfd->para.socket.range,
+			sfd->para.socket.ip.ai_flags,
+			sfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -282,7 +285,7 @@ int _xioopen_ipdgram_listen(struct single *sfd,
 
 /* we expect the form: port */
 int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
-			   int xioflags, xiofile_t *fd,
+			   int xioflags, xiofile_t *xfd,
 			  groups_t groups, int pf, int ipproto,
 			  int protname) {
    const char *portname = argv[1];
@@ -294,6 +297,7 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
       switch (xioparms.default_ip) {
@@ -311,14 +315,14 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_PROTOTYPE, &ipproto);
 
-   if (applyopts_single(&fd->stream, opts, PH_INIT) < 0)  return -1;
+   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
 
    uslen = socket_init(pf, &us);
    retropt_bind(opts, pf, socktype, ipproto,
 		(struct sockaddr *)&us, &uslen, 1,
-		fd->stream.para.socket.ip.res_opts[1],
-		fd->stream.para.socket.ip.res_opts[0]);
+		xfd->stream.para.socket.ip.ai_flags,
+		xfd->stream.para.socket.ip.res_opts);
 
    if (false) {
       ;
@@ -334,13 +338,13 @@ int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts,
       Error1("xioopen_ipdgram_listen(): unknown address family %d", pf);
    }
 
-   return _xioopen_ipdgram_listen(&fd->stream, xioflags, &us, uslen,
+   return _xioopen_ipdgram_listen(&xfd->stream, xioflags, &us, uslen,
 				  opts, pf, socktype, ipproto);
 }
 
 static
 int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
-		     int xioflags, xiofile_t *xxfd, groups_t groups,
+		     int xioflags, xiofile_t *xfd, groups_t groups,
 		     int pf, int socktype, int ipproto) {
    int result;
 
@@ -350,13 +354,14 @@ int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    retropt_socket_pf(opts, &pf);
-   if ((result = _xioopen_udp_sendto(argv[1], argv[2], opts, xioflags, xxfd,
+   if ((result = _xioopen_udp_sendto(argv[1], argv[2], opts, xioflags, xfd,
 				     groups, pf, socktype, ipproto))
        != STAT_OK) {
       return result;
    }
-   _xio_openlate(&xxfd->stream, opts);
+   _xio_openlate(&xfd->stream, opts);
    return STAT_OK;
 }
 
@@ -387,9 +392,9 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
    xfd->salen = sizeof(xfd->peersa);
    if ((result =
 	xioresolve(hostname, servname, pf, socktype, ipproto,
-		       &xfd->peersa, &xfd->salen,
-		       xfd->para.socket.ip.res_opts[0],
-		       xfd->para.socket.ip.res_opts[1]))
+		   &xfd->peersa, &xfd->salen,
+		   xfd->para.socket.ip.ai_flags,
+		   xfd->para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
    }
@@ -398,8 +403,8 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
    }
    uslen = socket_init(pf, &us);
    if (retropt_bind(opts, pf, socktype, ipproto, &us.soa, &uslen, feats,
-		    xfd->para.socket.ip.res_opts[0],
-		    xfd->para.socket.ip.res_opts[1])
+		    xfd->para.socket.ip.ai_flags,
+		    xfd->para.socket.ip.res_opts)
        != STAT_NOACTION) {
       needbind = true;
    }
@@ -446,6 +451,7 @@ int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
+   xioinit_ip(xfd, &pf);
    if ((hostname = strdup(argv[1])) == NULL) {
       Error1("strdup(\"%s\"): out of memory", argv[1]);
       return STAT_RETRYLATER;
@@ -474,7 +480,10 @@ int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
    /* which reply packets will be accepted - determine by range option */
    if (retropt_string(opts, OPT_RANGE, &rangename)
        >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -506,6 +515,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    xfd->stream.howtoend = END_NONE;
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
@@ -523,9 +533,9 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
    }
 
    if ((result =
-	xioresolve(NULL, argv[1], pf, socktype, ipproto,
-		       &us, &uslen, xfd->stream.para.socket.ip.res_opts[0],
-		       xfd->stream.para.socket.ip.res_opts[1]))
+	xioresolve(NULL, argv[1], pf, socktype, ipproto, &us, &uslen,
+		   xfd->stream.para.socket.ip.ai_flags,
+		   xfd->stream.para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
    }
@@ -538,8 +548,8 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
       socklen_t lalen = sizeof(la);
 
       if (retropt_bind(opts, pf, socktype, ipproto, &la.soa, &lalen, 1,
-		       xfd->stream.para.socket.ip.res_opts[0],
-		       xfd->stream.para.socket.ip.res_opts[1])
+		       xfd->stream.para.socket.ip.ai_flags,
+		       xfd->stream.para.socket.ip.res_opts)
 	  != STAT_NOACTION) {
 	 switch (pf) {
 #if WITH_IP4
@@ -584,6 +594,7 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
@@ -600,9 +611,9 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
    }
 
    if ((result =
-	xioresolve(NULL, argv[1], pf, socktype, ipproto,
-		       &us, &uslen, xfd->stream.para.socket.ip.res_opts[0],
-		       xfd->stream.para.socket.ip.res_opts[1]))
+	xioresolve(NULL, argv[1], pf, socktype, ipproto, &us, &uslen,
+		   xfd->stream.para.socket.ip.ai_flags,
+		   xfd->stream.para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
    }
@@ -617,8 +628,8 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
 
       if (retropt_bind(opts, pf, socktype, ipproto,
 		       &xfd->stream.para.socket.la.soa, &lalen, 1,
-		       xfd->stream.para.socket.ip.res_opts[0],
-		       xfd->stream.para.socket.ip.res_opts[1])
+		       xfd->stream.para.socket.ip.ai_flags,
+		       xfd->stream.para.socket.ip.res_opts)
 	  != STAT_NOACTION) {
 	 switch (pf) {
 #if WITH_IP4
@@ -638,7 +649,10 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->stream.para.socket.range) < 0) {
+      if (xioparserange(rangename, pf, &xfd->stream.para.socket.range,
+			xfd->stream.para.socket.ip.ai_flags,
+			xfd->stream.para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }

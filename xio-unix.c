@@ -240,7 +240,8 @@ static int xioopen_unix_connect(int argc, const char *argv[], struct opt *opts, 
       retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    }
    if (retropt_bind(opts, pf, socktype, protocol, (struct sockaddr *)&us, &uslen,
-		    (abstract<<1)|xfd->para.socket.un.tight, 0, 0) == STAT_OK) {
+		    (abstract<<1)|xfd->para.socket.un.tight, NULL, NULL)
+       == STAT_OK) {
       needbind = true;
    }
 
@@ -383,7 +384,8 @@ static int xioopen_unix_sendto(int argc, const char *argv[], struct opt *opts, i
    xfd->dtype = XIODATA_RECVFROM;
 
    if (retropt_bind(opts, pf, socktype, protocol, &us.soa, &uslen,
-		   (abstract<<1)| xfd->para.socket.un.tight, 0, 0) == STAT_OK) {
+		    (abstract<<1)| xfd->para.socket.un.tight, NULL, NULL)
+       == STAT_OK) {
       needbind = true;
    }
 
@@ -451,7 +453,8 @@ int xioopen_unix_recvfrom(int argc, const char *argv[], struct opt *opts,
 
 #if 0
    if (retropt_bind(opts, pf, socktype, protocol, (struct sockaddr *)&us, &uslen,
-		    (abstract<<1)|xfd->para.socket.un.tight, 0, 0) == STAT_OK) {
+		    (abstract<<1)|xfd->para.socket.un.tight, NULL, NULL)
+       == STAT_OK) {
    }
 #endif
 
@@ -531,7 +534,7 @@ int xioopen_unix_recv(int argc, const char *argv[], struct opt *opts,
 
 #if 0
    if (retropt_bind(opts, pf, socktype, protocol, &us.soa, &uslen,
-		    (abstract<<1)|xfd->para.socket.un.tight, 0, 0)
+		    (abstract<<1)|xfd->para.socket.un.tight, NULL, NULL)
        == STAT_OK) {
    }
 #endif
@@ -616,7 +619,7 @@ _xioopen_unix_client(xiosingle_t *xfd, int xioflags, groups_t groups,
       retropt_bool(opts, OPT_UNLINK_CLOSE, &opt_unlink_close);
    }
    if (retropt_bind(opts, pf, socktype, protocol, &us.soa, &uslen,
-		    (abstract<<1)|xfd->para.socket.un.tight, 0, 0)
+		    (abstract<<1)|xfd->para.socket.un.tight, NULL, NULL)
        != STAT_NOACTION) {
       needbind = true;
    }

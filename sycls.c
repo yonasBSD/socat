@@ -1445,7 +1445,7 @@ struct hostent *Gethostbyname(const char *name) {
 int Getaddrinfo(const char *node, const char *service,
 		const struct addrinfo *hints, struct addrinfo **res) {
    int result;
-   Debug15("getaddrinfo(%s%s%s, %s%s%s, {%d,%d,%d,%d,"F_socklen",%p,%p,%p}, %p)",
+   Debug15("getaddrinfo(%s%s%s, %s%s%s, {0x%02x,%d,%d,%d,"F_socklen",%p,%p,%p}, %p)",
 	   node?"\"":"", node?node:"NULL", node?"\"":"",
 	   service?"\"":"", service?service:"NULL", service?"\"":"",
 	   hints->ai_flags, hints->ai_family, hints->ai_socktype,

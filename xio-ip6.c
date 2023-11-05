@@ -82,7 +82,12 @@ const struct optdesc opt_ipv6_recvpathmtu = { "ipv6-recvpathmtu", "recvpathmtu",
 /* Returns canonical form of IPv6 address.
    IPv6 address may bei enclose in brackets.
    Returns STAT_OK on success, STAT_NORETRY on failure. */
-int xioip6_pton(const char *src, struct in6_addr *dst) {
+int xioip6_pton(
+	const char *src,
+	struct in6_addr *dst,
+	const int ai_flags[2],
+	const unsigned long res_opts[2])
+{
    union sockaddr_union sockaddr;
    socklen_t sockaddrlen = sizeof(sockaddr);
 
@@ -94,10 +99,10 @@ int xioip6_pton(const char *src, struct in6_addr *dst) {
       plainaddr[INET6_ADDRSTRLEN-1] = '\0';
       if ((clos = strchr(plainaddr, ']')) != NULL)
 	 *clos = '\0';
-      return xioip6_pton(plainaddr, dst);
+      return xioip6_pton(plainaddr, dst, ai_flags, res_opts);
    }
    if (xioresolve(src, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
-		      0, 0)
+		  ai_flags, res_opts)
        != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -105,7 +110,12 @@ int xioip6_pton(const char *src, struct in6_addr *dst) {
    return STAT_OK;
 }
 
-int xioparsenetwork_ip6(const char *rangename, struct xiorange *range) {
+int xioparsenetwork_ip6(
+	const char *rangename,
+	struct xiorange *range,
+	const int ai_flags[2],
+	const unsigned long res_opts[2])
+{
    char *delimpos;	/* absolute address of delimiter */
    size_t delimind;	/* index of delimiter in string */
    unsigned int bits;	/* netmask bits */
@@ -135,7 +145,7 @@ int xioparsenetwork_ip6(const char *rangename, struct xiorange *range) {
    }
    baseaddr[delimind-2] = '\0';
    if (xioresolve(baseaddr, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
-		      0, 0)
+		  ai_flags, res_opts)
        != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -480,9 +490,12 @@ int xioapply_ipv6_join_group(
 	/* First parameter is multicast address */
 	if ((res =
 	     xioresolve(opt->value.u_string/*multiaddr*/, NULL,
-			    xfd->para.socket.la.soa.sa_family,
-			    SOCK_DGRAM, IPPROTO_IP,
-			    &sockaddr1, &socklen1, 0, 0)) != STAT_OK) {
+			xfd->para.socket.la.soa.sa_family,
+			SOCK_DGRAM, IPPROTO_IP,
+			&sockaddr1, &socklen1,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts))
+	    != STAT_OK) {
 	   return res;
 	}
 	ip6_mreq.ipv6mr_multiaddr = sockaddr1.ip6.sin6_addr;
@@ -619,9 +632,10 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
    /* First parameter is always multicast address */
    if ((res =
 	xioresolve(opt->value.u_string/*mcaddr*/, NULL,
-		       xfd->para.socket.la.soa.sa_family,
-		       SOCK_DGRAM, IPPROTO_IP,
-		       &sockaddr1, &socklen1, 0, 0)) != STAT_OK) {
+		   xfd->para.socket.la.soa.sa_family,
+		   SOCK_DGRAM, IPPROTO_IP, &sockaddr1, &socklen1,
+		   xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts))
+       != STAT_OK) {
       return res;
    }
    memcpy(&ip6_gsr.gsr_group, &sockaddr1.ip6, socklen1);
@@ -636,9 +650,10 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
    /* Third parameter is source address */
    if ((res =
 	xioresolve(opt->value3.u_string/*srcaddr*/, NULL,
-		       xfd->para.socket.la.soa.sa_family,
-		       SOCK_DGRAM, IPPROTO_IP,
-		       &sockaddr2, &socklen2, 0, 0)) != STAT_OK) {
+		   xfd->para.socket.la.soa.sa_family,
+		   SOCK_DGRAM, IPPROTO_IP, &sockaddr2, &socklen2,
+		   xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts))
+       != STAT_OK) {
       return res;
    }
    memcpy(&ip6_gsr.gsr_source, &sockaddr2.ip6, socklen2);

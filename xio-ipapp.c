@@ -42,6 +42,7 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
       Error2("%s: wrong number of parameters (%d instead of 2)", argv[0], argc-1);
    }
 
+   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
@@ -50,8 +51,8 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    retropt_bool(opts, OPT_FORK, &dofork);
 
    if (_xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
-			      xfd->para.socket.ip.res_opts[1],
-			      xfd->para.socket.ip.res_opts[0],
+			      xfd->para.socket.ip.ai_flags,
+			      xfd->para.socket.ip.res_opts,
 			      &themlist, us, &uslen, &needbind, &lowport,
 			      socktype) != STAT_OK) {
       return STAT_NORETRY;
@@ -170,16 +171,21 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    OPT_PROTOCOL_FAMILY, OPT_BIND, OPT_SOURCEPORT, OPT_LOWPORT
  */
 int
-   _xioopen_ipapp_prepare(struct opt *opts, struct opt **opts0,
-			   const char *hostname,
-			   const char *portname,
-			   int *pf,
-			   int protocol,
-			   unsigned long res_opts0, unsigned long res_opts1,
-			  struct addrinfo **themlist,
-			   union sockaddr_union *us, socklen_t *uslen,
-			   bool *needbind, bool *lowport,
-			   int socktype) {
+   _xioopen_ipapp_prepare(
+	   struct opt *opts,
+	   struct opt **opts0,
+	   const char *hostname,
+	   const char *portname,
+	   int *pf,
+	   int protocol,
+	   const int ai_flags[2],
+	   const unsigned long res_opts[2],
+	   struct addrinfo **themlist,
+	   union sockaddr_union *us,
+	   socklen_t *uslen,
+	   bool *needbind,
+	   bool *lowport,
+	   int socktype) {
    uint16_t port;
    int result;
 
@@ -188,9 +194,7 @@ int
    if ((result =
 	xiogetaddrinfo(hostname, portname,
 		       *pf, socktype, protocol,
-		       themlist,
-		       res_opts0, res_opts1
-		       ))
+		       themlist, ai_flags, res_opts))
        != STAT_OK) {
       return STAT_NORETRY;	/*! STAT_RETRYLATER? */
    }
@@ -200,7 +204,7 @@ int
    /* 3 means: IP address AND port accepted */
    if (retropt_bind(opts, (*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family,
 		    socktype, protocol, (struct sockaddr *)us, uslen, 3,
-		    res_opts0, res_opts1)
+		    ai_flags, res_opts)
        != STAT_NOACTION) {
       *needbind = true;
    } else {
@@ -242,12 +246,18 @@ int
    applies and consumes the following options:
    OPT_PROTOCOL_FAMILY, OPT_BIND
  */
-int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0,
-				   const char *portname, int *pf, int ipproto,
-				  unsigned long res_opts0,
-				  unsigned long res_opts1,
-				   union sockaddr_union *us, socklen_t *uslen,
-				   int socktype) {
+int _xioopen_ipapp_listen_prepare(
+	struct opt *opts,
+	struct opt **opts0,
+	const char *portname,
+	int *pf,
+	int ipproto,
+	const int ai_flags[2],
+	const unsigned long res_opts[2],
+	union sockaddr_union *us,
+	socklen_t *uslen,
+	int socktype)
+{
    char *bindname = NULL;
    int result;
 
@@ -256,8 +266,7 @@ int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0,
    retropt_string(opts, OPT_BIND, &bindname);
    result =
 	xioresolve(bindname, portname, *pf, socktype, ipproto,
-		   us, uslen,
-		   res_opts0, res_opts1);
+		   us, uslen, ai_flags, res_opts);
    if (result != STAT_OK) {
       /*! STAT_RETRY? */
       return result;
@@ -270,7 +279,7 @@ int _xioopen_ipapp_listen_prepare(struct opt *opts, struct opt **opts0,
 /* we expect the form: port */
 /* currently only used for TCP4 */
 int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
-			  int xioflags, xiofile_t *fd,
+			  int xioflags, xiofile_t *xfd,
 			 groups_t groups, int socktype,
 			 int ipproto, int pf) {
    struct opt *opts0 = NULL;
@@ -282,6 +291,7 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
       Error2("%s: wrong number of parameters (%d instead of 1)", argv[0], argc-1);
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6
       switch (xioparms.default_ip) {
@@ -296,22 +306,22 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 #endif
    }
 
-   fd->stream.howtoend = END_SHUTDOWN;
+   xfd->stream.howtoend = END_SHUTDOWN;
 
-   if (applyopts_single(&fd->stream, opts, PH_INIT) < 0)  return -1;
+   if (applyopts_single(&xfd->stream, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
    applyopts(-1, opts, PH_EARLY);
 
    if (_xioopen_ipapp_listen_prepare(opts, &opts0, argv[1], &pf, ipproto,
-				     fd->stream.para.socket.ip.res_opts[1],
-				     fd->stream.para.socket.ip.res_opts[0],
+				     xfd->stream.para.socket.ip.ai_flags,
+				     xfd->stream.para.socket.ip.res_opts,
 				     us, &uslen, socktype)
        != STAT_OK) {
       return STAT_NORETRY;
    }
 
    if ((result =
-	xioopen_listen(&fd->stream, xioflags,
+	xioopen_listen(&xfd->stream, xioflags,
 		       (struct sockaddr *)us, uslen,
 		     opts, opts0, pf, socktype, ipproto))
        != 0)

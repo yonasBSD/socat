@@ -218,10 +218,10 @@ label(option_W)dit(bf(tt(-W))tt(<lockfile>))
    If lockfile exists, waits until it disappears. When lockfile does not exist,
    creates it and continues, unlinks lockfile on exit.
 label(option_4)dit(bf(tt(-4)))
-   Use IP version 4 in case that the addresses do not implicitly or explicitly
+   Use IP version 4 in case the addresses do not implicitly or explicitly
    specify a version; this is the default.
 label(option_6)dit(bf(tt(-6)))
-   Use IP version 6 in case that the addresses do not implicitly or explicitly
+   Use IP version 6 in case the addresses do not implicitly or explicitly
    specify a version.
 label(option_statistics)dit(bf(tt(--statistics)))
    Logs transfer statistics (bytes and blocks counters for both directions)
@@ -2240,6 +2240,11 @@ label(OPTOIN_IP_TRANSPARENT)
 dit(bf(tt(ip-transparent)))
    Sets the IP_TRANSPARENT socket option.
    This option might require root privilege.
+label(OPTION_AI_ADDRCONFIG)
+dit(bf(tt(ai-addrconfig[=0|1]))), dit(bf(tt(addrconfig[=0|1])))
+   Sets or unsets the AI_ADDRCONFIG flag to prevent name resolution to address
+   families that are not configured (e.g. IPv6). Default value is 1 in case the
+   resolver does not get an address family hint.
 label(OPTION_RES_DEBUG)dit(bf(tt(res-debug)))
 label(OPTION_RES_AAONLY)dit(bf(tt(res-aaonly)))
 label(OPTION_RES_USEVC)dit(bf(tt(res-usevc)))
@@ -2249,10 +2254,10 @@ label(OPTION_RES_RECURSE)dit(bf(tt(res-recurse)))
 label(OPTION_RES_DEFNAMES)dit(bf(tt(res-defnames)))
 label(OPTION_RES_STAYOPEN)dit(bf(tt(res-stayopen)))
 label(OPTION_RES_DNSRCH)dit(bf(tt(res-dnsrch)))
-   These options set the corresponding resolver (name resolution) option flags.
-   Append "=0" to clear a default option. See man NOEXPAND(resolver(5)) for more
-   information on these options. Note: these options are valid only for the
-   address they are applied to.
+   These options temporarily set the corresponding resolver (name resolution)
+   option flags. Append "=0" to clear a default option. See man
+   NOEXPAND(resolver(5)) for more information on these options. These flags are
+   per process, however socat() restores the old values after name resolution.
    
 enddit()
 

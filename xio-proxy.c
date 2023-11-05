@@ -110,6 +110,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    targetname = argv[2];
    targetport = argv[3];
 
+   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
@@ -124,14 +125,16 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
       }
    }
 
-   result = _xioopen_proxy_prepare(proxyvars, opts, targetname, targetport);
+   result = _xioopen_proxy_prepare(proxyvars, opts, targetname, targetport,
+				   xfd->para.socket.ip.ai_flags,
+				   xfd->para.socket.ip.res_opts);
    if (result != STAT_OK)  return result;
 
    result =
       _xioopen_ipapp_prepare(opts, &opts0, proxyname, proxyport,
 			     &pf, ipproto,
-			     xfd->para.socket.ip.res_opts[1],
-			     xfd->para.socket.ip.res_opts[0],
+			     xfd->para.socket.ip.ai_flags,
+			     xfd->para.socket.ip.res_opts,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)  return result;
@@ -242,8 +245,13 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
 }
 
 
-int _xioopen_proxy_prepare(struct proxyvars *proxyvars, struct opt *opts,
-			   const char *targetname, const char *targetport) {
+int _xioopen_proxy_prepare(
+	struct proxyvars *proxyvars,
+	struct opt *opts,
+	const char *targetname,
+	const char *targetport,
+	const int ai_flags[2],
+	const unsigned long res_opts[2]) {
    union sockaddr_union host;
    socklen_t socklen = sizeof(host);
    int rc;
@@ -300,10 +308,10 @@ int _xioopen_proxy_prepare(struct proxyvars *proxyvars, struct opt *opts,
    if (proxyvars->doresolve) {
       /* currently we only resolve to IPv4 addresses. This is in accordance to
 	 RFC 2396; however once it becomes clear how IPv6 addresses should be
-	 represented in CONNECT commands this code might be extended */
+	 represented in CONNECT commands this code might need to be extended */
       rc = xioresolve(targetname, targetport, PF_INET/*!?*/,
-			  SOCK_STREAM, IPPROTO_TCP,
-			  &host, &socklen, 0, 0);
+		      SOCK_STREAM, IPPROTO_TCP,
+		      &host, &socklen, ai_flags, res_opts);
       if (rc != STAT_OK) {
 	 proxyvars->targetaddr = strdup(targetname);
       } else {

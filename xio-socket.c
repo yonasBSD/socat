@@ -277,7 +277,7 @@ int xioopen_socket_connect(int argc, const char *argv[], struct opt *opts,
 
    socket_init(0, &us);
    if (retropt_bind(opts, 0 /*pf*/, socktype, proto, (struct sockaddr *)&us, &uslen, 3,
-		    0, 0)
+		    xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts)
        != STAT_NOACTION) {
       needbind = true;
       us.soa.sa_family = pf;
@@ -540,7 +540,10 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
    xfd->dtype = XIOREAD_RECV|XIOWRITE_SENDTO;
 
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, 0, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, 0, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -619,7 +622,10 @@ int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
    xfd->para.socket.la.soa.sa_family = pf;
 
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, 0, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, 0, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -699,7 +705,10 @@ int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
 
    /* which reply sockets will accept - determine by range option */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, 0, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, 0, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -1169,7 +1178,10 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
 
    /* for generic sockets, this has already been retrieved */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -1371,7 +1383,10 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -1814,19 +1829,25 @@ char *xiogetifname(int ind, char *val, int ins) {
 
 
 /* parses a network specification consisting of an address and a mask. */
-int xioparsenetwork(const char *rangename, int pf, struct xiorange *range) {
+int xioparsenetwork(
+	const char *rangename,
+	int pf,
+	struct xiorange *range,
+	const int ai_flags[2],
+	const unsigned long res_opts[2])
+{
    size_t addrlen = 0, masklen = 0;
    int result;
 
   switch (pf) {
 #if WITH_IP4
   case PF_INET:
-      return xioparsenetwork_ip4(rangename, range);
+     return xioparsenetwork_ip4(rangename, range, ai_flags, res_opts);
    break;
 #endif /* WITH_IP4 */
 #if WITH_IP6
    case PF_INET6:
-      return xioparsenetwork_ip6(rangename, range);
+      return xioparsenetwork_ip6(rangename, range, ai_flags, res_opts);
       break;
 #endif /* WITH_IP6 */
   case PF_UNSPEC:
@@ -1887,9 +1908,15 @@ int xioparsenetwork(const char *rangename, int pf, struct xiorange *range) {
 
 /* parses a string of form address/bits or address:mask, and fills the fields
    of the range union. The addr component is masked with mask. */
-int xioparserange(const char *rangename, int pf, struct xiorange *range) {
+int xioparserange(
+	const char *rangename,
+	int pf,
+	struct xiorange *range,
+	const int ai_flags[2],
+	const unsigned long res_opts[2])
+{
    int i;
-   if (xioparsenetwork(rangename, pf, range) < 0) {
+   if (xioparsenetwork(rangename, pf, range, ai_flags, res_opts) < 0) {
       Error2("failed to parse or resolve range \"%s\" (pf=%d)", rangename, pf);
       return -1;
    }

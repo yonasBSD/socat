@@ -29,6 +29,8 @@ extern const struct optdesc opt_ip_recvdstaddr;
 extern const struct optdesc opt_ip_recvif;
 extern const struct optdesc opt_ip_transparent;
 
+extern const struct optdesc opt_ai_addrconfig;
+
 extern const struct optdesc opt_res_debug;
 extern const struct optdesc opt_res_aaonly;
 extern const struct optdesc opt_res_usevc;
@@ -39,9 +41,11 @@ extern const struct optdesc opt_res_defnames;
 extern const struct optdesc opt_res_stayopen;
 extern const struct optdesc opt_res_dnsrch;
 
-extern int xiogetaddrinfo(const char *node, const char *service, int family, int socktype, int protocol, struct addrinfo **res, unsigned long res_opts0, unsigned long res_opts1);
+extern int xioinit_ip(struct single *sfd, int *pf);
+
+extern int xiogetaddrinfo(const char *node, const char *service, int family, int socktype, int protocol, struct addrinfo **res, const int ai_flags[2], const unsigned long res_opts[2]);
 extern void xiofreeaddrinfo(struct addrinfo *res);
-extern int xioresolve(const char *node, const char *service, int family, int socktype, int protocol, union sockaddr_union *addr, socklen_t *addrlen, unsigned long res_opts0, unsigned long res_opts1);
+extern int xioresolve(const char *node, const char *service, int family, int socktype, int protocol, union sockaddr_union *addr, socklen_t *addrlen, const int ai_flags[2], const unsigned long res_opts[2]);
 extern int xiolog_ancillary_ip(struct single *sfd, struct cmsghdr *cmsg, int *num, char *typbuff, int typlen, char *nambuff, int namlen, char *envbuff, int envlen, char *valbuff, int vallen);
 extern int xiotype_ip_add_membership(char *token, const struct optname *ent, struct opt *opt);
 extern int xioapply_ip_add_membership(xiosingle_t *xfd, struct opt *opt);

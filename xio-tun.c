@@ -133,7 +133,10 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
           Error1("strdup(\"%s\"): out of memory", argv[1]);
           return STAT_RETRYLATER;
        }
-       if ((result = xioparsenetwork(ifaddr, pf, &network)) != STAT_OK) {
+       if ((result = xioparsenetwork(ifaddr, pf, &network,
+				     xfd->stream.para.socket.ip.ai_flags,
+				     xfd->stream.para.socket.ip.res_opts))
+	   != STAT_OK) {
           /*! recover */
           return result;
        }

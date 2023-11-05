@@ -32,9 +32,8 @@ extern const struct optdesc opt_ipv6_tclass;
 extern const struct optdesc opt_ipv6_recvtclass;
 extern const struct optdesc opt_ipv6_recvpathmtu;
 
-extern int xioip6_pton(const char *src, struct in6_addr *dst);
-extern
-int xioparsenetwork_ip6(const char *rangename, struct xiorange *range);
+extern int xioip6_pton(const char *src, struct in6_addr *dst, const int ai_flags[2], const unsigned long res_opts[2]);
+extern int xioparsenetwork_ip6(const char *rangename, struct xiorange *range, const int ai_flags[2], const unsigned long res_opts[2]);
 extern int xiorange_ip6andmask(struct xiorange *range);
 
 extern

@@ -72,6 +72,7 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
    targetname = argv[2];
    targetport = argv[3];
 
+   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
@@ -85,8 +86,8 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
    result =
       _xioopen_ipapp_prepare(opts, &opts0, sockdname, socksport,
 			     &pf, ipproto,
-			     xfd->para.socket.ip.res_opts[1],
-			     xfd->para.socket.ip.res_opts[0],
+			     xfd->para.socket.ip.ai_flags,
+			     xfd->para.socket.ip.res_opts,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
 
@@ -272,10 +273,10 @@ int
       socklen_t saulen = sizeof(sau);
 
       if ((result = xioresolve(hostname, NULL,
-				   PF_INET, SOCK_STREAM, IPPROTO_TCP,
-				   &sau, &saulen,
-				   xfd->para.socket.ip.res_opts[1],
-				   xfd->para.socket.ip.res_opts[0]))
+			       PF_INET, SOCK_STREAM, IPPROTO_TCP,
+			       &sau, &saulen,
+			       xfd->para.socket.ip.ai_flags,
+			       xfd->para.socket.ip.res_opts))
 	  != STAT_OK) {
 	 return result;	/*! STAT_RETRY? */
       }

@@ -24,6 +24,7 @@ enum e_types {
    TYPE_CONST,		/* keyword means a fix value - implies int type */
    TYPE_BIN,		/* raw binary data, length determined by data */
    TYPE_BOOL,		/* value is 0 or 1 (no-value is interpreted as 1) */
+   TYPE_BOOL_NULL,	/* value is 0 or 1 (no-value is interpreted as 1), or just opt= */
    TYPE_BYTE,		/* unsigned char */
 
    TYPE_INT,		/* int */
@@ -103,7 +104,7 @@ enum e_func {
    OFUNC_TERMIO,	/* termio() ? */
    OFUNC_SPEC,		/* special, i.e. no generalizable function call */
    OFUNC_OFFSET,	/* put a value into xiofile struct; major is offset */
-   OFUNC_OFFSET_MASKS,	/* !!! */
+   OFUNC_OFFSET_MASKS,	/* set pos or neg bit pattern in array[2] */
    /*OFUNC_APPL,*/	/* special, i.e. application must know which f. */
    OFUNC_EXT,		/* with extended file descriptors only */
    OFUNC_TERMIOS_FLAG,	/* a flag in struct termios: major..tcflag, minor..bit
@@ -201,6 +202,7 @@ enum e_func {
 /* optcode's */
 enum e_optcode {
    OPT_ADDRESS_FAMILY = 1,
+   OPT_AI_ADDRCONFIG, 	/* getaddrinfo() */
    /* these are not alphabetically, I know... */
    OPT_B0,		/* termios.c_cflag */
    OPT_B50,		/* termios.c_cflag */
@@ -954,15 +956,7 @@ extern int retropt_ulong(struct opt *opts, int optcode, unsigned long *result);
 extern int retropt_flag(struct opt *opts, int optcode, flags_t *result);
 extern int retropt_string(struct opt *opts, int optcode, char **result);
 extern int retropt_timespec(struct opt *opts, int optcode, struct timespec *result);
-extern int retropt_bind(struct opt *opts,
-		 int af,
-		 int socktype,
-		 int ipproto,
-		 struct sockaddr *sa,
-		 socklen_t *salen,
-		 int feats,	/* TCP etc: 1..address allowed,
-				   3..address and port allowed */
-		 unsigned long res_opts0, unsigned long res_opts1);
+extern int retropt_bind(struct opt *opts, int af, int socktype, int ipproto, struct sockaddr *sa, socklen_t *salen, int feats, const int ai_flags[2], const unsigned long res_opts[2]);
 extern int applyopts(int fd, struct opt *opts, enum e_phase phase);
 extern int applyopts2(int fd, struct opt *opts, unsigned int from,
 		      unsigned int to);

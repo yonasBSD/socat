@@ -73,6 +73,8 @@ int xioopen_rawip_sendto(int argc, const char *argv[], struct opt *opts,
 	     argv[0], argc-1);
       return STAT_NORETRY;
    }
+
+   xioinit_ip(&xxfd->stream, &pf);
    if ((result = _xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
 				       groups, &pf)) != STAT_OK) {
       return result;
@@ -123,8 +125,8 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    if ((result =
 	xioresolve(hostname, NULL, *pf, socktype, ipproto,
 		       &xfd->peersa, &xfd->salen,
-		       xfd->para.socket.ip.res_opts[0],
-		       xfd->para.socket.ip.res_opts[1]))
+		       xfd->para.socket.ip.ai_flags,
+		       xfd->para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
    }
@@ -137,8 +139,9 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    xfd->dtype = XIODATA_RECVFROM_SKIPIP;
 
    if (retropt_bind(opts, *pf, socktype, ipproto, &us.soa, &uslen, feats,
-		    xfd->para.socket.ip.res_opts[0],
-		    xfd->para.socket.ip.res_opts[1]) != STAT_NOACTION) {
+		    xfd->para.socket.ip.ai_flags,
+		    xfd->para.socket.ip.res_opts)
+       != STAT_NOACTION) {
       needbind = true;
    }
    return
@@ -161,6 +164,8 @@ int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
 	     argv[0], argc-1);
       return STAT_NORETRY;
    }
+
+   xioinit_ip(xfd, &pf);
    if ((result =
 	_xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
 				groups, &pf)) != STAT_OK) {
@@ -176,7 +181,10 @@ int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
 
    /* which reply packets will be accepted - determine by range option */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
-      if (xioparserange(rangename, pf, &xfd->para.socket.range) < 0) {
+      if (xioparserange(rangename, pf, &xfd->para.socket.range,
+			xfd->para.socket.ip.ai_flags,
+			xfd->para.socket.ip.res_opts)
+	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
       }
@@ -212,6 +220,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    if ((ipproto = strtoul(protname, &garbage, 0)) >= 256) {
       Error2("xioopen_rawip_recvfrom(\"%s\",,): protocol number exceeds 255 (%u)",
 	     protname, ipproto);
@@ -239,8 +248,9 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
    }
 
    if (retropt_bind(opts, pf, socktype, ipproto, &us.soa, &uslen, 1,
-		    xfd->stream.para.socket.ip.res_opts[0],
-		    xfd->stream.para.socket.ip.res_opts[1]) != STAT_NOACTION) {
+		    xfd->stream.para.socket.ip.ai_flags,
+		    xfd->stream.para.socket.ip.res_opts)
+       != STAT_NOACTION) {
       needbind = true;
    }
 
@@ -274,6 +284,7 @@ int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
+   xioinit_ip(&xfd->stream, &pf);
    if ((ipproto = strtoul(protname, &garbage, 0)) >= 256) {
       Error2("xioopen_rawip_recv(\"%s\",,): protocol number exceeds 255 (%u)",
 	     protname, ipproto);
@@ -297,9 +308,9 @@ int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
 
    if (retropt_bind(opts, pf, socktype, ipproto,
 		    &/*us.soa*/xfd->stream.para.socket.la.soa, &uslen, 1,
-		    xfd->stream.para.socket.ip.res_opts[0],
-		    xfd->stream.para.socket.ip.res_opts[1]) ==
-       STAT_OK) {
+		    xfd->stream.para.socket.ip.ai_flags,
+		    xfd->stream.para.socket.ip.res_opts)
+       == STAT_OK) {
       needbind = true;
    } else {
       /* pf is required during xioread checks */

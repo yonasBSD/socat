@@ -173,6 +173,7 @@ SOL_SOCKET="$($PROCAN -c |grep "^#define[[:space:]]*SOL_SOCKET[[:space:]]" |cut 
 SO_REUSEADDR="$($PROCAN -c |grep "^#define[[:space:]]*SO_REUSEADDR[[:space:]]" |cut -d' ' -f3)"
 TCP_MAXSEG="$($PROCAN -c |grep "^#define[[:space:]]*TCP_MAXSEG[[:space:]]" |cut -d' ' -f3)"
 SIZE_T=$($PROCAN |grep size_t |awk '{print($3);}')
+#AI_ADDRCONFIG=; if [ "$($SOCAT -hhh |grep ai-addrconfig)" ]; then AI_ADDRCONFIG="ai-addrconfig=0"; fi
 
 # SSL certificate contents
 TESTCERT_CONF=testcert.conf
@@ -2089,8 +2090,20 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%ip6%*|*%ipapp%*|*%tcp%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: echo via connection to TCP V6 socket"
 if ! eval $NUMCOND; then :;
-elif ! testfeats tcp ip6 >/dev/null || ! runsip6 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}TCP6 not available${NORMAL}\n" $N
+elif ! F=$(testfeats IP6 TCP LISTEN STDIO PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs - TCP6-LISTEN PIPE STDIN STDOUT TCP6-CONNECT); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions so-reuseaddr ) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip6 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -2101,27 +2114,36 @@ newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP6-LISTEN:$tsl,$REUSEADDR PIPE"
-CMD2="$TRACE $SOCAT $opts stdin!!stdout TCP6:$ts"
+CMD2="$TRACE $SOCAT $opts STDIN!!STDOUT TCP6:$ts"
 printf "test $F_n $TEST... " $N
 $CMD1 >"$tf" 2>"${te}1" &
 pid=$!	# background process id
 waittcp6port $tsl 1
 echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
 if [ $? -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   echo "$CMD2"
-   cat "$te"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED: diff:\n"
-   cat "$tdiff"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+    $PRINTF "$FAILED: diff:\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo diff:
+    cat "$tdiff"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
 else
    $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null
@@ -2131,17 +2153,26 @@ N=$((N+1))
 #set +vx
 
 
+# Test if TCP client with IPv4 address connects to IPv4 port
 NAME=TCPX4
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%tcp%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: echo via connection to TCP socket, v4 by target"
 if ! eval $NUMCOND; then :;
-elif ! testfeats tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}TCP4 not available${NORMAL}\n" $N
+elif ! F=$(testfeats STDIO PIPE IP4 TCP LISTEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! testfeats ip6 >/dev/null || ! runsip6 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IP6 not available${NORMAL}\n" $N
+elif ! A=$(testaddrs TCP TCP-LISTEN STDIN STDOUT PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions pf) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -2151,29 +2182,39 @@ tdiff="$td/test$N.diff"
 newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
-CMD1="$TRACE $SOCAT $opts TCP-LISTEN:$tsl,pf=ip4,$REUSEADDR PIPE"
-CMD2="$TRACE $SOCAT $opts STDIN!!STDOUT TCP:$ts"
+CMD0="$TRACE $SOCAT $opts TCP-LISTEN:$tsl,pf=ip4,$REUSEADDR PIPE"
+CMD1="$TRACE $SOCAT $opts STDIN!!STDOUT TCP:$ts"
 printf "test $F_n $TEST... " $N
-$CMD1 >"$tf" 2>"${te}1" &
+$CMD0 >"$tf" 2>"${te}0" &
 pid=$!	# background process id
 waittcp4port $tsl 1
-echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
+echo "$da" |$CMD1 >>"$tf" 2>>"${te}1"
 if [ $? -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   echo "$CMD2"
-   cat "$te"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED: diff:\n"
-   cat "$tdiff"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+    $PRINTF "$FAILED: diff:\n"
+    cat "$tdiff"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null
 fi
@@ -2181,17 +2222,26 @@ esac
 N=$((N+1))
 
 
+# Test if TCP client with IPv6 address connects to IPv6 port
 NAME=TCPX6
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip6%*|*%ipapp%*|*%tcp%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: echo via connection to TCP socket, v6 by target"
 if ! eval $NUMCOND; then :;
-elif ! testfeats tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}TCP4 not available${NORMAL}\n" $N
+elif ! F=$(testfeats STDIO PIPE IP6 TCP LISTEN); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! testfeats ip6 >/dev/null || ! runsip6 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IP6 not available${NORMAL}\n" $N
+elif ! A=$(testaddrs TCP TCP-LISTEN STDIN STDOUT PIPE); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions pf) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip6 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -2201,29 +2251,39 @@ tdiff="$td/test$N.diff"
 newport tcp6; tsl=$PORT
 ts="[::1]:$tsl"
 da="test$N $(date) $RANDOM"
-CMD1="$TRACE $SOCAT $opts TCP-LISTEN:$tsl,pf=ip6,$REUSEADDR PIPE"
-CMD2="$TRACE $SOCAT $opts STDIN!!STDOUT TCP:$ts"
+CMD0="$TRACE $SOCAT $opts TCP-LISTEN:$tsl,pf=ip6,$REUSEADDR PIPE"
+CMD1="$TRACE $SOCAT $opts STDIN!!STDOUT TCP:$ts"
 printf "test $F_n $TEST... " $N
-$CMD1 >"$tf" 2>"${te}1" &
+$CMD0 >"$tf" 2>"${te}0" &
 pid=$!	# background process id
 waittcp6port $tsl 1
-echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
+echo "$da" |$CMD1 >>"$tf" 2>>"${te}1"
 if [ $? -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   echo "$CMD2"
-   cat "$te"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED: diff:\n"
-   cat "$tdiff"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+    $PRINTF "$FAILED: diff:\n"
+    cat "$tdiff"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "$CMD1"
+    cat "${te}1" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numOK=$((numOK+1))
 fi
 kill $pid 2>/dev/null
 fi
@@ -8298,7 +8358,7 @@ newport udp6; ts1p=$PORT
 if1="$MCINTERFACE"
 ts1a="[::1]"
 da="test$N $(date) $RANDOM"
-CMD1="$TRACE $SOCAT -u $opts UDP6-RECV:$ts1p,reuseaddr,ipv6-join-group=[ff02::2]:$if1 -"
+CMD1="$TRACE $SOCAT -u $opts UDP6-RECV:$ts1p,$REUSEADDR,ipv6-join-group=[ff02::2]:$if1 -"
 #CMD2="$TRACE $SOCAT -u $opts - UDP6-SENDTO:[ff02::2]:$ts1p,bind=$ts1a"
 CMD2="$TRACE $SOCAT -u $opts - UDP6-SENDTO:[ff02::2]:$ts1p"
 printf "test $F_n $TEST... " $N
@@ -13589,7 +13649,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts FILE:/dev/null OPENSSL-CONNECT:$SNISERVER:443"
+CMD0="$TRACE $SOCAT $opts FILE:/dev/null OPENSSL-CONNECT:$SNISERVER:443,pf=ip4"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0"
 rc0=$?
@@ -15177,7 +15237,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -t 3 $PROTO-RECVFROM:$tsl,fork SYSTEM:'read t x; sleep \$t; echo \$x >>'\"$tf\""
+CMD0="$TRACE $SOCAT $opts -t 3 $PROTO-RECVFROM:$tsl,fork SYSTEM:'read t x; sleep \$t; echo \\\"\$x\\\" >>'\"$tf\""
 CMD1="$TRACE $SOCAT $opts -t 3 - $PROTO-SENDTO:$tsc"
 printf "test $F_n $TEST... " $N
 eval $CMD0 </dev/null 2>"${te}0" &
@@ -15947,6 +16007,7 @@ newport tcp6
 CMD0a="$TRACE $SOCAT $opts -lp server1 -6 OPENSSL-LISTEN:$PORT,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD0b="$TRACE $SOCAT $opts -lp server2 -6 OPENSSL-LISTEN:$PORT,accept-timeout=.01,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD1="$TRACE $SOCAT $opts -lp client -6 -T 0.1 PIPE OPENSSL-CONNECT:$LOCALHOST6:$PORT,verify=0"
+printf "test $F_n $TEST... " $N
 $CMD0a >/dev/null 2>"${te}0a" &
 pid0=$!
 waittcp6port $PORT 1
@@ -16077,8 +16138,8 @@ TEST="$NAME: try all available TCP4 addresses"
 # that is closed on both addresses.
 # The test succeeded when the log shows that Socat tried to connect two times.
 if ! eval $NUMCOND; then :;
-elif [ -z "$FOREIGN" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+elif ! $(type nslookup >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 #elif ! $(type nslookup >/dev/null 2>&1) && ! $(type host >/dev/null 2>&1); then
@@ -16095,6 +16156,10 @@ elif ! A=$(testaddrs TCP4-CONNECT GOPEN); then
     listCANT="$listCANT $N"
 elif ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ -z "$FOREIGN" ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16162,7 +16227,7 @@ elif [ -z "$FOREIGN" ]; then	# only needs Internet DNS
 #    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup and host not available${NORMAL}\n" $N
 #    numCANT=$((numCANT+1))
 #    listCANT="$listCANT $N"
-elif ! F=$(testfeats ip4 ip6 tcp); then
+elif ! F=$(testfeats IP4 IP6 TCP); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -16178,6 +16243,10 @@ elif ! runsip6 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 not available or not routable${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+elif [ -z "$FOREIGN" ]; then	# only needs Internet DNS
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
@@ -16185,10 +16254,18 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 LOCALHOST_4_6=localhost-4-6.dest-unreach.net
 if type nslookup >/dev/null 2>&1; then
-    ADDRS=$(nslookup server-4.dest-unreach.net. |sed -n '/^$/,$ p' |grep ^Address |awk '{print($2);}')
+    ADDRS=$(nslookup $LOCALHOST_4_6 |sed -n '/^$/,$ p' |grep ^Address |awk '{print($2);}')
 elif type host >/dev/null 2>&1; then
-    ADDRS=$(host server-4.dest-unreach.net. |sed 's/.*address //')
+    ADDRS=$(host $LOCALHOST_4_6 |sed 's/.*address //')
 fi
+# Specific config: on Ubuntu-12.04: getaddrinfo(...AI_ADDRCONFIG) does not
+# resolve to IPv6 addresses even when there are link local IPv6 addresses
+if test -f /etc/os-release &&
+	grep -q '^NAME="Ubuntu"' /etc/os-release &&
+	grep -q '^VERSION="12\.04' /etc/os-release; then
+    AI_ADDRCONFIG="ai-addrconfig=0,"
+fi
+# Check if PORT is really closed on both addresses
 while true; do
     OPEN=
     for addr in $ADDRS; do
@@ -16196,7 +16273,7 @@ while true; do
 	    *.*) ;;
 	    *:*) addr="[$addr]" ;
 	esac
-	if $SOCAT /dev/null TCP:$addr:$PORT 2>/dev/null; then
+	if $SOCAT /dev/null TCP:$addr:$PORT,$AI_ADDRCONFIG 2>/dev/null; then
 	    # port is open :-(
 	    OPEN=1
 	    break
@@ -16207,7 +16284,7 @@ while true; do
     fi
     newport tcp4
 done
-CMD="$TRACE $SOCAT $opts -d -d /dev/null TCP:localhost-4-6.dest-unreach.net:$PORT"
+CMD="$TRACE $SOCAT $opts -d -d /dev/null TCP:$LOCALHOST_4_6:$PORT,$AI_ADDRCONFIG"
 printf "test $F_n $TEST... " $N
 $CMD >/dev/null 2>"${te}"
 rc=$?
@@ -16378,8 +16455,8 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     $PRINTF "test $F_n $TEST... ${YELLOW}Must be root${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! $(type systemd-socket-activate >/dev/null 2>&1); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}systemd-socket-activate not available${NORMAL}\n" $N
+elif ! $(type nslookup >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! F=$(testfeats STDIO IP4 TCP PIPE); then
@@ -16392,6 +16469,10 @@ elif ! A=$(testaddrs - TCP4 TCP4-LISTEN PIPE); then
     listCANT="$listCANT $N"
 elif ! o=$(testoptions so-reuseaddr fork) >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runsip4 >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! runsip4 >/dev/null; then

@@ -78,6 +78,12 @@ Features:
 	configure option --with-default-ipv allows to specify at build time if
 	IPv4, IPv6, or none of these is the preferred default.
 
+	Socat options -4 and -6 have been reworked.
+	Tests: TCP_ENV6 TCP_DASH6
+
+	New option ai-addrconfig disables name resolution to protocol families
+	that are not configured on the computer (e.g. IPv6)
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

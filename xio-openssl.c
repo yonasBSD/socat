@@ -280,6 +280,7 @@ static int
       return STAT_NORETRY;
    }
 
+   xioinit_ip(xfd, &pf);
    xfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
@@ -326,8 +327,8 @@ static int
 
    result =
       _xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
-			     xfd->para.socket.ip.res_opts[1],
-			     xfd->para.socket.ip.res_opts[0],
+			     xfd->para.socket.ip.ai_flags,
+			     xfd->para.socket.ip.res_opts,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)  return STAT_NORETRY;
@@ -571,6 +572,7 @@ static int
       return STAT_NORETRY;
    }
 
+   xioinit_ip(xfd, &pf);
 #if WITH_IP4 && WITH_IP6
    switch (xioparms.default_ip) {
    case '4': pf = PF_INET; break;
@@ -610,8 +612,8 @@ static int
    retropt_int(opts, OPT_SO_PROTOTYPE, &ipproto);
 
    if (_xioopen_ipapp_listen_prepare(opts, &opts0, portname, &pf, ipproto,
-				     xfd->para.socket.ip.res_opts[1],
-				     xfd->para.socket.ip.res_opts[0],
+				     xfd->para.socket.ip.ai_flags,
+				     xfd->para.socket.ip.res_opts,
 				     us, &uslen, socktype)
        != STAT_OK) {
       return STAT_NORETRY;
@@ -1894,7 +1896,8 @@ static int openssl_handle_peer_certificate(struct single *xfd,
 			case 16: /* IPv6 */
 			   inet_ntop(AF_INET6, data, aBuffer, sizeof(aBuffer));
 			   if (peername != NULL) {
-			      xioip6_pton(peername, &ip6bin);
+			      xioip6_pton(peername, &ip6bin, xfd->para.socket.ip.ai_flags,
+					  xfd->para.socket.ip.res_opts);
 			      if (memcmp(data, &ip6bin, sizeof(ip6bin)) == 0) {
 			         Debug2("subjectAltName \"%s\" matches peername \"%s\"",
 					aBuffer, peername);

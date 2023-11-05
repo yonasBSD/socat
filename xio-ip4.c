@@ -14,7 +14,12 @@
 #include "xio-ip4.h"
 
 
-int xioparsenetwork_ip4(const char *rangename, struct xiorange *range) {
+int xioparsenetwork_ip4(
+	const char *rangename,
+	struct xiorange *range,
+	const int ai_flags[2],
+	const unsigned long res_opts[2])
+{
    struct in_addr *netaddr_in = &range->netaddr.ip4.sin_addr;
    struct in_addr *netmask_in = &range->netmask.ip4.sin_addr;
    char *rangename1;	/* a copy of rangename with writing allowed */
@@ -46,7 +51,7 @@ int xioparsenetwork_ip4(const char *rangename, struct xiorange *range) {
       }
    } else if (delimpos = strchr(rangename1, ':')) {
       if ((rc = xioresolve(delimpos+1, NULL, PF_INET, 0, 0,
-			       &sau, &socklen, 0, 0))
+			   &sau, &socklen, ai_flags, res_opts))
 	  != STAT_OK) {
 	 return rc;
       }
@@ -59,7 +64,7 @@ int xioparsenetwork_ip4(const char *rangename, struct xiorange *range) {
    {
       *delimpos = 0;
       if ((rc = xioresolve(rangename1, NULL, PF_INET, 0, 0,
-			       &sau, &socklen, 0, 0))
+			   &sau, &socklen, ai_flags, res_opts))
 	  != STAT_OK) {
 	 return rc;
       }

@@ -96,7 +96,8 @@ static int xioopen_vsock_connect(int argc, const char *argv[], struct opt *opts,
    xiolog_vsock_cid();
 
    ret = retropt_bind(opts, pf, socktype, protocol,
-                      (struct sockaddr *)&sa_local, &sa_len, 3, 0, 0);
+                      (struct sockaddr *)&sa_local, &sa_len, 3,
+		      NULL, NULL);
    if (ret == STAT_NORETRY)
       return ret;
    if (ret == STAT_OK)
@@ -153,7 +154,7 @@ static int xioopen_vsock_listen(int argc, const char *argv[], struct opt *opts,
    opts0 = copyopts(opts, GROUP_ALL);
 
    ret = retropt_bind(opts, pf, socktype, protocol, (struct sockaddr *)&sa_bind,
-                      &sa_len, 1, 0, 0);
+                      &sa_len, 1, NULL, NULL);
    if (ret == STAT_NORETRY)
        return ret;
    if (ret == STAT_OK)

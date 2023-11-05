@@ -173,6 +173,12 @@ const struct optname optionnames[] = {
 #if defined(HAVE_STRUCT_IP_MREQ_SOURCE) && defined(IP_ADD_SOURCE_MEMBERSHIP)
 	IF_IP     ("add-source-membership",	&opt_ip_add_source_membership)
 #endif
+#if defined(AI_ADDRCONFIG)
+	IF_IP	  ("addrconfig", 		&opt_ai_addrconfig)
+#endif
+#if defined(AI_ADDRCONFIG)
+	IF_IP	  ("ai-addrconfig", 		&opt_ai_addrconfig)
+#endif
 	IF_INTERFACE("allmulti",	&opt_iff_allmulti)
 #if WITH_LIBWRAP && defined(HAVE_HOSTS_ALLOW_TABLE)
 	IF_IPAPP  ("allow-table",	&opt_tcpwrap_hosts_allow_table)
@@ -2597,8 +2603,8 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	    }
 	    *buffp = '\0';
 	    if (xioresolve(buff, NULL, AF_INET, SOCK_DGRAM, IPPROTO_IP,
-			   (union sockaddr_union *)&sa, &salen,
-			       0, 0/*!!!*/) != STAT_OK) {
+			   (union sockaddr_union *)&sa, &salen, NULL,
+			   NULL/*!! !*/) != STAT_OK) {
 	       opt->desc = ODESC_ERROR; continue;
 	    }
 	    opt->value.u_ip4addr = sa.sin_addr;
@@ -3109,7 +3115,8 @@ int retropt_bind(struct opt *opts,
 				   UNIX (or'd): 1..tight
 						2..abstract
 				*/
-		 unsigned long res_opts0, unsigned long res_opts1) {
+		 const int ai_flags[2], const unsigned long res_opts[2])
+{
    const char portsep[] = ":";
    const char *ends[] = { portsep, NULL };
    const char *nests[] = { "[", "]", NULL };
@@ -3175,9 +3182,9 @@ int retropt_bind(struct opt *opts,
       }
       if ((result =
 	   xioresolve(hostname[0]!='\0'?hostname:NULL, portp,
-			  af, socktype, ipproto,
-			  (union sockaddr_union *)sa, salen,
-			  res_opts0, res_opts1))
+		      af, socktype, ipproto,
+		      (union sockaddr_union *)sa, salen,
+		      ai_flags, res_opts))
 	  != STAT_OK) {
 	 Error("error resolving bind option");
 	 return STAT_NORETRY;
@@ -4070,6 +4077,10 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
       break;
 
      case OFUNC_OFFSET_MASKS:
+	/* An external (e.g. library) variable with independent bits is to be
+	   manipulated. Here the data target is an array with size 2, the first
+	   element holds the bit mask to be set, the second one those to be
+	   cleared. Each related option sets or unsets a specific bit. */
 	{
 	   void *masks = (char *)xfd + opt->desc->major;
 	   size_t masksize = opt->desc->minor;
@@ -4089,8 +4100,14 @@ int applyopts_single(struct single *xfd, struct opt *opts, enum e_phase phase) {
 		 ((uint32_t *)masks)[1] |= bit;
 	      }
 	      break;
+	   case sizeof(uint64_t):
+	      if (opt->value.u_bool) {
+		 ((uint64_t *)masks)[0] |= bit;
+	      } else {
+		 ((uint64_t *)masks)[1] |= bit;
+	      }
+	      break;
 	   default:
-	      Info1("sizeof(uint32_t)="F_Zu, sizeof(uint32_t));
 	      Error1("applyopts_single: masksize "F_Zu" not implemented",
 		     masksize);
 	   }

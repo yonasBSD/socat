@@ -130,7 +130,8 @@ extern xioparms_t xioparms;
 
 #if _WITH_IP4 || _WITH_IP6
 struct para_ip {
-	unsigned int res_opts[2];	/* bits to be set in _res.options are
+	int	      ai_flags[2]; 	/* flags for getaddrinfo() ai_flags (set/unset) */
+	unsigned long res_opts[2];	/* bits to be set in _res.options are
 					   at [0], bits to be cleared are at [1] */
 	bool     dosourceport; 	/* check the source port of incoming connection or packets */
 	uint16_t sourceport;		/* host byte order */
