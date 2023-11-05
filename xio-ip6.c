@@ -85,8 +85,7 @@ const struct optdesc opt_ipv6_recvpathmtu = { "ipv6-recvpathmtu", "recvpathmtu",
 int xioip6_pton(
 	const char *src,
 	struct in6_addr *dst,
-	const int ai_flags[2],
-	const unsigned long res_opts[2])
+	const int ai_flags[2])
 {
    union sockaddr_union sockaddr;
    socklen_t sockaddrlen = sizeof(sockaddr);
@@ -99,10 +98,10 @@ int xioip6_pton(
       plainaddr[INET6_ADDRSTRLEN-1] = '\0';
       if ((clos = strchr(plainaddr, ']')) != NULL)
 	 *clos = '\0';
-      return xioip6_pton(plainaddr, dst, ai_flags, res_opts);
+      return xioip6_pton(plainaddr, dst, ai_flags);
    }
    if (xioresolve(src, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
-		  ai_flags, res_opts)
+		  ai_flags)
        != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -113,8 +112,7 @@ int xioip6_pton(
 int xioparsenetwork_ip6(
 	const char *rangename,
 	struct xiorange *range,
-	const int ai_flags[2],
-	const unsigned long res_opts[2])
+	const int ai_flags[2])
 {
    char *delimpos;	/* absolute address of delimiter */
    size_t delimind;	/* index of delimiter in string */
@@ -145,7 +143,7 @@ int xioparsenetwork_ip6(
    }
    baseaddr[delimind-2] = '\0';
    if (xioresolve(baseaddr, NULL, PF_INET6, 0, 0, &sockaddr, &sockaddrlen,
-		  ai_flags, res_opts)
+		  ai_flags)
        != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -493,8 +491,7 @@ int xioapply_ipv6_join_group(
 			xfd->para.socket.la.soa.sa_family,
 			SOCK_DGRAM, IPPROTO_IP,
 			&sockaddr1, &socklen1,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts))
+			xfd->para.socket.ip.ai_flags))
 	    != STAT_OK) {
 	   return res;
 	}
@@ -634,7 +631,7 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
 	xioresolve(opt->value.u_string/*mcaddr*/, NULL,
 		   xfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP, &sockaddr1, &socklen1,
-		   xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts))
+		   xfd->para.socket.ip.ai_flags))
        != STAT_OK) {
       return res;
    }
@@ -652,7 +649,7 @@ int xioapply_ip6_join_source_group(struct single *xfd, struct opt *opt) {
 	xioresolve(opt->value3.u_string/*srcaddr*/, NULL,
 		   xfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP, &sockaddr2, &socklen2,
-		   xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts))
+		   xfd->para.socket.ip.ai_flags))
        != STAT_OK) {
       return res;
    }

@@ -82,11 +82,13 @@ const struct optdesc opt_ip_recvif = { "ip-recvif", "recvdstaddrif",OPT_IP_RECVI
 #endif
 
 #ifdef AI_ADDRCONFIG
-const struct optdesc opt_ai_addrconfig = { "ai-addrconfig", "addrconfig", OPT_AI_ADDRCONFIG, GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_ADDRCONFIG };
-const struct optdesc opt_ai_v4mapped   = { "ai-v4mapped",   "v4mapped",   OPT_AI_V4MAPPED,   GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_V4MAPPED };
+const struct optdesc opt_ai_addrconfig = { "ai-addrconfig", "addrconfig", OPT_AI_ADDRCONFIG, GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_ADDRCONFIG };
+#endif
+#ifdef AI_V4MAPPED
+const struct optdesc opt_ai_v4mapped   = { "ai-v4mapped",   "v4mapped",   OPT_AI_V4MAPPED,   GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_V4MAPPED };
 #endif
 #ifdef AI_PASSIVE
-const struct optdesc opt_ai_passive    = { "ai-passive",    "passive",    OPT_AI_PASSIVE,    GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_PASSIVE    };
+const struct optdesc opt_ai_passive    = { "ai-passive",    "passive",    OPT_AI_PASSIVE,    GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_PASSIVE    };
 #endif
 
 #if WITH_RES_DEPRECATED
@@ -94,19 +96,19 @@ const struct optdesc opt_ai_passive    = { "ai-passive",    "passive",    OPT_AI
 #  define WITH_RES_PRIMARY 1
 #endif /* WITH_RES_DEPRECATED */
 #if HAVE_RESOLV_H
-const struct optdesc opt_res_debug    = { "res-debug",    NULL,       OPT_RES_DEBUG,    GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_DEBUG };
+const struct optdesc opt_res_debug    = { "res-debug",    NULL,       OPT_RES_DEBUG,    GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_DEBUG };
 #if WITH_RES_AAONLY
-const struct optdesc opt_res_aaonly   = { "res-aaonly",   "aaonly",   OPT_RES_AAONLY,   GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_AAONLY };
+const struct optdesc opt_res_aaonly   = { "res-aaonly",   "aaonly",   OPT_RES_AAONLY,   GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_AAONLY };
 #endif
-const struct optdesc opt_res_usevc    = { "res-usevc",    "usevc",    OPT_RES_USEVC,    GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_USEVC };
+const struct optdesc opt_res_usevc    = { "res-usevc",    "usevc",    OPT_RES_USEVC,    GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_USEVC };
 #if WITH_RES_PRIMARY
-const struct optdesc opt_res_primary  = { "res-primary",  "primary",  OPT_RES_PRIMARY,  GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_PRIMARY };
+const struct optdesc opt_res_primary  = { "res-primary",  "primary",  OPT_RES_PRIMARY,  GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_PRIMARY };
 #endif
-const struct optdesc opt_res_igntc    = { "res-igntc",    "igntc",    OPT_RES_IGNTC,    GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_IGNTC };
-const struct optdesc opt_res_recurse  = { "res-recurse",  "recurse",  OPT_RES_RECURSE,  GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_RECURSE };
-const struct optdesc opt_res_defnames = { "res-defnames", "defnames", OPT_RES_DEFNAMES, GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_DEFNAMES };
-const struct optdesc opt_res_stayopen = { "res-stayopen", "stayopen", OPT_RES_STAYOPEN, GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_STAYOPEN };
-const struct optdesc opt_res_dnsrch   = { "res-dnsrch",   "dnsrch",   OPT_RES_DNSRCH,   GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_DNSRCH };
+const struct optdesc opt_res_igntc    = { "res-igntc",    "igntc",    OPT_RES_IGNTC,    GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_IGNTC };
+const struct optdesc opt_res_recurse  = { "res-recurse",  "recurse",  OPT_RES_RECURSE,  GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_RECURSE };
+const struct optdesc opt_res_defnames = { "res-defnames", "defnames", OPT_RES_DEFNAMES, GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_DEFNAMES };
+const struct optdesc opt_res_stayopen = { "res-stayopen", "stayopen", OPT_RES_STAYOPEN, GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_STAYOPEN };
+const struct optdesc opt_res_dnsrch   = { "res-dnsrch",   "dnsrch",   OPT_RES_DNSRCH,   GROUP_SOCK_IP, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.res_opts), XIO_SIZEOF(para.socket.ip.res_opts), RES_DNSRCH };
 #endif /* HAVE_RESOLV_H */
 
 #endif /* WITH_IP4 || WITH_IP6 */
@@ -161,30 +163,15 @@ unsigned long res_opts() {
 */
 int xiogetaddrinfo(const char *node, const char *service,
 		   int family, int socktype, int protocol,
-		   struct addrinfo **res, const int ai_flags[2],
-		   const unsigned long res_opts[2]) {
+		   struct addrinfo **res, const int ai_flags[2]) {
    char *numnode = NULL;
    size_t nodelen;
-   unsigned long save_res_opts = 0;
 #if HAVE_GETADDRINFO
    struct addrinfo hints = {0};
 #else /* HAVE_PROTOTYPE_LIB_getipnodebyname || nothing */
    struct hostent *host;
 #endif
    int error_num;
-
-#if HAVE_RESOLV_H
-   if (res_opts[0] | res_opts[1]) {
-      if (!(_res.options & RES_INIT)) {
-         Res_init();	/*!!! returns -1 on error */
-      }
-      save_res_opts = _res.options;
-      _res.options |= res_opts[0];
-      _res.options &= ~res_opts[1];
-      Debug2("changed _res.options from 0x%lx to 0x%lx",
-	     save_res_opts, _res.options);
-   }
-#endif /* HAVE_RESOLV_H */
 
    if (service && service[0]=='\0') {
       Error("empty port/service");
@@ -209,14 +196,9 @@ int xiogetaddrinfo(const char *node, const char *service,
       ;
 #if WITH_IP6
    } else if (node && node[0] == '[' && node[(nodelen=strlen(node))-1]==']') {
-      if ((numnode = Malloc(nodelen-1)) == NULL) {
-#if HAVE_RESOLV_H
-	 if (res_opts[0] | res_opts[1]) {
-	    _res.options = save_res_opts;
-	 }
-#endif
+      if ((numnode = Malloc(nodelen-1)) == NULL)
 	 return STAT_NORETRY;
-      }
+
       strncpy(numnode, node+1, nodelen-2);	/* ok */
       numnode[nodelen-2] = '\0';
       node = numnode;
@@ -273,13 +255,8 @@ int xiogetaddrinfo(const char *node, const char *service,
 		hints.ai_socktype, hints.ai_protocol,
 		(error_num == EAI_SYSTEM)?
 		strerror(errno):gai_strerror(error_num));
-	 if (numnode)  free(numnode);
-
-#if HAVE_RESOLV_H
-	 if (res_opts[0] | res_opts[1]) {
-	    _res.options = save_res_opts;
-	 }
-#endif
+	 if (numnode)
+	    free(numnode);
 	 return STAT_RETRYLATER;
 	}
       } while (1);
@@ -373,11 +350,6 @@ int xiogetaddrinfo(const char *node, const char *service,
 	 Error2("gethostbyname(\"%s\"): %s", node,
 		h_errno == NETDB_INTERNAL ? strerror(errno) :
 		hstrerror(h_errno));
-#if HAVE_RESOLV_H
-	 if (res_opts[0] | res_opts[1]) {
-	    _res.options = save_res_opts;
-	 }
-#endif
 	 return STAT_RETRYLATER;
       }
       if (host->h_addrtype != family) {
@@ -407,11 +379,6 @@ int xiogetaddrinfo(const char *node, const char *service,
 
    if (numnode)  free(numnode);
 
-#if HAVE_RESOLV_H
-   if (res_opts[0] | res_opts[1]) {
-      _res.options = save_res_opts;
-   }
-#endif /* HAVE_RESOLV_H */
    return STAT_OK;
 }
 
@@ -431,14 +398,14 @@ void xiofreeaddrinfo(struct addrinfo *res) {
 int xioresolve(const char *node, const char *service,
 	       int family, int socktype, int protocol,
 	       union sockaddr_union *addr, socklen_t *addrlen,
-	       const int ai_flags[2], const unsigned long res_opts[2])
+	       const int ai_flags[2])
 {
    struct addrinfo *res = NULL;
    struct addrinfo *aip;
    int rc;
 
    rc = xiogetaddrinfo(node, service, family, socktype, protocol,
-		       &res, ai_flags, res_opts);
+		       &res, ai_flags);
    if (rc != 0) {
       xiofreeaddrinfo(res);
       return -1;
@@ -789,7 +756,7 @@ mc:addr
 	xioresolve(opt->value.u_string/*multiaddr*/, NULL,
 		   xfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP, &sockaddr1, &socklen1,
-		   xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts);
+		   xfd->para.socket.ip.ai_flags);
 	ip4_mreqn.mreq.imr_multiaddr = sockaddr1.ip4.sin_addr;
 	if (0) {
 		;	/* for canonical reasons */
@@ -800,8 +767,7 @@ mc:addr
 		xioresolve(opt->value2.u_string/*param2*/, NULL,
 			   xfd->para.socket.la.soa.sa_family,
 			   SOCK_DGRAM, IPPROTO_IP, &sockaddr2, &socklen2,
-			   xfd->para.socket.ip.ai_flags,
-			   xfd->para.socket.ip.res_opts);
+			   xfd->para.socket.ip.ai_flags);
 		ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
 		/* third parameter is interface */
 		if (ifindex(opt->value3.u_string/*ifindex*/,
@@ -830,8 +796,7 @@ mc:addr
 				   xfd->para.socket.la.soa.sa_family,
 				   SOCK_DGRAM, IPPROTO_IP,
 				   &sockaddr2, &socklen2,
-				   xfd->para.socket.ip.ai_flags,
-				   xfd->para.socket.ip.res_opts);
+				   xfd->para.socket.ip.ai_flags);
 			ip4_mreqn.mreq.imr_interface = sockaddr2.ip4.sin_addr;
 		}
 	}
@@ -982,8 +947,7 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
    rc = xioresolve(opt->value.u_string/*mcaddr*/, NULL,
 		   xfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP,
-		   &sockaddr1, &socklen1, xfd->para.socket.ip.ai_flags,
-		   xfd->para.socket.ip.res_opts);
+		   &sockaddr1, &socklen1, xfd->para.socket.ip.ai_flags);
    if (rc < 0) {
       return -1;
    }
@@ -992,8 +956,7 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
    rc = xioresolve(opt->value.u_string/*ifaddr*/, NULL,
 		   xfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP,
-		   &sockaddr2, &socklen2, xfd->para.socket.ip.ai_flags,
-		   xfd->para.socket.ip.res_opts);
+		   &sockaddr2, &socklen2, xfd->para.socket.ip.ai_flags);
    if (rc < 0) {
       return -1;
    }
@@ -1002,8 +965,7 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
    rc = xioresolve(opt->value.u_string/*srcaddr*/, NULL,
 		   xfd->para.socket.la.soa.sa_family,
 		   SOCK_DGRAM, IPPROTO_IP,
-		   &sockaddr3, &socklen3, xfd->para.socket.ip.ai_flags,
-		   xfd->para.socket.ip.res_opts);
+		   &sockaddr3, &socklen3, xfd->para.socket.ip.ai_flags);
    if (rc < 0) {
       return -1;
    }
@@ -1022,6 +984,47 @@ int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt) {
    }
    return 0;
 }
+
 #endif /* HAVE_STRUCT_IP_MREQ_SOURCE */
+
+
+#if HAVE_RESOLV_H
+
+/* When there are options for resolver then this function saves the current
+   resolver settings to save_res and applies the options to resolver libs state
+   in _res.
+   Returns 1 when there were options (state needs to be restored later, see
+   xio_res_restore());
+   Returns 0 when there were no options;
+   Returns -1 on error. */
+int xio_res_init(
+	struct single *sfd,
+	struct __res_state *save_res)
+{
+	if (sfd->para.socket.ip.res_opts[0] ||
+	    sfd->para.socket.ip.res_opts[1]) {
+		if (!(_res.options & RES_INIT)) {
+			if (Res_init() < 0) {
+				Error("res_init() failed");
+				return -1;
+			}
+		}
+		*save_res = _res;
+		_res.options |=  sfd->para.socket.ip.res_opts[0];
+		_res.options &= ~sfd->para.socket.ip.res_opts[1];
+		Debug2("changed _res.options from 0x%lx to 0x%lx",
+		       save_res->options, _res.options);
+		return 1;
+	}
+	return 0;
+}
+
+int xio_res_restore(
+	struct __res_state *save_res)
+{
+	_res = *save_res;
+	return 0;
+}
+#endif /* HAVE_RESOLV_H */
 
 #endif /* _WITH_IP4 || _WITH_IP6 */

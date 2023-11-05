@@ -53,7 +53,6 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
 
    if (_xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
 			      xfd->para.socket.ip.ai_flags,
-			      xfd->para.socket.ip.res_opts,
 			      &themlist, us, &uslen, &needbind, &lowport,
 			      socktype) != STAT_OK) {
       return STAT_NORETRY;
@@ -195,7 +194,6 @@ int
 	   int *pf,
 	   int protocol,
 	   const int ai_flags[2],
-	   const unsigned long res_opts[2],
 	   struct addrinfo **themlist,
 	   union sockaddr_union *us,
 	   socklen_t *uslen,
@@ -211,7 +209,7 @@ int
     if ((result =
 	xiogetaddrinfo(hostname, portname,
 		       *pf, socktype, protocol,
-		       themlist, ai_flags, res_opts))
+		       themlist, ai_flags))
        != STAT_OK) {
       return STAT_NORETRY;	/*! STAT_RETRYLATER? */
     }
@@ -222,7 +220,7 @@ int
    /* 3 means: IP address AND port accepted */
    if (retropt_bind(opts, (*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family,
 		    socktype, protocol, (struct sockaddr *)us, uslen, 3,
-		    ai_flags, res_opts)
+		    ai_flags)
        != STAT_NOACTION) {
       *needbind = true;
    } else {
@@ -271,7 +269,6 @@ int _xioopen_ipapp_listen_prepare(
 	int *pf,
 	int ipproto,
 	const int ai_flags[2],
-	const unsigned long res_opts[2],
 	union sockaddr_union *us,
 	socklen_t *uslen,
 	int socktype)
@@ -292,7 +289,7 @@ int _xioopen_ipapp_listen_prepare(
 
    result =
 	xioresolve(bindname, portname, *pf, socktype, ipproto,
-		   us, uslen, ai_flags2, res_opts);
+		   us, uslen, ai_flags2);
    if (result != STAT_OK) {
       /*! STAT_RETRY? */
       return result;
@@ -340,7 +337,6 @@ int xioopen_ipapp_listen(int argc, const char *argv[], struct opt *opts,
 
    if (_xioopen_ipapp_listen_prepare(opts, &opts0, argv[1], &pf, ipproto,
 				     xfd->stream.para.socket.ip.ai_flags,
-				     xfd->stream.para.socket.ip.res_opts,
 				     us, &uslen, socktype)
        != STAT_OK) {
       return STAT_NORETRY;

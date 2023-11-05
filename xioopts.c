@@ -2615,8 +2615,8 @@ int parseopts_table(const char **a, groups_t groups, struct opt **opts,
 	    }
 	    *buffp = '\0';
 	    if (xioresolve(buff, NULL, AF_INET, SOCK_DGRAM, IPPROTO_IP,
-			   (union sockaddr_union *)&sa, &salen, NULL,
-			   NULL/*!! !*/) != STAT_OK) {
+			   (union sockaddr_union *)&sa, &salen, NULL)
+		!= STAT_OK) {
 	       opt->desc = ODESC_ERROR; continue;
 	    }
 	    opt->value.u_ip4addr = sa.sin_addr;
@@ -3127,7 +3127,7 @@ int retropt_bind(struct opt *opts,
 				   UNIX (or'd): 1..tight
 						2..abstract
 				*/
-		 const int ai_flags[2], const unsigned long res_opts[2])
+		 const int ai_flags[2])
 {
    const char portsep[] = ":";
    const char *ends[] = { portsep, NULL };
@@ -3203,8 +3203,7 @@ int retropt_bind(struct opt *opts,
       if ((result =
 	   xioresolve(hostname[0]!='\0'?hostname:NULL, portp,
 		      af, socktype, ipproto,
-		      (union sockaddr_union *)sa, salen,
-		      ai_flags2, res_opts))
+		      (union sockaddr_union *)sa, salen, ai_flags2))
 	  != STAT_OK) {
 	 Error("error resolving bind option");
 	 return STAT_NORETRY;

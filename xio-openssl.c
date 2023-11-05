@@ -114,10 +114,10 @@ const struct optdesc opt_openssl_cipherlist = { "openssl-cipherlist", "ciphers",
 const struct optdesc opt_openssl_method     = { "openssl-method",     "method",  OPT_OPENSSL_METHOD,     GROUP_OPENSSL, PH_SPEC, TYPE_STRING, OFUNC_SPEC };
 #endif
 #if HAVE_SSL_CTX_set_min_proto_version || defined(SSL_CTX_set_min_proto_version)
-const struct optdesc opt_openssl_min_proto_version = { "openssl-min-proto-version", "min-version", OPT_OPENSSL_MIN_PROTO_VERSION, GROUP_OPENSSL, PH_INIT, TYPE_STRING, OFUNC_OFFSET, XIO_OFFSETOF(para.openssl.min_proto_version) };
+const struct optdesc opt_openssl_min_proto_version = { "openssl-min-proto-version", "min-version", OPT_OPENSSL_MIN_PROTO_VERSION, GROUP_OPENSSL, PH_OFFSET, TYPE_STRING, OFUNC_OFFSET, XIO_OFFSETOF(para.openssl.min_proto_version) };
 #endif
 #if HAVE_SSL_CTX_set_max_proto_version || defined(SSL_CTX_set_max_proto_version)
-const struct optdesc opt_openssl_max_proto_version = { "openssl-max-proto-version", "max-version", OPT_OPENSSL_MAX_PROTO_VERSION, GROUP_OPENSSL, PH_INIT, TYPE_STRING, OFUNC_OFFSET, XIO_OFFSETOF(para.openssl.max_proto_version) };
+const struct optdesc opt_openssl_max_proto_version = { "openssl-max-proto-version", "max-version", OPT_OPENSSL_MAX_PROTO_VERSION, GROUP_OPENSSL, PH_OFFSET, TYPE_STRING, OFUNC_OFFSET, XIO_OFFSETOF(para.openssl.max_proto_version) };
 #endif
 const struct optdesc opt_openssl_verify     = { "openssl-verify",     "verify",  OPT_OPENSSL_VERIFY,     GROUP_OPENSSL, PH_SPEC, TYPE_BOOL,   OFUNC_SPEC };
 const struct optdesc opt_openssl_certificate = { "openssl-certificate", "cert",  OPT_OPENSSL_CERTIFICATE, GROUP_OPENSSL, PH_SPEC, TYPE_FILENAME, OFUNC_SPEC };
@@ -329,7 +329,6 @@ static int
    result =
       _xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
 			     xfd->para.socket.ip.ai_flags,
-			     xfd->para.socket.ip.res_opts,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)  return STAT_NORETRY;
@@ -629,7 +628,6 @@ static int
 
    if (_xioopen_ipapp_listen_prepare(opts, &opts0, portname, &pf, ipproto,
 				     xfd->para.socket.ip.ai_flags,
-				     xfd->para.socket.ip.res_opts,
 				     us, &uslen, socktype)
        != STAT_OK) {
       return STAT_NORETRY;
@@ -1912,8 +1910,7 @@ static int openssl_handle_peer_certificate(struct single *xfd,
 			case 16: /* IPv6 */
 			   inet_ntop(AF_INET6, data, aBuffer, sizeof(aBuffer));
 			   if (peername != NULL) {
-			      xioip6_pton(peername, &ip6bin, xfd->para.socket.ip.ai_flags,
-					  xfd->para.socket.ip.res_opts);
+			      xioip6_pton(peername, &ip6bin, xfd->para.socket.ip.ai_flags);
 			      if (memcmp(data, &ip6bin, sizeof(ip6bin)) == 0) {
 			         Debug2("subjectAltName \"%s\" matches peername \"%s\"",
 					aBuffer, peername);

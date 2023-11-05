@@ -117,7 +117,6 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    xfd->howtoend = END_SHUTDOWN;
    retropt_int(opts, OPT_PROTOCOL_FAMILY, pf);
 
-   /* ...res_opts[] */
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
 
@@ -125,8 +124,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    if ((result =
 	xioresolve(hostname, NULL, *pf, socktype, ipproto,
 		       &xfd->peersa, &xfd->salen,
-		       xfd->para.socket.ip.ai_flags,
-		       xfd->para.socket.ip.res_opts))
+		       xfd->para.socket.ip.ai_flags))
        != STAT_OK) {
       return result;
    }
@@ -139,8 +137,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
    xfd->dtype = XIODATA_RECVFROM_SKIPIP;
 
    if (retropt_bind(opts, *pf, socktype, ipproto, &us.soa, &uslen, feats,
-		    xfd->para.socket.ip.ai_flags,
-		    xfd->para.socket.ip.res_opts)
+		    xfd->para.socket.ip.ai_flags)
        != STAT_NOACTION) {
       needbind = true;
    }
@@ -182,8 +179,7 @@ int xioopen_rawip_datagram(int argc, const char *argv[], struct opt *opts,
    /* which reply packets will be accepted - determine by range option */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, pf, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts)
+			xfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
@@ -248,8 +244,7 @@ int xioopen_rawip_recvfrom(int argc, const char *argv[], struct opt *opts,
    }
 
    if (retropt_bind(opts, pf, socktype, ipproto, &us.soa, &uslen, 1,
-		    xfd->stream.para.socket.ip.ai_flags,
-		    xfd->stream.para.socket.ip.res_opts)
+		    xfd->stream.para.socket.ip.ai_flags)
        != STAT_NOACTION) {
       needbind = true;
    }
@@ -308,8 +303,7 @@ int xioopen_rawip_recv(int argc, const char *argv[], struct opt *opts,
 
    if (retropt_bind(opts, pf, socktype, ipproto,
 		    &/*us.soa*/xfd->stream.para.socket.la.soa, &uslen, 1,
-		    xfd->stream.para.socket.ip.ai_flags,
-		    xfd->stream.para.socket.ip.res_opts)
+		    xfd->stream.para.socket.ip.ai_flags)
        == STAT_OK) {
       needbind = true;
    } else {

@@ -891,6 +891,7 @@ enum e_optcode {
 enum e_phase {
    PH_ALL,		/* not for option definitions; use in apply funcs to
 			   say "all phases" */
+   PH_OFFSET, 		/* automatically applied to xio-fd */
    PH_INIT,		/* retrieving info from original state */
    PH_EARLY,		/* before any other processing */
    PH_PREOPEN,		/* before file descriptor is created/opened */
@@ -958,7 +959,7 @@ extern int retropt_ulong(struct opt *opts, int optcode, unsigned long *result);
 extern int retropt_flag(struct opt *opts, int optcode, flags_t *result);
 extern int retropt_string(struct opt *opts, int optcode, char **result);
 extern int retropt_timespec(struct opt *opts, int optcode, struct timespec *result);
-extern int retropt_bind(struct opt *opts, int af, int socktype, int ipproto, struct sockaddr *sa, socklen_t *salen, int feats, const int ai_flags[2], const unsigned long res_opts[2]);
+extern int retropt_bind(struct opt *opts, int af, int socktype, int ipproto, struct sockaddr *sa, socklen_t *salen, int feats, const int ai_flags[2]);
 extern int applyopts(int fd, struct opt *opts, enum e_phase phase);
 extern int applyopts2(int fd, struct opt *opts, unsigned int from,
 		      unsigned int to);

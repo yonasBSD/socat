@@ -125,8 +125,8 @@ int xiocheckpeer(xiosingle_t *xfd,
 extern
 int xiosetsockaddrenv(const char *lr, union sockaddr_union *sau, socklen_t salen, int proto);
 
-extern int xioparsenetwork(const char *rangename, int pf, struct xiorange *range, const int ai_flags[2], const unsigned long res_opts[2]);
-extern int xioparserange(const char *rangename, int pf, struct xiorange *range, const int ai_flags[2], const unsigned long res_opts[2]);
+extern int xioparsenetwork(const char *rangename, int pf, struct xiorange *range, const int ai_flags[2]);
+extern int xioparserange(const char *rangename, int pf, struct xiorange *range, const int ai_flags[2]);
 
 extern int
 xiosocket(struct opt *opts, int pf, int socktype, int proto, int level);

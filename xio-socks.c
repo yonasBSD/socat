@@ -100,7 +100,6 @@ static int xioopen_socks4_connect(int argc, const char *argv[], struct opt *opts
 	 _xioopen_ipapp_prepare(opts, &opts0, sockdname, socksport,
 				&pf, ipproto,
 				xfd->para.socket.ip.ai_flags,
-				xfd->para.socket.ip.res_opts,
 				&themlist, us, &uslen,
 				&needbind, &lowport, socktype);
 
@@ -297,8 +296,7 @@ int
       if ((result = xioresolve(hostname, NULL,
 			       PF_INET, SOCK_STREAM, IPPROTO_TCP,
 			       &sau, &saulen,
-			       xfd->para.socket.ip.ai_flags,
-			       xfd->para.socket.ip.res_opts))
+			       xfd->para.socket.ip.ai_flags))
 	  != STAT_OK) {
 	 return result;	/*! STAT_RETRY? */
       }

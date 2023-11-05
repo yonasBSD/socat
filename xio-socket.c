@@ -211,7 +211,7 @@ const struct optdesc opt_setsockopt_bin    = { "setsockopt-bin",    "sockopt-bin
 const struct optdesc opt_setsockopt_string = { "setsockopt-string", "sockopt-string", OPT_SETSOCKOPT_STRING,     GROUP_SOCKET,PH_CONNECTED, TYPE_INT_INT_STRING,  OFUNC_SOCKOPT_GENERIC, 0, 0 };
 const struct optdesc opt_setsockopt_listen = { "setsockopt-listen", "sockopt-listen", OPT_SETSOCKOPT_LISTEN,     GROUP_SOCKET,PH_PREBIND,   TYPE_INT_INT_BIN,     OFUNC_SOCKOPT_GENERIC, 0, 0 };
 
-const struct optdesc opt_null_eof = { "null-eof", NULL, OPT_NULL_EOF, GROUP_SOCKET, PH_INIT, TYPE_BOOL, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.null_eof) };
+const struct optdesc opt_null_eof = { "null-eof", NULL, OPT_NULL_EOF, GROUP_SOCKET, PH_OFFSET, TYPE_BOOL, OFUNC_OFFSET, XIO_OFFSETOF(para.socket.null_eof) };
 
 
 #if WITH_GENERICSOCKET
@@ -277,7 +277,7 @@ int xioopen_socket_connect(int argc, const char *argv[], struct opt *opts,
 
    socket_init(0, &us);
    if (retropt_bind(opts, 0 /*pf*/, socktype, proto, (struct sockaddr *)&us, &uslen, 3,
-		    xfd->para.socket.ip.ai_flags, xfd->para.socket.ip.res_opts)
+		    xfd->para.socket.ip.ai_flags)
        != STAT_NOACTION) {
       needbind = true;
       us.soa.sa_family = pf;
@@ -446,7 +446,6 @@ int _xioopen_socket_sendto(const char *pfname, const char *type,
       themsize;
 #endif
 
-   /* ...res_opts[] */
    if (applyopts_single(xfd, opts, PH_INIT) < 0)  return -1;
    applyopts(-1, opts, PH_INIT);
 
@@ -541,8 +540,7 @@ int xioopen_socket_recvfrom(int argc, const char *argv[], struct opt *opts,
 
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, 0, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts)
+			xfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
@@ -623,8 +621,7 @@ int xioopen_socket_recv(int argc, const char *argv[], struct opt *opts,
 
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, 0, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts)
+			xfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
@@ -706,8 +703,7 @@ int xioopen_socket_datagram(int argc, const char *argv[], struct opt *opts,
    /* which reply sockets will accept - determine by range option */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, 0, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts)
+			xfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
@@ -1179,8 +1175,7 @@ int _xioopen_dgram_recvfrom(struct single *xfd, int xioflags,
    /* for generic sockets, this has already been retrieved */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, pf, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts)
+			xfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
@@ -1384,8 +1379,7 @@ int _xioopen_dgram_recv(struct single *xfd, int xioflags,
 #if WITH_IP4 /*|| WITH_IP6*/
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, pf, &xfd->para.socket.range,
-			xfd->para.socket.ip.ai_flags,
-			xfd->para.socket.ip.res_opts)
+			xfd->para.socket.ip.ai_flags)
 	  < 0) {
 	 free(rangename);
 	 return STAT_NORETRY;
@@ -1833,8 +1827,7 @@ int xioparsenetwork(
 	const char *rangename,
 	int pf,
 	struct xiorange *range,
-	const int ai_flags[2],
-	const unsigned long res_opts[2])
+	const int ai_flags[2])
 {
    size_t addrlen = 0, masklen = 0;
    int result;
@@ -1842,12 +1835,12 @@ int xioparsenetwork(
   switch (pf) {
 #if WITH_IP4
   case PF_INET:
-     return xioparsenetwork_ip4(rangename, range, ai_flags, res_opts);
+     return xioparsenetwork_ip4(rangename, range, ai_flags);
    break;
 #endif /* WITH_IP4 */
 #if WITH_IP6
    case PF_INET6:
-      return xioparsenetwork_ip6(rangename, range, ai_flags, res_opts);
+      return xioparsenetwork_ip6(rangename, range, ai_flags);
       break;
 #endif /* WITH_IP6 */
   case PF_UNSPEC:
@@ -1912,11 +1905,10 @@ int xioparserange(
 	const char *rangename,
 	int pf,
 	struct xiorange *range,
-	const int ai_flags[2],
-	const unsigned long res_opts[2])
+	const int ai_flags[2])
 {
    int i;
-   if (xioparsenetwork(rangename, pf, range, ai_flags, res_opts) < 0) {
+   if (xioparsenetwork(rangename, pf, range, ai_flags) < 0) {
       Error2("failed to parse or resolve range \"%s\" (pf=%d)", rangename, pf);
       return -1;
    }

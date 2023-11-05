@@ -10827,13 +10827,17 @@ rc1=$?
 kill $pid0 2>/dev/null; wait
 if echo "$da" |diff - ${tf}1 >"$tdiff"; then
     $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
-    echo "$CMD1"
     cat "${te}0"
-#    cat "${te}1"
+    echo "$CMD1"
+    cat "${te}1"
     cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
@@ -10888,13 +10892,17 @@ rc1=$?
 kill $pid0 2>/dev/null; wait
 if echo "$da" |diff - ${tf}1 >"$tdiff"; then
     $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
-    echo "$CMD1"
     cat "${te}0"
-#    cat "${te}1"
+    echo "$CMD1"
+    cat "${te}1"
     cat "$tdiff"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"

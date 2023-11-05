@@ -134,8 +134,7 @@ static int xioopen_tun(int argc, const char *argv[], struct opt *opts, int xiofl
           return STAT_RETRYLATER;
        }
        if ((result = xioparsenetwork(ifaddr, pf, &network,
-				     xfd->stream.para.socket.ip.ai_flags,
-				     xfd->stream.para.socket.ip.res_opts))
+				     xfd->stream.para.socket.ip.ai_flags))
 	   != STAT_OK) {
           /*! recover */
           return result;

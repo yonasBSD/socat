@@ -2270,7 +2270,7 @@ label(OPTION_RES_DNSRCH)dit(bf(tt(res-dnsrch)))
    option flags. Append "=0" to clear a default option. See man
    NOEXPAND(resolver(5)) for more information on these options. These flags are
    per process, however socat() restores the old values after name resolution.
-   Please note that these flags only affects DNS resolution, but not hosts or
+   Please note that these flags only affect DNS resolution, but not hosts or
    NIS based name resolution, and they have no effect when (g)libc retrieves
    the results from code(nscd).
 enddit()

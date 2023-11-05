@@ -17,8 +17,7 @@
 int xioparsenetwork_ip4(
 	const char *rangename,
 	struct xiorange *range,
-	const int ai_flags[2],
-	const unsigned long res_opts[2])
+	const int ai_flags[2])
 {
    struct in_addr *netaddr_in = &range->netaddr.ip4.sin_addr;
    struct in_addr *netmask_in = &range->netmask.ip4.sin_addr;
@@ -51,7 +50,7 @@ int xioparsenetwork_ip4(
       }
    } else if (delimpos = strchr(rangename1, ':')) {
       if ((rc = xioresolve(delimpos+1, NULL, PF_INET, 0, 0,
-			   &sau, &socklen, ai_flags, res_opts))
+			   &sau, &socklen, ai_flags))
 	  != STAT_OK) {
 	 return rc;
       }
@@ -64,7 +63,7 @@ int xioparsenetwork_ip4(
    {
       *delimpos = 0;
       if ((rc = xioresolve(rangename1, NULL, PF_INET, 0, 0,
-			   &sau, &socklen, ai_flags, res_opts))
+			   &sau, &socklen, ai_flags))
 	  != STAT_OK) {
 	 return rc;
       }

@@ -127,8 +127,7 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
    }
 
    result = _xioopen_proxy_prepare(proxyvars, opts, targetname, targetport,
-				   xfd->para.socket.ip.ai_flags,
-				   xfd->para.socket.ip.res_opts);
+				   xfd->para.socket.ip.ai_flags);
    if (result != STAT_OK)
       return result;
 
@@ -144,7 +143,6 @@ static int xioopen_proxy_connect(int argc, const char *argv[], struct opt *opts,
       _xioopen_ipapp_prepare(opts, &opts0, proxyname, proxyport,
 			     &pf, ipproto,
 			     xfd->para.socket.ip.ai_flags,
-			     xfd->para.socket.ip.res_opts,
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)
@@ -273,8 +271,7 @@ int _xioopen_proxy_prepare(
 	struct opt *opts,
 	const char *targetname,
 	const char *targetport,
-	const int ai_flags[2],
-	const unsigned long res_opts[2]) {
+	const int ai_flags[2]) {
    union sockaddr_union host;
    socklen_t socklen = sizeof(host);
    int rc;
@@ -334,7 +331,7 @@ int _xioopen_proxy_prepare(
 	 represented in CONNECT commands this code might need to be extended */
       rc = xioresolve(targetname, targetport, PF_INET/*!?*/,
 		      SOCK_STREAM, IPPROTO_TCP,
-		      &host, &socklen, ai_flags, res_opts);
+		      &host, &socklen, ai_flags);
       if (rc != STAT_OK) {
 	 proxyvars->targetaddr = strdup(targetname);
       } else {

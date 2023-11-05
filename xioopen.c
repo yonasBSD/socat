@@ -588,8 +588,22 @@ static xiosingle_t *xioparse_single(const char **addr) {
 }
 
 int xioopen_single(xiofile_t *xfd, int xioflags) {
+   struct single *sfd = &xfd->stream;
    const struct addrdesc *addrdesc;
    int result;
+   /* Values to be saved until xioopen() is finished */
+   int do_res;
+#if HAVE_RESOLV_H
+   struct __res_state save_res;
+#endif /* HAVE_RESOLV_H */
+
+   if (applyopts_single(sfd, sfd->opts, PH_OFFSET) < 0)
+      return -1;
+
+#if HAVE_RESOLV_H
+   if ((do_res = xio_res_init(sfd, &save_res)) < 0)
+      return STAT_NORETRY;
+#endif /* HAVE_RESOLV_H */
 
    if ((xioflags&XIO_ACCMODE) == XIO_RDONLY) {
       xfd->tag = XIO_TAG_RDONLY;
@@ -607,6 +621,12 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
 			      xfd->stream.opts, xioflags, xfd,
 			      addrdesc->groups, addrdesc->arg1,
 			      addrdesc->arg2, addrdesc->arg3);
+
+#if HAVE_RESOLV_H
+   if (do_res)
+      xio_res_init(sfd, &save_res);
+#endif /* HAVE_RESOLV_H */
+
    return result;
 }
 
