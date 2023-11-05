@@ -72,7 +72,6 @@ int xioinitialize(void) {
    {
       const char *default_ip;
 
-      // xioparms.default_ip = WITH_DEFAULT_IPV;
       default_ip = getenv("SOCAT_DEFAULT_LISTEN_IP");
       if (default_ip != NULL) {
 	 switch (default_ip[0]) {
@@ -89,7 +88,6 @@ int xioinitialize(void) {
    {
       const char *preferred_ip;
 
-      // xioparms.preferred_ip = WITH_DEFAULT_IPV;
       preferred_ip = getenv("SOCAT_PREFERRED_RESOLVE_IP");
       if (preferred_ip != NULL) {
 	 switch (preferred_ip[0]) {

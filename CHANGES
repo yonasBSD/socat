@@ -100,6 +100,10 @@ Features:
 	confirm option ipv6-v6only).
 	Added option ai-passive to control this flag explicitely.
 
+	New option ai-v4mapped (v4mapped) sets or unsets the AI_V4MAPPED flag
+	of the resolver. For Socat addresses requiring IPv6 addresses, this
+	resolves IPv4 addresses to the approriate IPv6 address [::ffff:*:*].
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

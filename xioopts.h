@@ -204,6 +204,7 @@ enum e_optcode {
    OPT_ADDRESS_FAMILY = 1,
    OPT_AI_ADDRCONFIG, 	/* getaddrinfo() */
    OPT_AI_PASSIVE, 	/* getaddrinfo() */
+   OPT_AI_V4MAPPED, 	/* getaddrinfo() */
    /* these are not alphabetically, I know... */
    OPT_B0,		/* termios.c_cflag */
    OPT_B50,		/* termios.c_cflag */

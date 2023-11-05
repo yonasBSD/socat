@@ -83,6 +83,7 @@ const struct optdesc opt_ip_recvif = { "ip-recvif", "recvdstaddrif",OPT_IP_RECVI
 
 #ifdef AI_ADDRCONFIG
 const struct optdesc opt_ai_addrconfig = { "ai-addrconfig", "addrconfig", OPT_AI_ADDRCONFIG, GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_ADDRCONFIG };
+const struct optdesc opt_ai_v4mapped   = { "ai-v4mapped",   "v4mapped",   OPT_AI_V4MAPPED,   GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_V4MAPPED };
 #endif
 #ifdef AI_PASSIVE
 const struct optdesc opt_ai_passive    = { "ai-passive",    "passive",    OPT_AI_PASSIVE,    GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_PASSIVE    };
@@ -227,7 +228,6 @@ int xiogetaddrinfo(const char *node, const char *service,
    }
    if (family == 0)
       hints.ai_flags |= AI_ADDRCONFIG;
-   hints.ai_flags |= AI_PASSIVE 	/* important for IPv4+IPv6 listen */;
 #if HAVE_GETADDRINFO
    if (node != NULL || service != NULL) {
       struct addrinfo *record;
@@ -461,7 +461,6 @@ int xioresolve(const char *node, const char *service,
    if (ai_flags[0] & AI_PASSIVE && family == PF_UNSPEC) {
       /* We select the first IPv6 address, if available,
 	 because this might accept IPv4 connections too */
-      struct addrinfo *aip = res;
       while (aip != NULL) {
 	 if (aip->ai_family == PF_INET6)
 	    break;

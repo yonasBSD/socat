@@ -354,7 +354,6 @@ int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   //xioinit_ip(&pf, xioparms.preferred_ip);
    retropt_socket_pf(opts, &pf);
    if ((result = _xioopen_udp_sendto(argv[1], argv[2], opts, xioflags, xfd,
 				     groups, pf, socktype, ipproto))
@@ -451,7 +450,6 @@ int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   //xioinit_ip(&pf, xioparms.preferred_ip);
    if ((hostname = strdup(argv[1])) == NULL) {
       Error1("strdup(\"%s\"): out of memory", argv[1]);
       return STAT_RETRYLATER;
@@ -601,7 +599,6 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
       return STAT_NORETRY;
    }
 
-   //xioinit_ip(&pf, xioparms.default_ip);
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6

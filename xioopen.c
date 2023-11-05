@@ -386,10 +386,6 @@ xiofile_t *xioopen(const char *addr,	/* address specification */
 		   int xioflags) {
    xiofile_t *xfd;
 
-   //if (xioinitialize() < 0) {
-   //   return NULL;
-   //}
-
    Debug1("xioopen(\"%s\")", addr);
 
    if ((xfd = xioparse_dual(&addr)) == NULL) {

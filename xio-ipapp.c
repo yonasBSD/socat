@@ -36,10 +36,9 @@ int xioopen_ipapp_connect(int argc, const char *argv[], struct opt *opts,
    bool needbind = false;
    bool lowport = false;
    int level;
-   int result;
-
    struct addrinfo **ai_sorted;
    int i;
+   int result;
 
    if (argc != 3) {
       Error2("%s: wrong number of parameters (%d instead of 2)", argv[0], argc-1);

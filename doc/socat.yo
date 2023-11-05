@@ -2243,12 +2243,20 @@ dit(bf(tt(ip-transparent)))
 label(OPTION_AI_ADDRCONFIG)
 dit(bf(tt(ai-addrconfig[=0|1]))), dit(bf(tt(addrconfig[=0|1])))
    Sets or unsets the AI_ADDRCONFIG flag to prevent name resolution to address
-   families that are not configured (e.g. IPv6). Default value is 1 in case the
-   resolver does not get an address family hint from Socat address or defaults.
+   families that are not available on the computer (e.g. IPv6). Default value
+   is 1 in case the resolver does not get an address family hint from Socat
+   address or defaults.
+label(OPTION_AI_PASSIVE)
 dit(bf(tt(ai-passive[=0|1]))), dit(bf(tt(passive[=0|1])))
-   Sets of unsets the AI_ADDRCONFIG flag for code(getaddrinfo)) calls. Default
-   is 1 for LISTEN, RECV, and RECVFROM type addresses, and with
+   Sets of unsets the AI_ADDRCONFIG flag for code(getaddrinfo()) calls.
+   Default is 1 for LISTEN, RECV, and RECVFROM type addresses, and with
    link(bind)(OPTION_BIND) option. 
+label(OPTION_AI_V4MAPPED)
+dit(bf(tt(ai-v4mapped[=0|1]))), dit(bf(tt(v4mapped[=0|1])))
+   Sets or unsets the AI_V4MAPPED flag for code(getaddrinfo()). With socat()
+   addresses requiring IPv6 addresses, this resolves IPv4 addresses to the
+   approriate IPv6 address [::ffff:*:*]. For IPv6 Socat addresses, the default
+   is 1.
 label(OPTION_RES_DEBUG)dit(bf(tt(res-debug)))
 label(OPTION_RES_AAONLY)dit(bf(tt(res-aaonly)))
 label(OPTION_RES_USEVC)dit(bf(tt(res-usevc)))

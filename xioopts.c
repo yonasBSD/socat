@@ -182,6 +182,9 @@ const struct optname optionnames[] = {
 #if defined(AI_PASSIVE	)
 	IF_IP	  ("ai-passive", 		&opt_ai_passive)
 #endif
+#if defined(AI_V4MAPPED)
+	IF_IP	  ("ai-v4mapped", 		&opt_ai_v4mapped)
+#endif
 	IF_INTERFACE("allmulti",	&opt_iff_allmulti)
 #if WITH_LIBWRAP && defined(HAVE_HOSTS_ALLOW_TABLE)
 	IF_IPAPP  ("allow-table",	&opt_tcpwrap_hosts_allow_table)
@@ -1848,6 +1851,9 @@ const struct optname optionnames[] = {
 #if HAVE_RESOLV_H
 	IF_IP     ("usevc",	&opt_res_usevc)
 #endif /* HAVE_RESOLV_H */
+#if defined(AI_V4MAPPED)
+	IF_IP	  ("v4mapped", 		&opt_ai_v4mapped)
+#endif
 #ifdef IPV6_V6ONLY
 	IF_IP6    ("v6only",	&opt_ipv6_v6only)
 #endif
