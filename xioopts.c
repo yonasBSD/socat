@@ -179,6 +179,9 @@ const struct optname optionnames[] = {
 #if defined(AI_ADDRCONFIG)
 	IF_IP	  ("ai-addrconfig", 		&opt_ai_addrconfig)
 #endif
+#if defined(AI_PASSIVE	)
+	IF_IP	  ("ai-passive", 		&opt_ai_passive)
+#endif
 	IF_INTERFACE("allmulti",	&opt_iff_allmulti)
 #if WITH_LIBWRAP && defined(HAVE_HOSTS_ALLOW_TABLE)
 	IF_IPAPP  ("allow-table",	&opt_tcpwrap_hosts_allow_table)
@@ -1251,6 +1254,9 @@ const struct optname optionnames[] = {
 	IF_TERMIOS("parodd",	&opt_parodd)
 #ifdef SO_PASSCRED
 	IF_SOCKET ("passcred",	&opt_so_passcred)
+#endif
+#if defined(AI_PASSIVE	)
+	IF_IP	  ("passive", 			&opt_ai_passive)
 #endif
 	IF_EXEC   ("path",	&opt_path)
 #ifdef TCP_PAWS	/* OSF1 */
@@ -3125,6 +3131,7 @@ int retropt_bind(struct opt *opts,
    char hostname[512], *hostp = hostname, *portp = NULL;
    size_t hostlen = sizeof(hostname)-1;
    int parsres;
+   int ai_flags2[2];
    int result;
 
    if (retropt_string(opts, OPT_BIND, &bindname) < 0) {
@@ -3180,11 +3187,18 @@ int retropt_bind(struct opt *opts,
 	    portp = bindp + strlen(portsep);
 	 }
       }
+
+      /* Set AI_PASSIVE, except when it is explicitely disabled */
+      ai_flags2[0] = ai_flags[0];
+      ai_flags2[1] = ai_flags[1];
+      if (!(ai_flags2[1] & AI_PASSIVE))
+      ai_flags2[0] |= AI_PASSIVE;
+
       if ((result =
 	   xioresolve(hostname[0]!='\0'?hostname:NULL, portp,
 		      af, socktype, ipproto,
 		      (union sockaddr_union *)sa, salen,
-		      ai_flags, res_opts))
+		      ai_flags2, res_opts))
 	  != STAT_OK) {
 	 Error("error resolving bind option");
 	 return STAT_NORETRY;

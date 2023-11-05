@@ -84,6 +84,14 @@ Features:
 	New option ai-addrconfig disables name resolution to protocol families
 	that are not configured on the computer (e.g. IPv6)
 
+	Flag AI_PASSIVE is now automatically applied for LISTEN, RECV, and
+	RECVFROM type addresses, and with bind option. In addition to its
+	application to the getaddrinfo() function, when this flag is set while
+	no IP version is preferred by build, environment, option, or address
+	type, Socat chooses IPv6 because this might activate both versions (but
+	confirm option ipv6-v6only).
+	Added option ai-passive to control this flag explicitely.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

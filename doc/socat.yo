@@ -2245,6 +2245,10 @@ dit(bf(tt(ai-addrconfig[=0|1]))), dit(bf(tt(addrconfig[=0|1])))
    Sets or unsets the AI_ADDRCONFIG flag to prevent name resolution to address
    families that are not configured (e.g. IPv6). Default value is 1 in case the
    resolver does not get an address family hint.
+dit(bf(tt(ai-passive[=0|1]))), dit(bf(tt(passive[=0|1])))
+   Sets of unsets the AI_ADDRCONFIG flag for code(getaddrinfo)) calls. Default
+   is 1 for LISTEN, RECV, and RECVFROM type addresses, and with
+   link(bind)(OPTION_BIND) option. 
 label(OPTION_RES_DEBUG)dit(bf(tt(res-debug)))
 label(OPTION_RES_AAONLY)dit(bf(tt(res-aaonly)))
 label(OPTION_RES_USEVC)dit(bf(tt(res-usevc)))
@@ -2258,7 +2262,9 @@ label(OPTION_RES_DNSRCH)dit(bf(tt(res-dnsrch)))
    option flags. Append "=0" to clear a default option. See man
    NOEXPAND(resolver(5)) for more information on these options. These flags are
    per process, however socat() restores the old values after name resolution.
-   
+   Please note that these flags only affects DNS resolution, but not hosts or
+   NIS based name resolution, and they have no effect when (g)libc retrieves
+   the results from code(nscd).
 enddit()
 
 startdit()enddit()nl()

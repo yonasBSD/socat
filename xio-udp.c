@@ -507,6 +507,7 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
 		     int pf, int socktype, int ipproto) {
    union sockaddr_union us;
    socklen_t uslen = sizeof(us);
+   int ai_flags2[2];
    int result;
 
    if (argc != 2) {
@@ -532,9 +533,15 @@ int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts,
 #endif
    }
 
+   /* Set AI_PASSIVE, except when it is explicitely disabled */
+   ai_flags2[0] = xfd->stream.para.socket.ip.ai_flags[0];
+   ai_flags2[1] = xfd->stream.para.socket.ip.ai_flags[1];
+   if (!(ai_flags2[1] & AI_PASSIVE))
+      ai_flags2[0] |= AI_PASSIVE;
+
    if ((result =
 	xioresolve(NULL, argv[1], pf, socktype, ipproto, &us, &uslen,
-		   xfd->stream.para.socket.ip.ai_flags,
+		   ai_flags2,
 		   xfd->stream.para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
@@ -586,6 +593,7 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
    union sockaddr_union us;
    socklen_t uslen = sizeof(us);
    char *rangename;
+   int ai_flags2[2];
    int result;
 
    if (argc != 2) {
@@ -610,10 +618,15 @@ int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts,
 #endif
    }
 
+   /* Set AI_PASSIVE, except when it is explicitely disabled */
+   ai_flags2[0] = xfd->stream.para.socket.ip.ai_flags[0];
+   ai_flags2[1] = xfd->stream.para.socket.ip.ai_flags[1];
+   if (!(ai_flags2[1] & AI_PASSIVE))
+      ai_flags2[0] |= AI_PASSIVE;
+
    if ((result =
 	xioresolve(NULL, argv[1], pf, socktype, ipproto, &us, &uslen,
-		   xfd->stream.para.socket.ip.ai_flags,
-		   xfd->stream.para.socket.ip.res_opts))
+		   ai_flags2, xfd->stream.para.socket.ip.res_opts))
        != STAT_OK) {
       return result;
    }

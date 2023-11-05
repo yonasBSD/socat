@@ -259,14 +259,22 @@ int _xioopen_ipapp_listen_prepare(
 	int socktype)
 {
    char *bindname = NULL;
+   int ai_flags2[2];
    int result;
 
    retropt_socket_pf(opts, pf);
 
    retropt_string(opts, OPT_BIND, &bindname);
+
+   /* Set AI_PASSIVE, except when it is explicitely disabled */
+   ai_flags2[0] = ai_flags[0];
+   ai_flags2[1] = ai_flags[1];
+   if (!(ai_flags2[1] & AI_PASSIVE))
+      ai_flags2[0] |= AI_PASSIVE;
+
    result =
 	xioresolve(bindname, portname, *pf, socktype, ipproto,
-		   us, uslen, ai_flags, res_opts);
+		   us, uslen, ai_flags2, res_opts);
    if (result != STAT_OK) {
       /*! STAT_RETRY? */
       return result;

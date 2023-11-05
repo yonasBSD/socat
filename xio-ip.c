@@ -84,6 +84,9 @@ const struct optdesc opt_ip_recvif = { "ip-recvif", "recvdstaddrif",OPT_IP_RECVI
 #ifdef AI_ADDRCONFIG
 const struct optdesc opt_ai_addrconfig = { "ai-addrconfig", "addrconfig", OPT_AI_ADDRCONFIG, GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_ADDRCONFIG };
 #endif
+#ifdef AI_PASSIVE
+const struct optdesc opt_ai_passive    = { "ai-passive",    "passive",    OPT_AI_PASSIVE,    GROUP_SOCK_IP, PH_INIT, TYPE_BOOL, OFUNC_OFFSET_MASKS, XIO_OFFSETOF(para.socket.ip.ai_flags), XIO_SIZEOF(para.socket.ip.ai_flags), AI_PASSIVE    };
+#endif
 
 #if WITH_RES_DEPRECATED
 #  define WITH_RES_AAONLY 1
