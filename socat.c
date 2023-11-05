@@ -610,6 +610,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_SOCKS4A\n", fd);
 #endif
+#ifdef WITH_SOCKS5
+   fprintf(fd, "  #define WITH_SOCKS5 %d\n", WITH_SOCKS5);
+#else
+   fputs("  #undef WITH_SOCKS5\n", fd);
+#endif
 #ifdef WITH_VSOCK
    fprintf(fd, "  #define WITH_VSOCK %d\n", WITH_VSOCK);
 #else

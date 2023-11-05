@@ -207,6 +207,12 @@ const struct addrname addressnames[] = {
 #if WITH_SOCKS4A
    { "SOCKS4A",			&xioaddr_socks4a_connect },
 #endif
+#if WITH_SOCKS5
+   { "SOCKS5", 		&xioaddr_socks5_connect },
+   { "SOCKS5-BIND", 	&xioaddr_socks5_listen },
+   { "SOCKS5-CONNECT", 	&xioaddr_socks5_connect },
+   { "SOCKS5-LISTEN", 	&xioaddr_socks5_listen },
+#endif
 #if WITH_OPENSSL
    { "SSL",		&xioaddr_openssl },
 #if WITH_LISTEN

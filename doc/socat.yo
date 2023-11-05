@@ -971,13 +971,47 @@ label(ADDRESS_SOCKS4)dit(bf(tt(SOCKS4:<socks-server>:<host>:<port>)))
    link(pf)(OPTION_PROTOCOL_FAMILY),
    link(retry)(OPTION_RETRY)nl()
    See also:
+   link(SOCKS5)(ADDRESS_SOCKS5_CONNECT),
    link(SOCKS4A)(ADDRESS_SOCKS4A),
    link(PROXY)(ADDRESS_PROXY_CONNECT),
    link(TCP)(ADDRESS_TCP_CONNECT)
+
 label(ADDRESS_SOCKS4A)dit(bf(tt(SOCKS4A:<socks-server>:<host>:<port>)))
    like link(SOCKS4)(ADDRESS_SOCKS4), but uses socks protocol version 4a, thus
    leaving host name resolution to the socks server.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP4)(GROUP_IP4),link(IP6)(GROUP_IP6),link(TCP)(GROUP_TCP),link(SOCKS4)(GROUP_SOCKS),link(RETRY)(GROUP_RETRY) nl()
+
+label(ADDRESS_SOCKS5_CONNECT)dit(bf(tt(SOCKS5-CONNECT:<socks-server>:<socks-port>:<target-host>:<target-port>)))
+   Connects via <socks-server> [link(IP address)(TYPE_IP_ADDRESS)]
+   to <target-host> [link(IPv4 address)(TYPE_IPV4_ADDRESS)]
+   on <target-port> [link(TCP service)(TYPE_TCP_SERVICE)],
+   using socks version 5 protocol over TCP. Currently no authentication mechanism is provided.nl()
+   This address type is experimental.nl()
+   Option groups: link(FD)(GROUP_FD), link(SOCKET)(GROUP_SOCKET), link(IP4)(GROUP_IP4), link(IP6)(GROUP_IP6), link(TCP)(GROUP_TCP), link(CHILD)(GROUP_CHILD), link(RETRY)(GROUP_RETRY)nl()
+   Useful options:
+   link(sourceport)(OPTION_SOURCEPORT),
+   link(pf)(OPTION_PROTOCOL_FAMILY),
+   link(retry)(OPTION_RETRY)nl()
+   See also:
+   link(SOCKS5-LISTEN)(ADDRESS_SOCKS5_LISTEN),
+   link(SOCKS4)(ADDRESS_SOCKS4),
+   link(SOCKS4A)(ADDRESS_SOCKS4A),
+   link(PROXY)(ADDRESS_PROXY_CONNECT),
+   link(TCP)(ADDRESS_TCP_CONNECT)
+
+label(ADDRESS_SOCKS5_LISTEN)dit(bf(tt(SOCKS5-LISTEN:<socks-server>:<socks-port>:<listen-host>:<listen-port>)))
+   Connects to <socks-server> [link(IP address)(TYPE_IP_ADDRESS)]
+   using socks version 5 protocol over TCP
+   and makes it listen for incoming connections on <listen-port> [link(TCP service)(TYPE_TCP_SERVICE)], binding to <-listen-host> [link(IPv4 address)(TYPE_IPV4_ADDRESS)]
+   Currently not authentication mechanism is provided. This address type is experimental.
+   Option groups: link(FD)(GROUP_FD), link(SOCKET)(GROUP_SOCKET), link(IP4)(GROUP_IP4), link(IP6)(GROUP_IP6), link(TCP)(GROUP_TCP), link(CHILD)(GROUP_CHILD), link(RETRY)(GROUP_RETRY)nl()
+   Useful options:
+   link(sourceport)(OPTION_SOURCEPORT),
+   link(pf)(OPTION_PROTOCOL_FAMILY),
+   link(retry)(OPTION_RETRY)nl()
+   See also:
+   link(SOCKS5-CONNECT)(ADDRESS_SOCKS5_CONNECT),
+
 label(ADDRESS_STDERR)dit(bf(tt(STDERR)))
    Uses file descriptor 2.nl()
    Option groups: link(FD)(GROUP_FD) (link(TERMIOS)(GROUP_TERMIOS),link(REG)(GROUP_REG),link(SOCKET)(GROUP_SOCKET)) nl()

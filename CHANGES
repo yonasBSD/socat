@@ -122,6 +122,11 @@ Features:
 	transfer. This can be used with "inetd mode" of systemd.
 	Test: ACCEPT_FD
 
+	Added experimental socks5 TCP client support (connect,bind); syntax:
+	SOCKS5-CONNECT:<socks-server>:<socks-port>:<target-host>:<target-port>
+	SOCKS5-LISTEN:<socks-server>:<socks-port>:<listen-host>:<listen-port>
+	Thanks to Charlie Svensson and others for contributions.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/
