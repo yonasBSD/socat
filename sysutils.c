@@ -44,7 +44,7 @@ ssize_t writefull(int fd, const void *buff, size_t bytes) {
 	 default: return -1;
 	 }
       } else if (writt+chk < bytes) {
-	 Warn4("write(%d, %p, "F_Zu"): only wrote "F_Zu" bytes, trying to continue ",
+	 Warn4("write(%d, %p, "F_Zu"): only wrote "F_Zu" bytes, trying to continue (rev.direction is blocked)",
 	       fd, (const char *)buff+writt, bytes-writt, chk);
 	 writt += chk;
       } else {
@@ -52,6 +52,7 @@ ssize_t writefull(int fd, const void *buff, size_t bytes) {
 	 break;
       }
    }
+   Notice3("write(%d, %p, "F_Zu") completed", fd, (const char *)buff, bytes);
    return writt;
 }
 

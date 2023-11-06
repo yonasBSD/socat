@@ -1984,6 +1984,21 @@ enddit()
 startdit()enddit()nl()
 
 
+label(GROUP_PIPE)em(bf(PIPE options))
+
+These options may be applied to pipes (fifos).
+
+startdit()
+label(OPTION_F_SETPIPE_SZ)dit(bf(tt(f-setpipe-sz=<int>)))
+dit(bf(tt(setpipe=<int>)))
+   Set the number of bytes a pipe can buffer. Where more bytes are written the
+   writing process might block. When more bytes are written in a single
+   tt(write()) the writing process blocks and might never recover.
+enddit()
+
+startdit()enddit()nl()
+
+
 label(GROUP_ADDRS)em(bf(General address options))
 
 These options may be applied to all address types. They change some process

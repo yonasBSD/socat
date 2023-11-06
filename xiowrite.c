@@ -96,12 +96,11 @@ ssize_t xiowrite(xiofile_t *file, const void *buff, size_t bytes) {
       }
       if ((size_t)writt < bytes) {
 	 char infobuff[256];
-	 Warn7("sendto(%d, %p, "F_Zu", 0, %s, "F_socklen") only wrote "F_Zu" of "F_Zu" bytes",
+	 Warn7("sendto(%d, %p, "F_Zu", 0, %s, "F_socklen") only sent "F_Zu" of "F_Zu" bytes",
 	       pipe->fd, buff, bytes,
 	       sockaddr_info(&pipe->peersa.soa, pipe->salen,
 			     infobuff, sizeof(infobuff)),
 	       pipe->salen, writt, bytes);
-      } else {
       }
       {
 	 char infobuff[256];

@@ -7652,25 +7652,27 @@ touch "${tf}2"
 sleep 1
 # read from the first file
 sh -c "$CMD" 2>"$te"
-if [ $? -ne 0 ]; then # command failed
-    $PRINTF "${FAILED}:\n"
+rc=$?
+if [ $rc -ne 0 ]; then # command failed
+    $PRINTF "${FAILED} (rc=$rc):\n"
     echo "$CMD"
-    cat "$te"
+    cat "$te" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
 # check which file has a later atime stamp
 if [ $(ls -ltu "${tf}1" "${tf}2" |head -1 |sed 's/.* //') != "${tf}2" ];
 then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD"
-   cat "$te"
+    $PRINTF "$FAILED (bad order):\n"
+    echo "$CMD" >&2
+    cat "$te"
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "$te"; fi
-   numOK=$((numOK+1))
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD"; fi
+    if [ "$DEBUG" ];   then cat "${te}" >&2; fi
+    numOK=$((numOK+1))
 fi # wrong time stamps
 fi # command ok
 fi ;; # NUMCOND, feats
@@ -17995,6 +17997,133 @@ fi # NUMCOND
  ;;
 esac
 PORT=$((PORT+1))
+N=$((N+1))
+
+
+# Test the new f-setpipe-sz option on a STDIN pipe
+NAME=STDIN_F_SETPIPE_SZ
+case "$TESTS" in
+*%$N%*|*%functions%*|*%filan%*|*%dual%*|*%stdio%*|*%exec%*|*%pipe%*|*%f-setpipe-sz%*|*%$NAME%*)
+TEST="$NAME: f-setpipe-sz on STDIN"
+# Start Socat in a shell pipe and have it calling Filan via EXEC and nofork
+# Check Filan output if pipe size of its input pipe is modified.
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! $(type true >/dev/null 2>&1); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}true not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions f-setpipe-sz nofork) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+newport tcp4 	# or whatever proto, or drop this line
+# Find the default pipe size
+PIPESZ="$(echo |$FILAN -n 0 |grep "0:" |head -n 1 |sed 's/.*F_GETPIPE_SZ=\([0-9][0-9]*\).*/\1/')"
+PIPESZ2=$((2*PIPESZ))
+CMD0="$TRACE $SOCAT $opts STDIN,f-setpipe-sz=$PIPESZ2!!STDOUT EXEC:$FILAN,nofork"
+printf "test $F_n $TEST... " $N
+true |$CMD0 >"${tf}" 2>"${te}0"
+rc0=$?
+PIPESZ2b="$(cat "$tf" |grep "0:" |head -n 1 |sed 's/.*F_GETPIPE_SZ=\([0-9][0-9]*\).*/\1/')"
+if [ "$rc0" -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif ! diff <(echo $PIPESZ2) <(echo $PIPESZ2b) >$tdiff; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    echo "diff:" >&2
+    cat "$tdiff" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the new f-setpipe-sz option on EXEC with pipes
+NAME=EXEC_F_SETPIPE_SZ
+case "$TESTS" in
+*%$N%*|*%functions%*|*%filan%*|*%stdio%*|*%exec%*|*%pipe%*|*%f-setpipe-sz%*|*%$NAME%*)
+TEST="$NAME: f-setpipe-sz on EXEC with pipes"
+# Start Socat calling Filan via EXEC and pipes and f-setpipe-sz
+# Check Filan output if pipe size of both pipes is modified.
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! F=$(testfeats STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! A=$(testaddrs STDIO EXEC); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions pipes f-setpipe-sz) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+# Find the default pipe size
+PIPESZ="$(echo |$FILAN -n 0 |grep "0:" |head -n 1 |sed 's/.*F_GETPIPE_SZ=\([0-9][0-9]*\).*/\1/')"
+PIPESZ2=$((2*PIPESZ))
+CMD0="$TRACE $SOCAT $opts STDIO EXEC:$FILAN,pipes,f-setpipe-sz=$PIPESZ2"
+printf "test $F_n $TEST... " $N
+$CMD0 >"$tf" 2>"${te}0"
+rc0=$?
+PIPESZ2b="$(cat "$tf" |grep "0:" |head -n 1 |sed 's/.*F_GETPIPE_SZ=\([0-9][0-9]*\).*/\1/')"
+if [ "$rc0" -ne 0 ]; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0"
+    cat "${te}0" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+elif ! diff <(echo $PIPESZ2) <(echo $PIPESZ2b) >$tdiff; then
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0" >&2
+    echo "diff:" >&2
+    cat "$tdiff" >&2
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+    namesFAIL="$namesFAIL $NAME"
+else
+    $PRINTF "$OK\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    numOK=$((numOK+1))
+fi
+fi # NUMCOND
+ ;;
+esac
 N=$((N+1))
 
 

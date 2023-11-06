@@ -161,6 +161,11 @@ Features:
 	ABSTRACT_RECVFROM_CLIENT_BIND_TEMPNAME ABSTRACT_RECVFROM_SENDTO_BIND_TEMPNAME
 	Thanks to Kai Lüke for sending an initial patch.
 
+	New option f-setpipe-sz (pipesz) sets the pipe size on systems that
+	provide ioctl F_SETIPE_SZ.
+	Filan prints the current value.
+	Tests: STDIN_F_SETPIPE_SZ EXEC_F_SETPIPE_SZ
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

@@ -61,6 +61,7 @@ int Pipe(int filedes[2]);
 ssize_t Read(int fd, void *buf, size_t count);
 ssize_t Write(int fd, const void *buf, size_t count);
 int Fcntl(int fd, int cmd);
+int Fcntl_i(int fd, int cmd, int arg);
 int Fcntl_l(int fd, int cmd, long arg);
 int Fcntl_lock(int fd, int cmd, struct flock *l);
 #if WITH_SYCLS

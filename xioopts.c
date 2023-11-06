@@ -548,6 +548,9 @@ const struct optname optionnames[] = {
 	IF_ANY 	  ("f-setlkw",	&opt_f_setlkw_wr)
 	IF_ANY 	  ("f-setlkw-rd",	&opt_f_setlkw_rd)
 	IF_ANY 	  ("f-setlkw-wr",	&opt_f_setlkw_wr)
+#if defined(F_SETPIPE_SZ)
+	IF_ANY    ("f-setpipe-sz",	&opt_f_setpipe_sz)
+#endif
 	IF_EXEC   ("fdin",	&opt_fdin)
 	IF_EXEC   ("fdout",	&opt_fdout)
 #ifdef FFDLY
@@ -1305,6 +1308,9 @@ const struct optname optionnames[] = {
 	IF_SOCKET ("pf",	&opt_protocol_family)
 	IF_EXEC   ("pgid",	&opt_setpgid)
 	IF_EXEC   ("pipes",	&opt_pipes)
+#if defined(F_SETPIPE_SZ)
+	IF_ANY    ("pipesz",	&opt_f_setpipe_sz)
+#endif
 #ifdef IP_PKTINFO
 	IF_IP     ("pktinfo",	&opt_ip_pktinfo)
 #endif
@@ -3375,23 +3381,34 @@ int applyopt_fcntl(
 {
 	int flag;
 
-	/* retrieve existing flag setttings */
-	if ((flag = Fcntl(fd, opt->desc->major-1)) < 0) {
+	if (opt->desc->type == TYPE_BOOL) {
+	   /* Retrieve existing flag settings */
+	   if ((flag = Fcntl(fd, opt->desc->major-1)) < 0) {
 		Error3("fcntl(%d, %d): %s",
 		       fd, opt->desc->major, strerror(errno));
 		return -1;
+	   }
+	   if (opt->value.u_bool) {
+	      flag |= opt->desc->minor;
+	   } else {
+	      flag &= ~opt->desc->minor;
+	   }
+	   if (Fcntl_i(fd, opt->desc->major, flag) < 0) {
+	      Error4("fcntl(%d, %d, 0x%x): %s",
+		     fd, opt->desc->major, flag, strerror(errno));
+	      return -1;
+	   }
+
+	} else if (opt->desc->type == TYPE_INT) {
+	   if (Fcntl_i(fd, opt->desc->major, opt->value.u_int) < 0) {
+	      Error4("fcntl(%d, %d, 0x%x): %s",
+		     fd, opt->desc->major, opt->value.u_int, strerror(errno));
+	      return -1;
+	   }
 	} else {
-		if (opt->value.u_bool) {
-			flag |= opt->desc->minor;
-		} else {
-			flag &= ~opt->desc->minor;
-		}
-		if (Fcntl_l(fd, opt->desc->major, flag) < 0) {
-			Error4("fcntl(%d, %d, %d): %s",
-			       fd, opt->desc->major, flag,
-			       strerror(errno));
-			return -1;
-		}
+	   Error2("applyopt_fcntl(\"%s\", ...): INTERNAL: type %d not implemented",
+		  opt->desc->defname, opt->desc->type);
+	   return -1;
 	}
 	return 0;
 }

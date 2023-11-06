@@ -7,4 +7,6 @@
 
 extern const struct addrdesc xioaddr_pipe;
 
+extern const struct optdesc opt_f_setpipe_sz;
+
 #endif /* !defined(__xio_pipe_h_included) */

@@ -291,6 +291,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 
    if (usepipes) {
       /* withfork usepipes */
+      struct opt *popts2 = NULL;
 
       if (rw == XIO_RDWR)
 	 sfd->dtype = XIODATA_2PIPE;
@@ -309,6 +310,8 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 	 return -1;
       }
       popts = opts;
+      if (sfd->dtype == XIODATA_2PIPE)
+	 popts2 = copyopts(popts, GROUP_ALL);
 
       if (rw != XIO_WRONLY) {
 	 applyopts_cloexec(rdpip[0], popts);
@@ -326,8 +329,11 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       /* wrpip[1]: write by socat; wrpip[0]: read by child */
       if (rw != XIO_RDONLY) {
 	 applyopts_cloexec(wrpip[1], popts);
-	 applyopts(sfd, wrpip[1], popts, PH_FD);
-	 applyopts(sfd, wrpip[0], copts, PH_FD);
+	 if (sfd->dtype == XIODATA_2PIPE)
+	    applyopts(NULL, wrpip[1], popts, PH_FD);
+	 else
+	    applyopts(NULL, wrpip[1], popts, PH_FD);
+	 applyopts(NULL, wrpip[0], copts, PH_FD);
       }
       if (sfd->howtoend == END_UNSPEC) {
 	 sfd->howtoend = END_CLOSE_KILL;

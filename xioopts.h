@@ -351,6 +351,7 @@ enum e_optcode {
    OPT_F_SETLKW_WR,	/* fcntl with struct flock - write-lock, wait */
    OPT_F_SETLK_RD,	/* fcntl with struct flock - read-lock */
    OPT_F_SETLK_WR,	/* fcntl with struct flock - write-lock */
+   OPT_F_SETPIPE_SZ, 	/* pipe == fifo */
    OPT_GROUP,
    OPT_GROUP_EARLY,
    OPT_GROUP_LATE,

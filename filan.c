@@ -146,10 +146,10 @@ int filan_fd(int fd, FILE *outfile) {
 	    ;
 #if HAVE_POLL
 	 if (Poll(&ufds, 1, 0) < 0) {
-	    Warn4("poll({%d, %hd, %hd}, 1, 0): %s",
+	    Warn4("\tpoll({%d, %hd, %hd}, 1, 0): %s",
 		   ufds.fd, ufds.events, ufds.revents, strerror(errno));
 	 } else {
-	    fputs("poll: ", outfile);
+	    fputs("\tpoll: ", outfile);
 	    if (ufds.revents & POLLIN)   fputs("IN,", outfile);
 	    if (ufds.revents & POLLPRI)  fputs("PRI,", outfile);
 	    if (ufds.revents & POLLOUT)  fputs("OUT,", outfile);
@@ -378,6 +378,9 @@ int filan_stat(
   if (statfd >= 0) { /*!indent */
    switch (buf->st_mode&S_IFMT) {
    case (S_IFIFO):	/* 1, FIFO */
+#if defined(F_GETPIPE_SZ)
+      fprintf(outfile, "\tF_GETPIPE_SZ=%d", Fcntl(statfd, F_GETPIPE_SZ));
+#endif
       break;
    case (S_IFCHR):	/* 2, character device */
       cdevan(statfd, outfile);
