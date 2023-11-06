@@ -190,7 +190,6 @@ int _xioopen_accept_fd(
    int result;
 
    retropt_bool(opts, OPT_FORK, &dofork);
-
    if (dofork) {
       if (!(xioflags & XIO_MAYFORK)) {
 	 Error("option fork not allowed here");

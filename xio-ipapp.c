@@ -36,6 +36,7 @@ int xioopen_ipapp_connect(
    int pf = addrdesc->arg3;
    const char *hostname = argv[1], *portname = argv[2];
    bool dofork = false;
+   int maxchildren = 0;
    union sockaddr_union us_sa,  *us = &us_sa;
    socklen_t uslen = sizeof(us_sa);
    struct addrinfo *themlist, *themp;
@@ -60,6 +61,20 @@ int xioopen_ipapp_connect(
    applyopts(sfd, -1, opts, PH_INIT);
 
    retropt_bool(opts, OPT_FORK, &dofork);
+   if (dofork) {
+      if (!(xioflags & XIO_MAYFORK)) {
+	 Error("option fork not allowed here");
+	 return STAT_NORETRY;
+      }
+      sfd->flags |= XIO_DOESFORK;
+   }
+
+   retropt_int(opts, OPT_MAX_CHILDREN, &maxchildren);
+
+   if (! dofork && maxchildren) {
+       Error("option max-children not allowed without option fork");
+       return STAT_NORETRY;
+   }
 
    if (_xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
 			      sfd->para.socket.ip.ai_flags,
@@ -169,6 +184,10 @@ int xioopen_ipapp_connect(
 	 Close(sfd->fd);
 	 /* with and without retry */
 	 Nanosleep(&sfd->intervall, NULL);
+	 while (maxchildren > 0 && num_child >= maxchildren) {
+	    Info1("all %d allowed children are active, waiting", maxchildren);
+	    Nanosleep(&sfd->intervall, NULL);
+	 }
 	 dropopts(opts, PH_ALL); free(opts); opts = copyopts(opts0, GROUP_ALL);
 	 continue;	/* with next socket() bind() connect() */
       } else

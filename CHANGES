@@ -206,6 +206,10 @@ Corrections:
 
 	Fixed option sourceport with UDP6-DATAGRAM.
 
+	Some client addresses (e.g. TCP-CONNECT) take the fork option for
+	automatically spawning new connections, however the max-children option
+	was not applied.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 
