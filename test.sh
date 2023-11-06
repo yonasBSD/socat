@@ -41,7 +41,7 @@ usage() {
     $ECHO "\t-C \t\tClear/remove left over certificates from previous runs"
     $ECHO "\t-x \t\tShow commands executed, even when test succeeded"
     #$ECHO "\t-d \t\tShow log output of commands, even when they did not fail"
-    $ECHO "\t-foreign \tAllow tests that send packets to Internet"
+    $ECHO "\t-internet \tAllow tests that send packets to Internet"
     $ECHO "\t-expect-fail N1,N2,... \tIgnore failure of these tests"
     $ECHO "\ttest-spec \Number of test or name of test"
     $ECHO "Contents of environment variable OPTS are passed to Socat invocations, e.'g:"
@@ -57,7 +57,7 @@ NUMCOND=true
 #NUMCOND="test \$N -gt 70"
 VERBOSE=
 DEBUG=
-FOREIGN=
+INTERNET=
 OPT_EXPECT_FAIL= EXPECT_FAIL=
 while [ "$1" ]; do
     case "X$1" in
@@ -71,7 +71,7 @@ while [ "$1" ]; do
 	X-N?*) NUMCOND="test \$N -gt ${1#-N}" ;;
 	X-N)   shift; NUMCOND="test \$N -ge $1" ;;
 	X-C)   rm -f testcert*.conf testcert.dh testcli*.* testsrv*.* ;;
-	X-foreign|X--foreign)	FOREIGN=1 ;; 	# allow access to 3rd party Internet hosts
+	X-internet|X--internet)	INTERNET=1 ;; 	# allow access to 3rd party Internet hosts
 	X-expect-fail|X--expect-fail) OPT_EXPECT_FAIL=1; shift; EXPECT_FAIL="$1" ;;
 	X-*)   echo "Unknown option \"$1\"" >&2
                usage >&2
@@ -989,6 +989,90 @@ routesip6 () {
     ping -c 1 -s 0 -6 2606:4700:4700::1111 >/dev/null 2>&1 || { echo route6; return 1; }
     return 0;
 }
+
+
+# Perform a couple of checks to make sure the test has a chance of a useful
+# result:
+# platform is supported, features compiled in, addresses and options
+# available; needs root; is allowed to access the internet
+checkconds() {
+    local unames="$(echo "$1")" 	# must be one of... exa: "Linux,FreeBSD"
+    local root="$2" 				# "root" or ""
+    local progs="$(echo "$3" |tr 'A-Z,' 'a-z ')"	# exa: "nslookup"
+    local feats="$(echo "$4" |tr 'a-z,' 'A-Z ')" 	# list of req.features (socat -V)
+    local addrs="$(echo "$5" |tr 'a-z,' 'A-Z ')" 	# list of req.addresses (socat -h)
+    local opts="$(echo "$6" |tr 'A-Z,' 'a-z ')" 	# list of req.options (socat -hhh)
+    local runs="$(echo "$7" |tr , ' ')" 		# list of req.protocols, exa: "sctp6"
+    local inet="$8" 					# when "internet": needs allowance
+    local i
+
+    if [ "$unames" ]; then
+	local uname="$(echo $UNAME |tr 'A-Z' 'a-z')"
+	for i in $unames; do
+	    if [ "$uname" = "$(echo "$i" |tr 'A-Z,' 'a-z ')" ]; then
+	        # good, mark as passed
+		i=
+		break;
+	    fi
+	done
+	[ "$i" ] && { echo "Only on (one of) $unames"; return -1; }
+    fi
+
+    if [ "$root" = "root" ]; then
+	if [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
+	    echo "Must be root"
+	    return -1;
+	fi
+    fi
+
+    if [ "$progs" ]; then
+	for i in $progs; do
+	    if ! type  >/dev/null 2>&1; then
+		echo "Program $i not available"
+		return -1
+	    fi
+	done
+    fi
+
+    if [ "$feats" ]; then
+	if ! F=$(testfeats $feats); then
+	    echo "Feature $F not configured in $SOCAT"
+	    return -1
+	fi
+    fi
+
+    if [ "$addrs" ]; then
+	if ! A=$(testaddrs - $addrs); then
+	    echo "Address $A not available in $SOCAT"
+	    return -1
+	fi
+    fi
+
+    if [ "$opts" ]; then
+	if ! o=$(testoptions $opts); then
+	    echo "Option $o not available in $SOCAT"
+	    return -1
+	fi
+    fi
+
+    if [ "$runs" ]; then
+	for i in $runs; do
+	    if ! runs$i >/dev/null; then
+		echo "$i not available on host"
+		return -1;
+	    fi
+	done
+    fi
+
+    if [ "$inet" ]; then
+	if [ -z "$NTERNET" ]; then
+	    echo "Use test.sh option -internet"
+	    return -1
+	fi
+    fi
+    return 0
+}
+
 
 # wait until an IP4 protocol is ready
 waitip4proto () {
@@ -2047,10 +2131,19 @@ N=$((N+1))
 
 
 NAME=TCP4
-if ! eval $NUMCOND; then :; else
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%tcp%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: echo via connection to TCP V4 socket"
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds "" "" "" \
+			 "IP4 TCP LISTEN STDIO PIPE" \
+			 "TCP4-LISTEN PIPE STDIN STDOUT TCP4" \
+			 "so-reuseaddr" \
+			 "tcp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+else	
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
@@ -2058,34 +2151,44 @@ newport tcp4; tsl=$PORT
 ts="127.0.0.1:$tsl"
 da="test$N $(date) $RANDOM"
 CMD1="$TRACE $SOCAT $opts TCP4-LISTEN:$tsl,$REUSEADDR PIPE"
-CMD2="$TRACE $SOCAT $opts stdin!!stdout TCP4:$ts"
+CMD2="$TRACE $SOCAT $opts STDIN!!STDOUT TCP4:$ts"
 printf "test $F_n $TEST... " $N
 $CMD1 >"$tf" 2>"${te}1" &
 pid1=$!
 waittcp4port $tsl 1
 echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
 if [ $? -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   cat "${te}1"
-   echo "$CMD2"
-   cat "${te}2"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED\n"
-   cat "$tdiff"
-   numFAIL=$((numFAIL+1))
-   listFAIL="$listFAIL $N"
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
 else
-   $PRINTF "$OK\n"
-   if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
-   numOK=$((numOK+1))
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
 fi
 kill $pid1 2>/dev/null
-wait ;;
+wait
+fi ;; # NUMCOND, checkconds
 esac
-fi # NUMCOND
 N=$((N+1))
 
 
@@ -13689,7 +13792,7 @@ N=$((N+1))
 # Test the OpenSSL SNI feature
 NAME=OPENSSL_SNI
 case "$TESTS" in
-*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%foreign%*|*%listen%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%internet%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: Test the OpenSSL SNI feature"
 # Connect to a server that is known to use SNI. Use an SNI name, not the
 # certifications default name. When the TLS connection is established
@@ -13704,8 +13807,8 @@ elif ! feat=$(testoptions openssl-snihost); then
     $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ -z "$FOREIGN" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+elif [ -z "$INTERNET" ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -13736,7 +13839,7 @@ N=$((N+1))
 # Test the openssl-no-sni option
 NAME=OPENSSL_NO_SNI
 case "$TESTS" in
-*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%foreign%*|*%listen%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%socket%*|*%openssl%*|*%internet%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: Test the openssl-no-sni option"
 # Connect to a server that is known to use SNI. Use an SNI name, not the
 # certifications default name, and use option openssl-no-sni.
@@ -13752,8 +13855,8 @@ elif ! feat=$(testoptions openssl-no-sni); then
     $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ -z "$FOREIGN" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+elif [ -z "$INTERNET" ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16077,7 +16180,6 @@ newport tcp6
 CMD0a="$TRACE $SOCAT $opts -lp server1 -6 OPENSSL-LISTEN:$PORT,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD0b="$TRACE $SOCAT $opts -lp server2 -6 OPENSSL-LISTEN:$PORT,accept-timeout=.01,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD1="$TRACE $SOCAT $opts -lp client -6 -T 0.1 PIPE OPENSSL-CONNECT:$LOCALHOST6:$PORT,verify=0"
-printf "test $F_n $TEST... " $N
 $CMD0a >/dev/null 2>"${te}0a" &
 pid0=$!
 waittcp6port $PORT 1
@@ -16198,7 +16300,7 @@ N=$((N+1))
 # Test if Socats TCP4-client tries all addresses if necessary
 NAME=TRY_ADDRS_4
 case "$TESTS" in
-*%$N%*|*%functions%*|*%tcp%*|*%tcp4%*|*%socket%*|*%foreign%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%tcp%*|*%tcp4%*|*%socket%*|*%internet%*|*%$NAME%*)
 TEST="$NAME: try all available TCP4 addresses"
 # Connect to a TCP4 port of a hostname that resolves to two addresses where at
 # least on the first one the port is closed.
@@ -16228,8 +16330,8 @@ elif ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ -z "$FOREIGN" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+elif [ -z "$INTERNET" ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16283,7 +16385,7 @@ N=$((N+1))
 # Test if Socats TCP-client tries all addresses (IPv4+IPv6) if necessary
 NAME=TRY_ADDRS_4_6
 case "$TESTS" in
-*%$N%*|*%functions%*|*%tcp%*|*%tcp4%*|*%tcp6%*|*%socket%*|*%foreign%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%tcp%*|*%tcp4%*|*%tcp6%*|*%socket%*|*%internet%*|*%$NAME%*)
 TEST="$NAME: for TCP try all available IPv4 and IPv6 addresses"
 # Connect to a TCP port that is not open on localhost-4-6.dest-unreach.net,
 # neither IPv4 nor IPv6
@@ -16313,8 +16415,8 @@ elif ! runsip6 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 not available or not routable${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ -z "$FOREIGN" ]; then	# only needs Internet DNS
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
+elif [ -z "$INTERNET" ]; then	# only needs Internet DNS
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -18031,97 +18133,76 @@ exit
 NAME=SHORT_UNIQUE_TESTNAME
 case "$TESTS" in
 *%$N%*|*%functions%*|*%bugs%*|*%socket%*|*%$NAME%*)
-#*%foreign%*|*%root%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%bug%*|...
+#*%internet%*|*%root%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%bug%*|...
 TEST="$NAME: give a one line description of test"
 # Describe how the test is performed, and what's the success criteria
-if ! eval $NUMCOND; then :;
+if ! eval $NUMCOND; then :
 # Remove unneeded checks, adapt lists of the remaining ones
-elif [ "$UNAME" != Linux ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Only on Linux${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Must be root${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif ! $(type nslookup >/dev/null 2>&1); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup not available${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif ! F=$(testfeats STDIO IP4 TCP PIPE); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif ! A=$(testaddrs - TCP4 TCP4-LISTEN PIPE); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif ! o=$(testoptions so-reuseaddr fork) >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif ! runsip4 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available on host${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-elif [ -z "$FOREIGN" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
-else
-tf="$td/test$N.stdout"
-te="$td/test$N.stderr"
-tdiff="$td/test$N.diff"
-da="test$N $(date) $RANDOM"
-newport tcp4 	# or whatever proto, or drop this line
-CMD0="$TRACE $SOCAT $opts server-address PIPE"
-CMD1="$TRACE $SOCAT $opts - client-address"
-printf "test $F_n $TEST... " $N
-$CMD0 >/dev/null 2>"${te}0" &
-pid0=$!
-wait<something>port $PORT 1
-#relsleep 1 	# if no matching wait*port function
-echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
-rc1=$?
-kill $pid0 2>/dev/null; wait
-if [ "$rc1" -ne 0 ]; then
-    $PRINTF "$FAILED (rc=$rc1)\n"
-    echo "$CMD0 &"
-    cat "${te}0" >&2
-    echo "$CMD1"
-    cat "${te}1" >&2
-    numFAIL=$((numFAIL+1))
-    listFAIL="$listFAIL $N"
-    namesFAIL="$namesFAIL $NAME"
-elif ! echo "$da" |diff "${tf}1" - >$tdiff; then
-    $PRINTF "$FAILED (diff)\n"
-    echo "$CMD0 &"
-    cat "${te}0" >&2
-    echo "$CMD1"
-    cat "${te}1" >&2
-    echo "// diff:" >&2
-    cat "$tdiff" >&2
-    numFAIL=$((numFAIL+1))
-    listFAIL="$listFAIL $N"
-    namesFAIL="$namesFAIL $NAME"
-elif [ ??? ]; then
-    # The test could not run meaningfully
-    $PRINTF "$CANT\n"
-    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
-    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
-    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
-    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+elif ! cond=$(checkconds \
+		  "Linux,FreeBSD" \
+		  "root" \
+		  "nslookup" \
+		  "IP4 TCP LISTEN STDIO PIPE" \
+		  "TCP4-LISTEN PIPE STDIN STDOUT TCP4" \
+		  "so-reuseaddr" \
+		  "tcp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
     namesCANT="$namesCANT $NAME"
 else
-    $PRINTF "$OK\n"
-    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
-    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
-    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
-    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
-    numOK=$((numOK+1))
-fi
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    newport tcp4 	# or whatever proto, or drop this line
+    CMD0="$TRACE $SOCAT $opts server-address PIPE"
+    CMD1="$TRACE $SOCAT $opts - client-address"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    wait<something>port $PORT 1
+    #relsleep 1 	# if no matching wait*port function
+    echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$da" |diff "${tf}1" - >$tdiff; then
+	$PRINTF "$FAILED\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif [ ??? ]; then
+	# The test could not run meaningfully
+	$PRINTF "$CANT\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+    fi
 fi # NUMCOND
  ;;
 esac

@@ -238,6 +238,10 @@ Porting:
 Testing:
 	Removed obselete parts from test.sh
 
+	Introduced function checkcond from test.sh
+
+	Renamed test.sh option -foreign to -internet
+
 Documentation:
 	Removed obselete file doc/xio.help
 
