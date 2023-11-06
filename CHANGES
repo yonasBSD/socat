@@ -166,6 +166,10 @@ Features:
 	Filan prints the current value.
 	Tests: STDIN_F_SETPIPE_SZ EXEC_F_SETPIPE_SZ
 
+	Bidirectional PIPE addresses may block on writing a data chunk larger
+	than pipe buffer. Socat now tries to detect if transfer block size is
+	large enough and issues a warning.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

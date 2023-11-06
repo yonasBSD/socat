@@ -104,7 +104,7 @@ typedef uint32_t groups_t;
 #endif
 
 /* global XIO options/parameters */
-typedef struct {
+typedef struct xioparms {
    bool strictopts;
    const char *pipesep;
    const char *paramsep;
@@ -119,6 +119,7 @@ typedef struct {
    bool experimental;	/* enable some features */
    const char *sniffleft_name; 		/* file name with -r */
    const char *sniffright_name; 	/* file name with -R */
+   size_t bufsiz;
 } xioparms_t;
 
 /* pack the description of a lock file */

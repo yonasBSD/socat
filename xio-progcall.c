@@ -330,7 +330,7 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       if (rw != XIO_RDONLY) {
 	 applyopts_cloexec(wrpip[1], popts);
 	 if (sfd->dtype == XIODATA_2PIPE)
-	    applyopts(NULL, wrpip[1], popts, PH_FD);
+	    applyopts(NULL, wrpip[1], popts2, PH_FD);
 	 else
 	    applyopts(NULL, wrpip[1], popts, PH_FD);
 	 applyopts(NULL, wrpip[0], copts, PH_FD);

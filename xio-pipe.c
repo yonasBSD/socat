@@ -74,6 +74,9 @@ static int xioopen_fifo_unnamed(xiofile_t *sock, struct opt *opts) {
       showleft(opts);
       Error1("INTERNAL: %d option(s) remained unused", numleft);
    }
+
+   xio_chk_pipesz(sfd->fd);
+
    Notice("writing to and reading from unnamed pipe");
    return 0;
 }
@@ -183,7 +186,45 @@ static int xioopen_fifo(
    applyopts_named(pipename, opts, PH_FD);
    applyopts(sfd, -1, opts, PH_FD);
    applyopts_cloexec(sfd->fd, opts);
+   xio_chk_pipesz(sfd->fd);
+
    return _xio_openlate(sfd, opts);
+}
+
+
+/* Checks if fd is a pipe and if its buffer is at least the blksiz.
+   returns 0 if ok;
+   returns 1 if unknown;
+   returns -1 if not */
+int xio_chk_pipesz(
+	int fd)
+{
+	struct stat st;
+	int pipesz;
+
+	if (fstat(fd, &st) < 0) {
+		Warn2("fstat(%d, ...): %s", fd, strerror(errno));
+		return 1;
+	}
+	if ((st.st_mode&S_IFMT) != S_IFIFO) {
+		return 0;
+	}
+
+#if defined(F_GETPIPE_SZ)
+	if ((pipesz = Fcntl(fd, F_GETPIPE_SZ)) < 0) {
+		Warn2("fcntl(%d, F_GETPIPE_SZ): %s", fd, strerror(errno));
+		return 1;
+	}
+
+	if (pipesz >= xioparms.bufsiz)
+		return 0;
+
+	Warn3("xio_chk_pipesz(%d, ...): Socat block size "F_Zu" is larger than pipe size %d, might block; use option f-setpipe-sz!",
+	      fd, xioparms.bufsiz, pipesz);
+	return -1;
+#else /* !defined(F_GETPIPE_SZ) */
+	return 1;
+#endif /* !defined(F_GETPIPE_SZ) */
 }
 
 #endif /* WITH_PIPE */

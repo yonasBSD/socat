@@ -23,7 +23,8 @@ xioparms_t xioparms = {
    WITH_DEFAULT_IPV, 	/* preferred_ip */
    false, 	/* experimental */
    NULL, 	/* sniffleft_name */
-   NULL 	/* sniffright_name */
+   NULL, 	/* sniffright_name */
+   8192 	/* bufsiz */
 } ;
 
 

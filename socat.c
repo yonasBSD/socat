@@ -22,10 +22,11 @@
 #include "xioopts.h"
 #include "xiolockfile.h"
 
+#include "xio-pipe.h"
+
 
 /* command line options */
-struct {
-   size_t bufsiz;
+struct socat_opts {
    bool verbose;
    bool verbhex;
    struct timeval pollintv;	/* with ignoreeof, reread after seconds */
@@ -40,7 +41,6 @@ struct {
    unsigned long log_sigs;	/* signals to be caught just for logging */
    bool statistics; 	/* log statistics on exit */
 } socat_opts = {
-   8192,	/* bufsiz */
    false,	/* verbose */
    false,	/* verbhex */
    {1,0},	/* pollintv */
@@ -234,7 +234,7 @@ int main(int argc, const char *argv[]) {
 	       Exit(1);
 	    }
 	 }
-	 socat_opts.bufsiz = Strtoul(a, (char **)&a, 0, "-b");
+	 xioparms.bufsiz = Strtoul(a, (char **)&a, 0, "-b");
 	 break;
       case 's':  if (arg1[0][2])  { socat_opt_hint(stderr, arg1[0][1], arg1[0][2]); Exit(1); }
 	 diag_set_int('e', E_FATAL); break;
@@ -936,9 +936,9 @@ int _socat(void) {
 #endif /* WITH_FILAN */
 
    /* when converting nl to crnl, size might double */
-   if (socat_opts.bufsiz > (SIZE_MAX-1)/2) {
-      Error2("buffer size option (-b) to big - "F_Zu" (max is "F_Zu")", socat_opts.bufsiz, (SIZE_MAX-1)/2);
-      socat_opts.bufsiz = (SIZE_MAX-1)/2;
+   if (xioparms.bufsiz > (SIZE_MAX-1)/2) {
+      Error2("buffer size option (-b) to big - "F_Zu" (max is "F_Zu")", xioparms.bufsiz, (SIZE_MAX-1)/2);
+      xioparms.bufsiz = (SIZE_MAX-1)/2;
    }
 
 #if HAVE_PROTOTYPE_LIB_posix_memalign
@@ -946,13 +946,13 @@ int _socat(void) {
       Without this, eg.read() fails with "Invalid argument" */
    {
       int _errno;
-      if ((_errno = Posix_memalign((void **)&buff, getpagesize(), 2*socat_opts.bufsiz+1)) != 0) {
+      if ((_errno = Posix_memalign((void **)&buff, getpagesize(), 2*xioparms.bufsiz+1)) != 0) {
 	 Error1("posix_memalign(): %s", strerror(_errno));
 	 return -1;
       }
    }
 #else /* !HAVE_PROTOTYPE_LIB_posix_memalign */
-   buff = Malloc(2*socat_opts.bufsiz+1);
+   buff = Malloc(2*xioparms.bufsiz+1);
    if (buff == NULL)  return -1;
 #endif /* !HAVE_PROTOTYPE_LIB_posix_memalign */
 
@@ -1180,7 +1180,7 @@ int _socat(void) {
 
       if (mayrd1 && maywr2) {
 	 mayrd1 = false;
-	 if ((bytes1 = xiotransfer(sock1, sock2, buff, socat_opts.bufsiz, false))
+	 if ((bytes1 = xiotransfer(sock1, sock2, buff, xioparms.bufsiz, false))
 	     < 0) {
 	    if (errno != EAGAIN) {
 	       closing = MAX(closing, 1);
@@ -1212,7 +1212,7 @@ int _socat(void) {
 
       if (mayrd2 && maywr1) {
 	 mayrd2 = false;
-	 if ((bytes2 = xiotransfer(sock2, sock1, buff, socat_opts.bufsiz, true))
+	 if ((bytes2 = xiotransfer(sock2, sock1, buff, xioparms.bufsiz, true))
 	     < 0) {
 	    if (errno != EAGAIN) {
 	       closing = MAX(closing, 1);
@@ -1633,7 +1633,7 @@ int cv_newline(unsigned char *buff, ssize_t *bytes,
 	 from = '\r';
       }
       if (buf2 == NULL) {
-	 if ((buf2 = Malloc(socat_opts.bufsiz)) == NULL) {
+	 if ((buf2 = Malloc(xioparms.bufsiz)) == NULL) {
 	    return -1;
 	 }
       }
