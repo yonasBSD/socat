@@ -142,7 +142,8 @@ static int xioopen_unix_listen(
 
    sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    if (!(ABSTRACT && addrdesc->arg1/*abstract*/)) {
       /* only for non abstract because abstract do not work in file system */
@@ -239,7 +240,8 @@ static int xioopen_unix_connect(
 
    sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
    applyopts(sfd, -1, opts, PH_INIT);
    applyopts_offset(sfd, opts);
@@ -409,7 +411,8 @@ static int xioopen_unix_sendto(
 
    sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    applyopts_offset(sfd, opts);
 
    sfd->salen = xiosetunix(pf, &sfd->peersa.un, name, addrdesc->arg1/*abstract*/, sfd->para.socket.un.tight);
@@ -494,7 +497,8 @@ int xioopen_unix_recvfrom(
 
    sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
-   sfd->howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_NONE;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
    applyopts(sfd, -1, opts, PH_INIT);
    applyopts_named(name, opts, PH_EARLY);       /* umask! */
@@ -580,7 +584,8 @@ static int xioopen_unix_recv(
 
    sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
    applyopts(sfd, -1, opts, PH_INIT);
    applyopts_named(name, opts, PH_EARLY);       /* umask! */
@@ -687,7 +692,8 @@ _xioopen_unix_client(
 
    sfd->para.socket.un.tight = UNIX_TIGHTSOCKLEN;
    retropt_socket_pf(opts, &pf);
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return STAT_NORETRY;
    applyopts(sfd, -1, opts, PH_INIT);
    applyopts_offset(sfd, opts);

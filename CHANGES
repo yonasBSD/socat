@@ -210,6 +210,8 @@ Corrections:
 	automatically spawning new connections, however the max-children option
 	was not applied.
 
+	Fixed the end-close option, it just did not work.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 

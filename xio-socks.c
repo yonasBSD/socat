@@ -76,7 +76,8 @@ static int xioopen_socks4_connect(
    targetname = argv[2];
    targetport = argv[3];
 
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts(sfd, 1, opts, PH_INIT);
 

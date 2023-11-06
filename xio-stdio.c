@@ -41,7 +41,9 @@ int xioopen_stdio_bi(xiofile_t *sock) {
    sock->dual.stream[0]->fd = 0 /*stdin*/;
    sock->dual.stream[1]->tag = XIO_TAG_WRONLY;
    sock->dual.stream[1]->fd = 1 /*stdout*/;
-   sock->dual.stream[0]->howtoend =
+   if (sock->dual.stream[0]->howtoend == END_UNSPEC)
+      sock->dual.stream[0]->howtoend = END_NONE;
+   if (sock->dual.stream[1]->howtoend == END_UNSPEC)
       sock->dual.stream[1]->howtoend = END_NONE;
 
 #if WITH_TERMIOS

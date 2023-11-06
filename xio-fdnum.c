@@ -111,7 +111,8 @@ static int xioopen_accept_fd(
 int xioopen_fd(struct opt *opts, int rw, struct single *sfd, int numfd) {
 
    sfd->fd = numfd;
-   sfd->howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_NONE;
 
 #if WITH_TERMIOS
    if (Isatty(sfd->fd)) {

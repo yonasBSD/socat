@@ -79,6 +79,7 @@ int xioshutdown(xiofile_t *sock, int how) {
 #endif /* _WITH_SOCKET */
    default: ;
    }
+   /* XIOSHUT_UNSPEC passes on */
 
    if (false) {
       ;

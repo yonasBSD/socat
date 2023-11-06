@@ -260,7 +260,8 @@ int _xioopen_ipdgram_listen(struct single *sfd,
    xiosetsockaddrenv("SOCK", us,   uslen,   IPPROTO_UDP);
    xiosetsockaddrenv("PEER", them, themlen, IPPROTO_UDP);
 
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    applyopts_fchown(sfd->fd, opts);
    applyopts(sfd, -1, opts, PH_LATE);
 
@@ -383,7 +384,8 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
    bool needbind = false;
    int result;
 
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    /* ...res_opts[] */
    if (applyopts_single(sfd, opts, PH_INIT) < 0)
@@ -539,6 +541,8 @@ static int xioopen_udp_recvfrom(
 
    xioinit_ip(&pf, xioparms.default_ip);
    sfd->howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_NONE;
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {
 #if WITH_IP4 && WITH_IP6

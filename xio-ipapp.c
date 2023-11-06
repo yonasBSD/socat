@@ -54,7 +54,8 @@ int xioopen_ipapp_connect(
    }
 
    xioinit_ip(&pf, xioparms.default_ip);
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)
       return -1;
@@ -367,7 +368,8 @@ int xioopen_ipapp_listen(
 #endif
    }
 
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts(sfd, -1, opts, PH_INIT);

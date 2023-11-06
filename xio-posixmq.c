@@ -102,7 +102,8 @@ static int xioopen_posixmq(
 		_posixmq_unlink(sfd->para.posixmq.name, E_INFO);
 	}
 	retropt_bool(opts, OPT_UNLINK_CLOSE, &sfd->opt_unlink_close);
-	sfd->howtoend = END_CLOSE;
+	if (sfd->howtoend == END_UNSPEC)
+	   sfd->howtoend = END_CLOSE;
 	sfd->dtype = XIODATA_POSIXMQ | oneshot;
 
 	oflag = O_CREAT;

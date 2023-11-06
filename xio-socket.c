@@ -236,7 +236,8 @@ static int xioopen_socket_connect(
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    /*retropt_int(opts, OPT_IP_PROTOCOL, &proto);*/
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)
       return -1;
@@ -320,7 +321,8 @@ static int xioopen_socket_listen(
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    /*retropt_int(opts, OPT_IP_PROTOCOL, &proto);*/
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    socket_init(0, &us);
    ussize = 0;
@@ -415,7 +417,8 @@ int _xioopen_socket_sendto(const char *pfname, const char *type,
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    /*retropt_int(opts, OPT_IP_PROTOCOL, &proto);*/
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    sfd->peersa.soa.sa_family = pf;
    themsize = 0;
@@ -516,7 +519,8 @@ int xioopen_socket_recvfrom(
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    /*retropt_int(opts, OPT_IP_PROTOCOL, &proto);*/
-   sfd->howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_NONE;
 
    ussize = 0;
    if ((result =
@@ -600,7 +604,8 @@ int xioopen_socket_recv(
    retropt_socket_pf(opts, &pf);
    retropt_int(opts, OPT_SO_TYPE, &socktype);
    /*retropt_int(opts, OPT_IP_PROTOCOL, &proto);*/
-   sfd->howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_NONE;
 
    ussize = 0;
    if ((result =
@@ -673,7 +678,8 @@ static int xioopen_socket_datagram(
 
    retropt_socket_pf(opts, &pf);
    /*retropt_int(opts, OPT_IP_PROTOCOL, &proto);*/
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    sfd->peersa.soa.sa_family = pf;
    themsize = 0;

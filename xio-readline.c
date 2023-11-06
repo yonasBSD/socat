@@ -75,7 +75,8 @@ static int xioopen_readline(
    Notice(msgbuf);
 
    xfd->stream.fd = 0;	/* stdin */
-   xfd->stream.howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      xfd->stream.howtoend = END_NONE;
    xfd->stream.dtype    = XIODATA_READLINE;
 
 #if WITH_TERMIOS

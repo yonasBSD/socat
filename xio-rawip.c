@@ -106,7 +106,8 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
       /*return STAT_NORETRY;*/
    }
 
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
    retropt_int(opts, OPT_PROTOCOL_FAMILY, pf);
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
@@ -228,7 +229,8 @@ static int xioopen_rawip_recvfrom(
 	     protname);
       /*return STAT_NORETRY;*/
    }
-   sfd->howtoend = END_NONE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_NONE;
 
    retropt_socket_pf(opts, &pf);
    if (pf == PF_UNSPEC) {

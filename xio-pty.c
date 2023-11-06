@@ -60,7 +60,8 @@ static int xioopen_pty(
       return STAT_NORETRY;
    }
 
-   sfd->howtoend = END_CLOSE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_CLOSE;
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts(sfd, -1, opts, PH_INIT);

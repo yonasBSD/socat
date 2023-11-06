@@ -43,7 +43,8 @@ static int vsock_addr_init(struct sockaddr_vm *sa, const char *cid_str,
 /* Performs a few steps during opening an address of type VSOCK */
 static int vsock_init(struct opt *opts, struct single *sfd) {
 
-   sfd->howtoend = END_SHUTDOWN;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_SHUTDOWN;
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)
       return STAT_NORETRY;

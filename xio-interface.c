@@ -74,7 +74,8 @@ int _xioopen_interface(const char *ifname,
       ifidx = 0;	/* desparate attempt to continue */
    }
 
-   sfd->howtoend = END_INTERFACE;
+   if (sfd->howtoend == END_UNSPEC)
+      sfd->howtoend = END_INTERFACE;
    retropt_int(opts, OPT_SO_TYPE, &socktype);
 
    retropt_socket_pf(opts, &pf);
