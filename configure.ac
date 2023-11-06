@@ -709,6 +709,14 @@ AC_ARG_ENABLE(openssl-method, [  --enable-openssl-method       enable OpenSSL me
 	       [AC_MSG_RESULT(no)])
 fi
 
+AC_MSG_CHECKING(whether to include undocumented resolver related options)
+AC_ARG_ENABLE(resolve, [  --enable-resolve       enable undocumented resolver options],
+	      [case "$enableval" in
+	       no) AC_MSG_RESULT(no);;
+	       *) AC_DEFINE(WITH_RESOLVE) AC_MSG_RESULT(yes);;
+	       esac],
+	       [AC_DEFINE(WITH_RESOLVE) AC_MSG_RESULT(yes)])
+
 AC_MSG_CHECKING(whether to include deprecated resolver option)
 AC_ARG_ENABLE(res-deprecated, [  --enable-res-deprecated       enable deprecated resolver options],
 	      [case "$enableval" in
@@ -2134,6 +2142,20 @@ if test -d /proc/$$/path; then
 else
   AC_MSG_RESULT(no)
 fi
+
+# Some OSes have undocumented _res.retrans, _res.retry components
+AC_MSG_CHECKING(for _res.retrans)
+AC_TRY_COMPILE([#include <resolv.h>],
+[_res.retrans == 0],
+[AC_MSG_RESULT(yes);
+ AC_DEFINE(HAVE_RES_RETRANS, 1)],
+ [AC_MSG_RESULT(no)])
+AC_MSG_CHECKING(for _res.retry)
+AC_TRY_COMPILE([#include <resolv.h>],
+[_res.retry == 0],
+[AC_MSG_RESULT(yes);
+ AC_DEFINE(HAVE_RES_RETRY, 1)],
+ [AC_MSG_RESULT(no)])
 
 
 dnl "tcpd" "tcpwrappers"

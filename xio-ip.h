@@ -42,6 +42,8 @@ extern const struct optdesc opt_res_recurse;
 extern const struct optdesc opt_res_defnames;
 extern const struct optdesc opt_res_stayopen;
 extern const struct optdesc opt_res_dnsrch;
+extern const struct optdesc opt_res_retrans;
+extern const struct optdesc opt_res_retry;
 
 extern int xioinit_ip(int *pf, char ipv);
 
@@ -54,9 +56,9 @@ extern int xioapply_ip_add_membership(xiosingle_t *xfd, struct opt *opt);
 extern int xiotype_ip_add_source_membership(char* token, const struct optname *ent, struct opt *opt);
 extern int xioapply_ip_add_source_membership(struct single *xfd, struct opt *opt);
 
-#if HAVE_RESOLV_H
+#if WITH_RESOLVE && HAVE_RESOLV_H
 extern int xio_res_init(struct single *sfd, struct __res_state *save_res);
-extern int xio_res_restore(struct __res_state *save_red);
-#endif /* HAVE_RESOLV_H */
+extern int xio_res_restore(struct __res_state *save_res);
+#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
 #endif /* !defined(__xio_ip_h_included) */

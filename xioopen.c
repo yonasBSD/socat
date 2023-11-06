@@ -397,7 +397,14 @@ static xiofile_t *xioallocfd(void) {
    fd->stream.escape	= -1;
 /* fd->stream.para.exec.pid = 0; */
    fd->stream.lineterm  = LINETERM_RAW;
-
+#if WITH_RESOLVE
+#if HAVE_RES_RETRANS
+   fd->stream.para.socket.ip.res.retrans = -1;
+#endif
+#if HAVE_RES_RETRY
+   fd->stream.para.socket.ip.res.retry   = -1;
+#endif
+#endif /* WITH_RESOLVE */
    return fd;
 }
 
@@ -616,10 +623,10 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    const char *modetext[4] = { "none", "read-only", "write-only", "read-write" } ;
    int result;
    /* Values to be saved until xioopen() is finished */
-#if HAVE_RESOLV_H
+#if WITH_RESOLVE && HAVE_RESOLV_H
    int do_res;
    struct __res_state save_res;
-#endif /* HAVE_RESOLV_H */
+#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 #if WITH_NAMESPACES
    char *temp_netns;
    int save_netfd = -1;
@@ -648,10 +655,10 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
    }
 #endif /* WITH_NAMESPACES */
 
-#if HAVE_RESOLV_H
+#if WITH_RESOLVE && HAVE_RESOLV_H
    if ((do_res = xio_res_init(sfd, &save_res)) < 0)
       return STAT_NORETRY;
-#endif /* HAVE_RESOLV_H */
+#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
    addrdesc = xfd->stream.addr;
    /* Check if address supports required data directions */
@@ -673,10 +680,10 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
 			      xfd->stream.opts, xioflags, xfd,
 			      addrdesc);
 
-#if HAVE_RESOLV_H
+#if WITH_RESOLVE && HAVE_RESOLV_H
    if (do_res)
-      xio_res_init(sfd, &save_res);
-#endif /* HAVE_RESOLV_H */
+      xio_res_restore(&save_res);
+#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
 #if WITH_NAMESPACES
    if (save_netfd >= 0) {

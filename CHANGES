@@ -135,6 +135,11 @@ Features:
 
 	New address SHELL invokes a shell but without the overhead of SYSTEM
 
+	Added options res-retrans and res-retry that make use of undocumented
+	resolver variables to set the retransmission time interval resp.the
+	number of times to retransmit.
+	Disable them and the old res-* opts with: ./configure --disable-resolve
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

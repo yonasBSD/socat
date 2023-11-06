@@ -80,7 +80,7 @@ const struct optdesc opt_ipv6_recvpathmtu = { "ipv6-recvpathmtu", "recvpathmtu",
 #endif
 
 /* Returns canonical form of IPv6 address.
-   IPv6 address may bei enclose in brackets.
+   IPv6 address may be enclose in brackets.
    Returns STAT_OK on success, STAT_NORETRY on failure. */
 int xioip6_pton(
 	const char *src,

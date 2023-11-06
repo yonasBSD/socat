@@ -126,6 +126,12 @@ bool xioopts_ignoregroups;
 #  define IF_OPENSSL(a,b)
 #endif
 
+#if WITH_RESOLVE
+#  define IF_RESOLVE(a,b) {a,b},
+#else
+#  define IF_RESOLVE(a,b)
+#endif
+
 #if WITH_INTERFACE
 #  define IF_INTERFACE(a,b) {a,b},
 #else
@@ -160,7 +166,7 @@ static int applyopt(struct single *sfd,	int fd,	struct opt *opt);
 /* NULL terminated */
 const struct optname optionnames[] = {
 #if HAVE_RESOLV_H && WITH_RES_AAONLY
-	IF_IP     ("aaonly",	&opt_res_aaonly)
+	IF_RESOLVE("aaonly",		&opt_res_aaonly)
 #endif
 #ifdef TCP_ABORT_THRESHOLD  /* HP_UX */
 	IF_TCP    ("abort-threshold",	&opt_tcp_abort_threshold)
@@ -384,7 +390,7 @@ const struct optname optionnames[] = {
 	IF_TERMIOS("ctty",	&opt_tiocsctty)
 	IF_EXEC   ("dash",	&opt_dash)
 	IF_SOCKET ("debug",	&opt_so_debug)
-	/*IF_IP     ("debug",	&opt_res_debug)*/
+	/*IF_RESOLVE("debug",	&opt_res_debug)*/
 #ifdef O_DEFER
 	IF_OPEN   ("defer",	&opt_o_defer)
 #endif
@@ -392,7 +398,7 @@ const struct optname optionnames[] = {
 	IF_TCP    ("defer-accept",	&opt_tcp_defer_accept)
 #endif
 #if HAVE_RESOLV_H
-	IF_IP     ("defnames",	&opt_res_defnames)
+	IF_RESOLVE("defnames",		&opt_res_defnames)
 #endif /* HAVE_RESOLV_H */
 #ifdef O_DELAY
 	IF_OPEN   ("delay",	&opt_o_delay)
@@ -425,7 +431,7 @@ const struct optname optionnames[] = {
 	IF_TERMIOS("discard",	&opt_vdiscard)
 #endif
 #if HAVE_RESOLV_H
-	IF_IP     ("dnsrch",	&opt_res_dnsrch)
+	IF_RESOLVE("dnsrch",		&opt_res_dnsrch)
 #endif /* HAVE_RESOLV_H */
 #ifdef SO_DONTLINGER
 	IF_SOCKET ("dontlinger",	&opt_so_dontlinger)
@@ -686,7 +692,7 @@ const struct optname optionnames[] = {
 	IF_ANY    ("ignoreof",	&opt_ignoreeof)
 	IF_TERMIOS("ignpar",	&opt_ignpar)
 #if HAVE_RESOLV_H
-	IF_IP     ("igntc",	&opt_res_igntc)
+	IF_RESOLVE("igntc",		&opt_res_igntc)
 #endif /* HAVE_RESOLV_H */
 	IF_TERMIOS("imaxbel",	&opt_imaxbel)
 #if WITH_FS && defined(FS_IMMUTABLE_FL)
@@ -1306,7 +1312,7 @@ const struct optname optionnames[] = {
 	IF_ANY	  ("posixmq-priority",	&opt_posixmq_priority)
 #endif
 #if HAVE_RESOLV_H && WITH_RES_PRIMARY
-	IF_IP     ("primary",	&opt_res_primary)
+	IF_RESOLVE("primary",		&opt_res_primary)
 #endif
 #ifdef SO_PRIORITY
 	IF_SOCKET ("priority",	&opt_so_priority)
@@ -1367,7 +1373,7 @@ const struct optname optionnames[] = {
 	IF_OPEN   ("rdwr",	&opt_o_rdwr)
 	IF_ANY    ("readbytes", &opt_readbytes)
 #if HAVE_RESOLV_H
-	IF_IP     ("recurse",	&opt_res_recurse)
+	IF_RESOLVE("recurse",		&opt_res_recurse)
 #endif /* HAVE_RESOLV_H */
 #ifdef IP_RECVDSTADDR
 	IF_IP     ("recvdstaddr",	&opt_ip_recvdstaddr)
@@ -1408,24 +1414,39 @@ const struct optname optionnames[] = {
 #endif
 #if HAVE_RESOLV_H
 #  if WITH_AA_ONLY
-	IF_IP     ("res-aaonly",	&opt_res_aaonly)
+	IF_RESOLVE("res-aaonly",	&opt_res_aaonly)
 #  endif
-	IF_IP     ("res-debug",	&opt_res_debug)
-	IF_IP     ("res-defnames",	&opt_res_defnames)
-	IF_IP     ("res-dnsrch",	&opt_res_dnsrch)
-	IF_IP     ("res-igntc",	&opt_res_igntc)
+	IF_RESOLVE("res-debug",		&opt_res_debug)
+	IF_RESOLVE("res-defnames",	&opt_res_defnames)
+	IF_RESOLVE("res-dnsrch",	&opt_res_dnsrch)
+	IF_RESOLVE("res-igntc",		&opt_res_igntc)
+#  if HAVE_RES_RETRANS
+	IF_RESOLVE("res-maxretrans",	&opt_res_retrans)
+#  endif
+#  if HAVE_RES_RETRY
+	IF_RESOLVE("res-maxretry",	&opt_res_retry)
+#  endif
 #  if WITH_RES_PRIMARY
-	IF_IP     ("res-primary",	&opt_res_primary)
+	IF_RESOLVE("res-primary",	&opt_res_primary)
 #  endif
-	IF_IP     ("res-recurse",	&opt_res_recurse)
-	IF_IP     ("res-stayopen",	&opt_res_stayopen)
-	IF_IP     ("res-usevc",	&opt_res_usevc)
+	IF_RESOLVE("res-recurse",	&opt_res_recurse)
+#  if HAVE_RES_RETRANS
+	IF_RESOLVE("res-retrans",	&opt_res_retrans)
+#  endif
+#  if HAVE_RES_RETRY
+	IF_RESOLVE("res-retry",		&opt_res_retry)
+#  endif
+	IF_RESOLVE("res-stayopen",	&opt_res_stayopen)
+	IF_RESOLVE("res-usevc",		&opt_res_usevc)
 #endif /* HAVE_RESOLV_H */
 	IF_PROXY  ("resolv",	&opt_proxy_resolve)
 	IF_PROXY  ("resolve",	&opt_proxy_resolve)
 #ifdef IP_RETOPTS
 	IF_IP     ("retopts",	&opt_ip_retopts)
 #endif
+#  if HAVE_RES_RETRANS
+	IF_RESOLVE("retrans",		&opt_res_retrans)
+#  endif
 #if WITH_INTERFACE && defined(PACKET_AUXDATA)
 	IF_SOCKET ("retrieve-vlan", 		&opt_retrieve_vlan)
 #endif
@@ -1662,7 +1683,7 @@ const struct optname optionnames[] = {
 	IF_IPAPP  ("sp",	&opt_sourceport)
 	IF_TERMIOS("start",	&opt_vstart)
 #if HAVE_RESOLV_H
-	IF_IP     ("stayopen",	&opt_res_stayopen)
+	IF_RESOLVE("stayopen",		&opt_res_stayopen)
 #endif /* HAVE_RESOLV_H */
 	IF_EXEC   ("stderr",    &opt_stderr)
 #ifdef TCP_STDURG
@@ -1865,7 +1886,7 @@ const struct optname optionnames[] = {
 	IF_NAMED  ("user-early",	&opt_user_early)
 	IF_ANY    ("user-late",	&opt_user_late)
 #if HAVE_RESOLV_H
-	IF_IP     ("usevc",	&opt_res_usevc)
+	IF_RESOLVE("usevc",		&opt_res_usevc)
 #endif /* HAVE_RESOLV_H */
 #if defined(AI_V4MAPPED)
 	IF_IP	  ("v4mapped", 		&opt_ai_v4mapped)

@@ -133,10 +133,24 @@ extern xioparms_t xioparms;
 #define MAXARGV 8
 
 #if _WITH_IP4 || _WITH_IP6
+#if WITH_RESOLVE && HAVE_RESOLV_H
+struct para_ip_res {
+	unsigned int opts[2];	/* bits to be set in _res.options are in [0],
+				   bits to be cleared are in [1] */
+#if HAVE_RES_RETRANS
+	int	 retrans;
+#endif
+#if HAVE_RES_RETRY
+	int	 retry;
+#endif
+} ;
+#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
+
 struct para_ip {
-	int	      ai_flags[2]; 	/* flags for getaddrinfo() ai_flags (set/unset) */
-	unsigned long res_opts[2];	/* bits to be set in _res.options are
-					   at [0], bits to be cleared are at [1] */
+	int	     ai_flags[2]; 	/* flags for getaddrinfo() ai_flags (set/unset) */
+#if WITH_RESOLVE && HAVE_RESOLV_H
+	struct para_ip_res res;
+#endif
 	bool     dosourceport; 	/* check the source port of incoming connection or packets */
 	uint16_t sourceport;		/* host byte order */
 	bool     lowport;
