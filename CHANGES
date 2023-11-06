@@ -204,6 +204,8 @@ Corrections:
 	Thanks to Hiroshi Sakurai for reporting the problem and suggesting this
 	solution.
 
+	Fixed option sourceport with UDP6-DATAGRAM.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 

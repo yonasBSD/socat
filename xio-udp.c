@@ -465,16 +465,28 @@ static int xioopen_udp_datagram(
    if (retropt_ushort(opts, OPT_SOURCEPORT, &sfd->para.socket.ip.sourceport)
        >= 0) {
       sfd->para.socket.ip.dosourceport = true;
-      sfd->para.socket.ip.sourceport = ntohs(sfd->peersa.ip4.sin_port);
    }
 
    retropt_socket_pf(opts, &pf);
+
    result =
       _xioopen_udp_sendto(hostname, argv[2], opts, xioflags, xxfd,
 			  addrdesc->groups, pf, socktype, ipproto);
    free(hostname);
    if (result != STAT_OK) {
       return result;
+   }
+
+   if (sfd->para.socket.ip.dosourceport) {
+      switch (sfd->peersa.soa.sa_family) {
+      case PF_INET:
+      default:
+	 sfd->para.socket.ip.sourceport = ntohs(sfd->peersa.ip4.sin_port);
+	 break;
+      case PF_INET6:
+	 sfd->para.socket.ip.sourceport = ntohs(sfd->peersa.ip6.sin6_port);
+	 break;
+      }
    }
 
    sfd->dtype = XIOREAD_RECV|XIOWRITE_SENDTO;
