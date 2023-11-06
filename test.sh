@@ -455,7 +455,7 @@ SunOS)
     #BROADCASTIF=hme0
     #BROADCASTIF=eri0
     #SECONDADDR=$($IFCONFIG $BROADCASTIF |grep 'inet ' |awk '{print($2);}')
-    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 '| head -n 1)" : '.*inet \([0-9.]*\) .*') 
+    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
     #BCIFADDR="$SECONDADDR"
     #BCADDR=$($IFCONFIG $BROADCASTIF |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}')
     ;;
@@ -467,7 +467,7 @@ DragonFly)
     BCADDR=$($IFCONFIG "$BROADCASTIF" |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
 #AIX|FreeBSD|Solaris)
 *)
-    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 ' |head -n 1)" : '.*inet \([0-9.]*\) .*') 
+    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 ' |head -n 1)" : '.*inet \([0-9.]*\) .*')
     ;;
 esac
 # for generic sockets we need this address in hex form
@@ -478,12 +478,12 @@ fi
 # for some tests we need a second local IPv6 address
 case "$UNAME" in
 Linux) if [ "$IP" ]; then
-	   SECONDIP6ADDR=$(expr "$($IP address |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet6 \([0-9a-f:][0-9a-f:]*\)/.*') 
+	   SECONDIP6ADDR=$(expr "$($IP address |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet6 \([0-9a-f:][0-9a-f:]*\)/.*')
        else
-	   SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*') 
+	   SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
        fi ;;
 *)
-    SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*') 
+    SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
     ;;
 esac
 if [ -z "$SECONDIP6ADDR" ]; then
@@ -491,7 +491,7 @@ if [ -z "$SECONDIP6ADDR" ]; then
 #	*%root2%*) $IFCONFIG eth0 ::2/128
 #    esac
     SECONDIP6ADDR="$LOCALHOST6"
-else 
+else
     SECONDIP6ADDR="[$SECONDIP6ADDR]"
 fi
 
@@ -2143,7 +2143,7 @@ elif ! cond=$(checkconds "" "" "" \
     $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-else	
+else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
@@ -18167,7 +18167,7 @@ else
     rc1=$?
     kill $pid0 2>/dev/null; wait
     if [ "$rc1" -ne 0 ]; then
-	$PRINTF "$FAILED\n"
+	$PRINTF "$FAILED (rc1=$rc1)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
 	echo "$CMD1"
@@ -18176,7 +18176,7 @@ else
 	listFAIL="$listFAIL $N"
 	namesFAIL="$namesFAIL $NAME"
     elif ! echo "$da" |diff "${tf}1" - >$tdiff; then
-	$PRINTF "$FAILED\n"
+	$PRINTF "$FAILED (diff)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
 	echo "$CMD1"

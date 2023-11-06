@@ -238,7 +238,7 @@ Porting:
 Testing:
 	Removed obselete parts from test.sh
 
-	Introduced function checkcond from test.sh
+	test.sh: Introduced function checkcond
 
 	Renamed test.sh option -foreign to -internet
 
