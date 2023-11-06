@@ -587,7 +587,8 @@ AC_ARG_ENABLE(openssl_base, [  --enable-openssl-base   specify directory with in
 #
 if test -n "$WITH_OPENSSL"; then
  if test -n "$OPENSSL_BASE"; then
-    sc_cv_have_openssl_ssl_h=yes; OPENSSL_BASE="$D"
+    sc_cv_have_openssl_ssl_h=yes;
+    CPPFLAGS="-I$OPENSSL_BASE/include $CPPFLAGS"
  else
   AC_MSG_NOTICE(checking for components of OpenSSL)
   # first, we need to find the include file <openssl/ssl.h>

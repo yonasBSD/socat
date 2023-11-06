@@ -243,6 +243,9 @@ Porting:
 	Renewed port to OpenBSD:
 	Guard OPENSSL_INIT_SETTINGS; and minor changes.
 
+	Thanks to Paul Hunt for sending a fix of the configure
+	--enable-openssl-base processing.
+
 Testing:
 	Removed obselete parts from test.sh
 
