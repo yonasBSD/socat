@@ -201,6 +201,10 @@ Features:
 	drive socks through TLS, or to use TLS over a serial line.
 	Tests: SOCAT_CHAIN_SOCKS4 SOCAT_CHAIN_SSL_PTY
 
+	Added script socat-mux.sh that performs n-to-1 / 1-to-n communications
+	using two Socat instances with multicasting.
+	Tests: SOCAT_MUX
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

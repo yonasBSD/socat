@@ -18986,6 +18986,118 @@ esac
 N=$((N+1))
 
 
+# Test the socat-mux.sh script
+# Requires lo/lo0 to have broadcast address 127.255.255.255
+NAME=SOCAT_MUX
+case "$TESTS" in
+*%$N%*|*%functions%*|*%script%*|*%socat-mux%*|*%socket%*|*%udp%*|*%broadcast%*|*%$NAME%*)
+TEST="$NAME: test the socat-mux.sh script"
+# Start a simple TCP server
+# Start socat-mux.sh to connect to this server
+# Connect with two clients to mux, send different data records from both.
+# Check if both client received both records in order.
+if ! eval $NUMCOND; then :
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 UDP TCP LISTEN STDIO PIPE" \
+		  "TCP4-LISTEN TCP4-CONNECT PIPE STDIO UDP-DATAGRAM" \
+		  "so-reuseaddr" \
+		  "udp4 tcp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    newport tcp4
+    PORT0=$PORT
+    newport tcp4
+    PORT1=$PORT
+    CMD0="$TRACE $SOCAT $opts -lp server TCP-LISTEN:$PORT0 PIPE"
+    CMD1="./socat-mux.sh TCP-LISTEN:$PORT1 TCP-CONNECT:$LOCALHOST:$PORT0"
+    CMD2="$TRACE $SOCAT $opts -lp client STDIO TCP:$LOCALHOST:$PORT1"
+    da_a="test$N $(date) $RANDOM"
+    da_b="test$N $(date) $RANDOM"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    waittcp4port $PORT0 1
+    $CMD1 >/dev/null 2>"${te}1" &
+    pid1=$!
+    waittcp4port $PORT1 1
+    { sleep 1; echo "$da_a"; sleep 2; } </dev/null |$CMD2 >"${tf}2a" 2>"${te}2a" &
+    pid2a=$!
+    { sleep 2; echo "$da_b"; sleep 1; } |$CMD2 >"${tf}2b" 2>"${te}2b"
+    rc2b=$?
+    kill $pid0 $(childpids $pid1) $pid1 2>/dev/null
+    wait 2>/dev/null
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc2b" -ne 0 ]; then
+	$PRINTF "$FAILED (rc2b=$rc2b)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1 &"
+	cat "${te}1" >&2
+	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2"
+	cat "${te}2a" >&2
+	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"
+	cat "${te}2b" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! $ECHO "$da_a\n$da_b" |diff - "${tf}2a" >${tdiff}_a; then
+	$PRINTF "$FAILED (diff a)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1 &"
+	cat "${te}1" >&2
+	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2"
+	cat "${te}2a" >&2
+	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"
+	cat "${te}2b" >&2
+	echo "// diff a:" >&2
+	cat "${tdiff}_a" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! $ECHO "$da_a\n$da_b" |diff - "${tf}2b" >${tdiff}_b; then
+	$PRINTF "$FAILED (diff b)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1 &"
+	cat "${te}1" >&2
+	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2"
+	cat "${te}2a" >&2
+	echo "{ sleep 2; echo \"\$da_b\"; sleep 2; } |$CMD2"
+	cat "${te}2b" >&2
+	echo "// diff b:" >&2
+	cat "${tdiff}_b" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	if [ "$VERBOSE" ]; then echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2"; fi
+	if [ "$DEBUG" ];   then cat "${te}2a" >&2; fi
+	if [ "$VERBOSE" ]; then echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"; fi
+	if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
