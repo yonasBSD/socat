@@ -2191,6 +2191,17 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# On Solaris family there is not dirent.d_type
+AC_MSG_CHECKING(for d_type in struct dirent)
+AC_CACHE_VAL(sc_cv_dirent_d_type,
+[AC_TRY_COMPILE([#include <dirent.h>],[struct dirent d; d.d_type],
+[sc_cv_dirent_d_type=yes],
+[sc_cv_dirent_d_type=no])])
+if test $sc_cv_dirent_d_type = yes; then
+   AC_DEFINE(HAVE_DIRENT_D_TYPE)
+fi
+AC_MSG_RESULT($sc_cv_dirent_d_type)
+
 # Some OSes have undocumented _res.retrans, _res.retry components
 AC_MSG_CHECKING(for _res.retrans)
 AC_TRY_COMPILE([#include <resolv.h>],

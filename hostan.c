@@ -169,6 +169,7 @@ int hostan(FILE *outfile) {
    fprintf(outfile, "typedef unsigned long long  off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
 #endif
 
+#if HAVE_TYPE_OFF64 && defined(HAVE_BASIC_OFF64_T) && HAVE_BASIC_OFF64_T
 #  if HAVE_BASIC_OFF64_T==1
    fprintf(outfile, "typedef          short      off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
 #elif HAVE_BASIC_OFF64_T==2
@@ -186,6 +187,7 @@ int hostan(FILE *outfile) {
 #elif HAVE_BASIC_OFF64_T==8
    fprintf(outfile, "typedef unsigned long long  off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
 #endif
+#endif /* defined(HAVE_BASIC_OFF64_T) && HAVE_BASIC_OFF64_T */
 
 #  if HAVE_BASIC_DEV_T==1
    fprintf(outfile, "typedef          short      dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
@@ -270,7 +272,7 @@ static int iffan(FILE *outfile) {
    int i;
 
    if ((s = Socket(PF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0) {
-      Error1("socket(PF_INET, SOCK_DGRAM, IPPROTO_IP): %s", strerror(errno));
+      Warn1("socket(PF_INET, SOCK_DGRAM, IPPROTO_IP): %s", strerror(errno));
       return -1;
    }
 
@@ -280,7 +282,7 @@ static int iffan(FILE *outfile) {
    ic.ifc_len = sizeof(buff);
    ic.ifc_ifcu.ifcu_buf = (caddr_t)buff;
    if (Ioctl(s, SIOCGIFCONF, &ic) < 0) {
-      Error3("ioctl(%d, SIOCGIFCONF, %p): %s", s, &ic, strerror(errno));
+      Warn3("ioctl(%d, SIOCGIFCONF, %p): %s", s, &ic, strerror(errno));
       return -1;
    }
 
@@ -293,7 +295,7 @@ static int iffan(FILE *outfile) {
 #if 0 || defined(SIOCGIFINDEX)	/* not NetBSD, OpenBSD */
       strcpy(ifr.ifr_name, ifp->ifr_name);
       if (Ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
-	 Error3("ioctl(%d, SIOCGIFINDEX, {\"%s\"}): %s",
+	 Warn3("ioctl(%d, SIOCGIFINDEX, {\"%s\"}): %s",
 		s, ifr.ifr_name, strerror(errno));
 	 return 1;
       }

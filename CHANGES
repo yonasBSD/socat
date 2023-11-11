@@ -193,6 +193,10 @@ Features:
 	value of SO_PROTOCOL/SO_PROTOTYPE and some other defines, definitions
 	of many C types, and the actual umask.
 
+	Procan tries to find the name of the controlling terminal, on Linux it
+	reads info from /proc/self/stat and searches for a device with matching
+	major and minor numbers.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/
