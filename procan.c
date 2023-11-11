@@ -71,10 +71,28 @@ int procan(FILE *outfile) {
    fprintf(outfile, "group id = "F_gid"\n", Getgid());
    fprintf(outfile, "effective group id = "F_gid"\n", Getegid());
 
+   /* Simple process features */
+   fprintf(outfile, "\n");
+   {
+      mode_t mask;
+#if LATER
+      char procpath[PATH_MAX];
+      sprintf(procpath, "/proc/"F_pid"/status", Getpid());
+      if (Stat()) {
+
+      } else
+#endif
+      {
+	 mask = Umask(0066);
+	 Umask(mask);
+      }
+      fprintf(outfile, "umask = "F_mode"\n", mask);
+   }
+
    {
       struct rlimit rlim;
 
-      fprintf(outfile, "\nRESOURCE LIMITS\n");
+      fprintf(outfile, "\n/* Resource limits */\n");
       fprintf(outfile, "resource                                 current                 maximum\n");
       if (getrlimit(RLIMIT_CPU, &rlim) < 0) {
 	 Warn2("getrlimit(RLIMIT_CPU, %p): %s", &rlim, strerror(errno));
@@ -156,10 +174,18 @@ int procan(FILE *outfile) {
 		 rlim.rlim_cur, rlim.rlim_max);
       }
 #endif
+      fputc('\n', outfile);
+
    }
 
+#ifdef CC
+   fprintf(outfile, "// CC:                      "CC"\n");
+#endif
+#ifdef __STDC_VERSION__
+   fprintf(outfile, "#define __STDC_VERSION__    %ld\n", __STDC_VERSION__);
+#endif
 #ifdef SIZE_MAX
-   fprintf(outfile, "SIZE_MAX                  = %-24lu\n", SIZE_MAX);
+   fprintf(outfile, "SIZE_MAX                  = "F_Zu" /* maximum value of size_t */\n", SIZE_MAX);
 #endif
 #ifdef P_tmpdir
    fprintf(outfile, "P_tmpdir                  = \"%s\"\n", P_tmpdir);
@@ -169,6 +195,9 @@ int procan(FILE *outfile) {
 #endif
 #ifdef TMP_MAX
    fprintf(outfile, "TMP_MAX                   = %d\n", TMP_MAX);
+#endif
+#ifdef FD_SETSIZE
+   fprintf(outfile, "FD_SETSIZE                = %d /* maximum number of FDs for select() */\n", FD_SETSIZE);
 #endif
 #ifdef PIPE_BUF
    fprintf(outfile, "PIPE_BUF                  = %-24d\n", PIPE_BUF);

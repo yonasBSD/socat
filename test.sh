@@ -188,7 +188,7 @@ TIOCEXCL="$($PROCAN -c |grep "^#define[[:space:]]*TIOCEXCL[[:space:]]" |cut -d' 
 SOL_SOCKET="$($PROCAN -c |grep "^#define[[:space:]]*SOL_SOCKET[[:space:]]" |cut -d' ' -f3)"
 SO_REUSEADDR="$($PROCAN -c |grep "^#define[[:space:]]*SO_REUSEADDR[[:space:]]" |cut -d' ' -f3)"
 TCP_MAXSEG="$($PROCAN -c |grep "^#define[[:space:]]*TCP_MAXSEG[[:space:]]" |cut -d' ' -f3)"
-SIZE_T=$($PROCAN |grep size_t |awk '{print($3);}')
+SIZE_T=$($PROCAN |grep "^[^[:space:]]*size_t" |awk '{print($3);}')
 #AI_ADDRCONFIG=; if [ "$($SOCAT -hhh |grep ai-addrconfig)" ]; then AI_ADDRCONFIG="ai-addrconfig=0"; fi
 
 # SSL certificate contents
@@ -3491,7 +3491,7 @@ N=$((N+1))
 # I cannot remember the clou of this test, seems rather useless
 NAME=CHILDDEFAULT
 case "$TESTS" in
-*%$N%*|*%functions%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%procan%*|*%$NAME%*)
 if ! eval $NUMCOND; then :
 elif ! F=$(testfeats STDIO EXEC); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
@@ -3535,7 +3535,7 @@ N=$((N+1))
 
 NAME=CHILDSETSID
 case "$TESTS" in
-*%$N%*|*%functions%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%procan%*|*%$NAME%*)
 TEST="$NAME: child process with setsid"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
@@ -3568,12 +3568,12 @@ N=$((N+1))
 
 NAME=MAINSETSID
 case "$TESTS" in
-*%$N%*|*%functions%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%stdio%*|*%exec%*|*%procan%*|*%$NAME%*)
 TEST="$NAME: main process with setsid"
 if ! eval $NUMCOND; then :; else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
-CMD="$TRACE $SOCAT $opts -U -,setsid exec:$PROCAN"
+CMD="$TRACE $SOCAT $opts -U -,setsid EXEC:$PROCAN"
 printf "test $F_n $TEST... " $N
 $CMD >$tf 2>$te
 MYPID=`grep "process id =" $tf |(expr "\`cat\`" : '[^0-9]*\([0-9]*\).*')`
@@ -10826,7 +10826,7 @@ else
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2"; fi
     numOK=$((numOK+1))
 fi
-fi # NUMCOND, SO_REUSEADDR
+fi # NUMCOND
  ;;
 esac
 N=$((N+1))
@@ -13347,6 +13347,7 @@ case $SIZE_T in
     4) CHKSIZE=2147483648 ;;
     8) CHKSIZE=9223372036854775808 ;;
     16) CHKSIZE=170141183460469231731687303715884105728 ;;
+    *) echo "Unsupported SIZE_T=\"$SIZE_T\"" >2 ;;
 esac
 CMD0="$TRACE $SOCAT $opts -T 1 -b $CHKSIZE /dev/null PIPE"
 printf "test $F_n $TEST... " $N
@@ -18798,10 +18799,10 @@ if [ "$OPT_EXPECT_FAIL" ]; then
     ln -sf "$td/failed.diff" .
     #grep "^"
     grep "^> " "$td/failed.diff" |awk '{print($2);}' >"$td/failed.unexp"
-    ln -s "$td/failed.unexp" .
+    ln -sf "$td/failed.unexp" .
     echo "FAILED unexpected: $(cat "$td/failed.unexp" |xargs echo)"
     grep "^< " "$td/failed.diff" |awk '{print($2);}' >"$td/ok.unexp"
-    ln -s "$td/ok.unexp" .
+    ln -sf "$td/ok.unexp" .
     echo "OK unexpected: $(cat "$td/ok.unexp" |xargs echo)"
 else
     touch "$td/failed.diff"

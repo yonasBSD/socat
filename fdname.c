@@ -310,7 +310,7 @@ int sockname(int fd, FILE *outfile, char style) {
    default: sprintf(protoname, "proto%d", proto); break;
    }
 #endif
-#else
+#else /* ! (defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)) */
    if (opttype == SOCK_STREAM) {
       strcpy(protoname, "(stream)");
    } else if (opttype == SOCK_DGRAM) {
@@ -338,7 +338,7 @@ int sockname(int fd, FILE *outfile, char style) {
    } else {
       strcpy(protoname, "socket");
    }
-#endif /* defined(SO_PROTOCOL) || defined(SO_PROTOTYPE) */
+#endif /* ! (defined(SO_PROTOCOL) || defined(SO_PROTOTYPE)) */
    socknamelen = sizeof(sockname);
    result = Getsockname(fd, &sockname.soa, &socknamelen);
    if (result < 0) {

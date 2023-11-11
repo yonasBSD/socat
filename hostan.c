@@ -32,25 +32,213 @@ int hostan(FILE *outfile) {
    fprintf(outfile, "sizeof(long long) = %u\n", (unsigned int)sizeof(long long));
 #endif
    fprintf(outfile, "sizeof(size_t)    = %u\n", (unsigned int)sizeof(size_t));
+
+#  if HAVE_BASIC_SIZE_T==2
+   fprintf(outfile, "typedef unsigned short      size_t;     /* sizeof(size_t) = %u */\n", (unsigned int)sizeof(size_t));
+#elif HAVE_BASIC_SIZE_T==4
+   fprintf(outfile, "typedef unsigned int        size_t;     /* sizeof(size_t) = %u */\n", (unsigned int)sizeof(size_t));
+#elif HAVE_BASIC_SIZE_T==6
+   fprintf(outfile, "typedef unsigned long       size_t;     /* sizeof(size_t) = %u */\n", (unsigned int)sizeof(size_t));
+#elif HAVE_BASIC_SIZE_T==8
+   fprintf(outfile, "typedef unsigned long long  size_t;     /* sizeof(size_t) = %u */\n", (unsigned int)sizeof(size_t));
+#endif
+
+#  if HAVE_BASIC_MODE_T==1
+   fprintf(outfile, "typedef          short      mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==2
+   fprintf(outfile, "typedef unsigned short      mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==3
+   fprintf(outfile, "typedef          int        mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==4
+   fprintf(outfile, "typedef unsigned int        mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==5
+   fprintf(outfile, "typedef          long       mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==6
+   fprintf(outfile, "typedef unsigned long       mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==7
+   fprintf(outfile, "typedef          long long  mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#elif HAVE_BASIC_MODE_T==8
+   fprintf(outfile, "typedef unsigned long long  mode_t;     /* sizeof(mode_t) = %u */\n", (unsigned int)sizeof(mode_t));
+#endif
+
+#  if HAVE_BASIC_PID_T==1
+   fprintf(outfile, "typedef          short      pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==2
+   fprintf(outfile, "typedef unsigned short      pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==3
+   fprintf(outfile, "typedef          int        pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==4
+   fprintf(outfile, "typedef unsigned int        pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==5
+   fprintf(outfile, "typedef          long       pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==6
+   fprintf(outfile, "typedef unsigned long       pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==7
+   fprintf(outfile, "typedef          long long  pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#elif HAVE_BASIC_PID_T==8
+   fprintf(outfile, "typedef unsigned long long  pid_t;      /* sizeof(pid_t) = %u */\n", (unsigned int)sizeof(pid_t));
+#endif
+
+#  if HAVE_BASIC_UID_T==1
+   fprintf(outfile, "typedef          short      uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==2
+   fprintf(outfile, "typedef unsigned short      uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==3
+   fprintf(outfile, "typedef          int        uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==4
+   fprintf(outfile, "typedef unsigned int        uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==5
+   fprintf(outfile, "typedef          long       uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==6
+   fprintf(outfile, "typedef unsigned long       uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==7
+   fprintf(outfile, "typedef          long long  uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#elif HAVE_BASIC_UID_T==8
+   fprintf(outfile, "typedef unsigned long long  uid_t;      /* sizeof(uid_t) = %u */\n", (unsigned int)sizeof(uid_t));
+#endif
+
+#  if HAVE_BASIC_GID_T==1
+   fprintf(outfile, "typedef          short      gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==2
+   fprintf(outfile, "typedef unsigned short      gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==3
+   fprintf(outfile, "typedef          int        gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==4
+   fprintf(outfile, "typedef unsigned int        gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==5
+   fprintf(outfile, "typedef          long       gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==6
+   fprintf(outfile, "typedef unsigned long       gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==7
+   fprintf(outfile, "typedef          long long  gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#elif HAVE_BASIC_GID_T==8
+   fprintf(outfile, "typedef unsigned long long  gid_t;      /* sizeof(gid_t) = %u */\n", (unsigned int)sizeof(gid_t));
+#endif
+
+#  if HAVE_BASIC_TIME_T==1
+   fprintf(outfile, "typedef          short      time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==2
+   fprintf(outfile, "typedef unsigned short      time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==3
+   fprintf(outfile, "typedef          int        time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==4
+   fprintf(outfile, "typedef unsigned int        time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==5
+   fprintf(outfile, "typedef          long       time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==6
+   fprintf(outfile, "typedef unsigned long       time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==7
+   fprintf(outfile, "typedef          long long  time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#elif HAVE_BASIC_TIME_T==8
+   fprintf(outfile, "typedef unsigned long long  time_t;     /* sizeof(time_t) = %u */\n", (unsigned int)sizeof(time_t));
+#endif
+
+#  if HAVE_BASIC_SOCKLEN_T==1
+   fprintf(outfile, "typedef          short      socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==2
+   fprintf(outfile, "typedef unsigned short      socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==3
+   fprintf(outfile, "typedef          int        socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==4
+   fprintf(outfile, "typedef unsigned int        socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==5
+   fprintf(outfile, "typedef          long       socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==6
+   fprintf(outfile, "typedef unsigned long       socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==7
+   fprintf(outfile, "typedef          long long  socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#elif HAVE_BASIC_SOCKLEN_T==8
+   fprintf(outfile, "typedef unsigned long long  socklen_t;  /* sizeof(socklen_t) = %u */\n", (unsigned int)sizeof(socklen_t));
+#endif
+
+#  if HAVE_BASIC_OFF_T==1
+   fprintf(outfile, "typedef          short      off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==2
+   fprintf(outfile, "typedef unsigned short      off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==3
+   fprintf(outfile, "typedef          int        off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==4
+   fprintf(outfile, "typedef unsigned int        off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==5
+   fprintf(outfile, "typedef          long       off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==6
+   fprintf(outfile, "typedef unsigned long       off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==7
+   fprintf(outfile, "typedef          long long  off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#elif HAVE_BASIC_OFF_T==8
+   fprintf(outfile, "typedef unsigned long long  off_t;      /* sizeof(off_t) = %u */\n", (unsigned int)sizeof(off_t));
+#endif
+
+#  if HAVE_BASIC_OFF64_T==1
+   fprintf(outfile, "typedef          short      off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==2
+   fprintf(outfile, "typedef unsigned short      off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==3
+   fprintf(outfile, "typedef          int        off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==4
+   fprintf(outfile, "typedef unsigned int        off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==5
+   fprintf(outfile, "typedef          long       off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==6
+   fprintf(outfile, "typedef unsigned long       off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==7
+   fprintf(outfile, "typedef          long long  off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#elif HAVE_BASIC_OFF64_T==8
+   fprintf(outfile, "typedef unsigned long long  off64_t;    /* sizeof(off64_t) = %u */\n", (unsigned int)sizeof(off64_t));
+#endif
+
+#  if HAVE_BASIC_DEV_T==1
+   fprintf(outfile, "typedef          short      dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==2
+   fprintf(outfile, "typedef unsigned short      dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==3
+   fprintf(outfile, "typedef          int        dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==4
+   fprintf(outfile, "typedef unsigned int        dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==5
+   fprintf(outfile, "typedef          long       dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==6
+   fprintf(outfile, "typedef unsigned long       dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==7
+   fprintf(outfile, "typedef          long long  dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#elif HAVE_BASIC_DEV_T==8
+   fprintf(outfile, "typedef unsigned long long  dev_t;      /* sizeof(dev_t) = %u */\n", (unsigned int)sizeof(dev_t));
+#endif
+
    {
-      union {
-	 uint16_t s;
-	 uint8_t c[2];
-      } bo;
-      bo.c[0] = 0x05;
-      bo.c[1] = 0xa0;
-      if (bo.s == 0x05a0) {
-	 fprintf(outfile, "host byte order: network (BE \"big endian\", most significast byte first)\n");
-      } else if (bo.s == 0xa005) {
-	 fprintf(outfile, "host byte order: intel (LE \"little endian\", least significast byte first\n");
+      struct stat x;
+#  if HAVE_TYPEOF_ST_INO==1
+   fprintf(outfile, "typedef          short      ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==2
+   fprintf(outfile, "typedef unsigned short      ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==3
+   fprintf(outfile, "typedef          int        ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==4
+   fprintf(outfile, "typedef unsigned int        ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==5
+   fprintf(outfile, "typedef          long       ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==6
+   fprintf(outfile, "typedef unsigned long       ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==7
+   fprintf(outfile, "typedef          long long  ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#elif HAVE_TYPEOF_ST_INO==8
+   fprintf(outfile, "typedef unsigned long long  ino_t;      /* sizeof(ino_t) = %u */\n", (unsigned int)sizeof(x.st_ino));
+#endif
+   }
+   {
+      unsigned short x = 0x100;
+      if (x == ntohs(0x100)) {
+	 fprintf(outfile, "#define __BYTE_ORDER __BIG_ENDIAN\t/* Motorola ea.*/\n");
       } else {
-	 fprintf(outfile, "host byte order: unknown\n");
-	 fprintf(stderr, "failed to determine host byte order");
+	 fprintf(outfile, "#define __BYTE_ORDER __LITTLE_ENDIAN\t/* Intel ea.*/\n");
       }
    }
 
 #include <sys/time.h>	/* select(); OpenBSD: struct timespec */
    fprintf(outfile, "sizeof(struct timespec)      = %u\n", (unsigned int)sizeof(struct timespec));
+
+   fprintf(outfile, "\n");
+   fprintf(outfile, "/* Socat types */\n");
    fprintf(outfile, "sizeof(struct diag_dgram)      = %u\n", (unsigned int)sizeof(struct diag_dgram));
    fprintf(outfile, "((struct diag_dgram *)0)->op-((struct diag_dgram *)0)     = %u\n", (unsigned int)((char *)(&((struct diag_dgram *)0)->op)-(char *)((struct diag_dgram *)0)));
    fprintf(outfile, "((struct diag_dgram *)0)->now-((struct diag_dgram *)0)     = %u\n", (unsigned int)((char *)(&((struct diag_dgram *)0)->now)-(char *)((struct diag_dgram *)0)));

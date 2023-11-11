@@ -85,6 +85,9 @@ int procan_cdefs(FILE *outfile) {
 #endif
 
    /* socket constants */
+#ifdef PF_UNSPEC
+   fprintf(outfile, "#define PF_UNSPEC %d\n", PF_UNSPEC);
+#endif
 #ifdef PF_UNIX
    fprintf(outfile, "#define PF_UNIX %d\n", PF_UNIX);
 #elif defined(PF_LOCAL)
@@ -101,6 +104,9 @@ int procan_cdefs(FILE *outfile) {
 #endif
 #ifdef PF_PACKET
    fprintf(outfile, "#define PF_PACKET %d\n", PF_PACKET);
+#endif
+#ifdef PF_VSOCK
+   fprintf(outfile, "#define PF_VSOCK %d\n", PF_VSOCK);
 #endif
 #ifdef SOCK_STREAM
    fprintf(outfile, "#define SOCK_STREAM %d\n", SOCK_STREAM);
@@ -135,6 +141,9 @@ int procan_cdefs(FILE *outfile) {
 #ifdef IPPROTO_UDPLITE
    fprintf(outfile, "#define IPPROTO_UDPLITE %d\n", IPPROTO_UDPLITE);
 #endif
+#ifdef IPPROTO_RAW
+   fprintf(outfile, "#define IPPROTO_RAW %d\n", IPPROTO_RAW);
+#endif
 #ifdef SOL_SOCKET
    fprintf(outfile, "#define SOL_SOCKET 0x%x\n", SOL_SOCKET);
 #endif
@@ -158,6 +167,12 @@ int procan_cdefs(FILE *outfile) {
 #endif
 #ifdef SOL_DCCP
    fprintf(outfile, "#define SOL_DCCP 0x%x\n", SOL_DCCP);
+#endif
+#ifdef SO_PROTOCOL
+   fprintf(outfile, "#define SO_PROTOCOL %d\n", SO_PROTOCOL);
+#endif
+#ifdef SO_PROTOTYPE
+   fprintf(outfile, "#define SO_PROTOTYPE %d\n", SO_PROTOTYPE);
 #endif
 #ifdef SO_REUSEADDR
    fprintf(outfile, "#define SO_REUSEADDR %d\n", SO_REUSEADDR);

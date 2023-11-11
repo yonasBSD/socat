@@ -189,6 +189,10 @@ Features:
 	All these are also available in UDPLITE4-* and UDPLITE6-* form;
 	options udplite-recv-cscov and udplite-send-cscov.
 
+	Procan now prints info about CC and __STDC_VERSION__, about FD_SETSIZE,
+	value of SO_PROTOCOL/SO_PROTOTYPE and some other defines, definitions
+	of many C types, and the actual umask.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/
