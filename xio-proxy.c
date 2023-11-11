@@ -149,7 +149,7 @@ static int xioopen_proxy_connect(
 			     &themlist, us, &uslen,
 			     &needbind, &lowport, socktype);
    if (result != STAT_OK)
-      return result;
+       return result;
 
     /* Count addrinfo entries */
       themp = themlist;

@@ -712,6 +712,7 @@
 #undef WITH_INTERFACE
 #undef WITH_TCP
 #undef WITH_UDP
+#undef WITH_UDPLITE
 #undef WITH_SCTP
 #undef WITH_DCCP
 #undef WITH_LISTEN

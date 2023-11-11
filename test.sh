@@ -607,6 +607,10 @@ case "$TESTS" in
 $ECHO "testing if address array is sorted...\c"
 TF="$TD/socat-q"
 IFS="$($ECHO ' \n\t')"
+if ! $SOCAT -hhh >/dev/null; then
+    echo "Failed: $SOCAT -hhh" >&2
+    exit -1
+fi
 $SOCAT -hhh |sed -n '/^   address-head:/,/^   opts:/ p' |grep -v -e "^   address-head:" -e "^   opts:" |sed -e 's/^[[:space:]]*//' -e 's/[: ].*//' |grep -v '^<' >"$TF"
 $SOCAT -hhh |sed -n '/^   address-head:/,/^   opts:/ p' |grep -v -e "^   address-head:" -e "^   opts:" |sed -e 's/^[[:space:]]*//' -e 's/[: ].*//' |grep -v '^<' |LC_ALL=C sort |diff "$TF" - >"$TF-diff"
 if [ -s "$TF-diff" ]; then
@@ -991,6 +995,20 @@ runsdccp6 () {
     runsip6 >/dev/null || { echo DCCP6; return 1; }
     $SOCAT -h |grep -i ' DCCP6-' >/dev/null || return 1
     $SOCAT /dev/null DCCP6-L:0,accept-timeout=0.001 2>/dev/null || return 1;
+    return 0;
+}
+
+# check if UDPLITE on IPv4 is available on host
+runsudplite4 () {
+    runsip4 >/dev/null || { echo UDPLITE4; return 1; }
+    $SOCAT -u -T 0.001 /dev/null UDPLITE4-SENDTO:$LOCALHOST4:0 2>/dev/null || return 1;
+    return 0;
+}
+
+# check if UDPLITE on IPv6 is available on host
+runsudplite6 () {
+    runsip6 >/dev/null || { echo UDPLITE6; return 1; }
+    $SOCAT -u -T 0.001 /dev/null UDPLITE6-SENDTO:$LOCALHOST6:0 2>/dev/null || return 1;
     return 0;
 }
 
@@ -1415,6 +1433,51 @@ waitsctp4port () {
     return 1
 }
 
+# wait until a UDPLITE4 port is ready
+waitudplite4port () {
+    local port="$1"
+    local logic="$2" # 0..wait until free; 1..wait until listening
+    local timeout="$3"
+    local l
+    local vx=+; case $- in *vx*) set +vx; vx=-; esac # no tracing here
+    [ "$logic" ] || logic=1
+    [ "$timeout" ] || timeout=5
+    while [ $timeout -gt 0 ]; do
+	case "$UNAME" in
+	    Linux) #if [ "$SS" ]; then
+		#l=$($SS -4 -l -n -u |grep "^UNCONN .*:$port\>")
+		#else
+		l=$(netstat -a -n -U -l |grep '^udpl .* .*[0-9*]:'$port' [ ]*0\.0\.0\.0:\*')
+		#fi
+		;;
+	    FreeBSD) l=$(netstat -an |egrep '^udpl46? .*[0-9*]\.'$port' .* \*\.\*') ;;
+	    NetBSD)  l=$(netstat -an |grep '^udpl .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
+	    OpenBSD) l=$(netstat -an |grep '^udpl .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
+	    #Darwin) case "$(uname -r)" in
+	    #   [1-5]*) l=$(netstat -an |grep '^udp.* .*[0-9*]\.'$port' .* \*\.\*') ;;
+	    #   *) l=$(netstat -an |grep '^udp4.* .*[0-9*]\.'$port' .* \*\.\* .*') ;;
+	    #   esac ;;
+	    #AIX)        l=$(netstat -an |grep '^udp[4 ]       0      0 .*[*0-9]\.'$port' .* \*\.\*[ ]*$') ;;
+	    #SunOS)   l=$(netstat -an -f inet -P udp |grep '.*[1-9*]\.'$port' [ ]*Idle') ;;
+	    #HP-UX)   l=$(netstat -an |grep '^udp        0      0  .*[0-9*]\.'$port' .* \*\.\* ') ;;
+	    #OSF1)    l=$(/usr/sbin/netstat -an |grep '^udp        0      0  .*[0-9*]\.'$port' [ ]*\*\.\*') ;;
+	    #DragonFly) l=$(netstat -an |grep '^udp4 .* .*[0-9*]\.'$port' [ ]* \*\.\* [ ]*') ;;
+	    *)       l=$(netstat -an |grep -i 'udp .*[0-9*][:.]'$port' ') ;;
+	esac
+	if [ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
+		\( \( $logic -eq 0 \) -a -z "$l" \) ]; then
+	    set ${vx}vx
+	    return 0
+	fi
+	sleep 1
+	timeout=$((timeout-1))
+    done
+
+    $ECHO "!port $port timed out! \c" >&2
+    set ${vx}vx
+    return 1
+}
+
 # check if a TCP6 port is in use
 # exits with 0 when it is not used
 checktcp6port () {
@@ -1549,6 +1612,48 @@ waitsctp6port () {
 	    return 0
 	fi
 	psleep $val_t
+	timeout=$((timeout-1))
+    done
+
+    $ECHO "!port $port timed out! \c" >&2
+    set ${vx}vx
+    return 1
+}
+
+# wait until a UDPLITE6 port is ready
+waitudplite6port () {
+    local port="$1"
+    local logic="$2" # 0..wait until free; 1..wait until listening
+    local timeout="$3"
+    local l
+    local vx=+; case $- in *vx*) set +vx; vx=-; esac # no tracing here
+    [ "$logic" ] || logic=1
+    [ "$timeout" ] || timeout=5
+    while [ $timeout -gt 0 ]; do
+	case "$UNAME" in
+	    Linux) #if [ "$SS" ]; then
+		#l=$($SS -6 -u -l -n |grep "^UNCONN .*:$port\>")
+		#else
+		l=$(netstat -an |grep -E '^udpl6? .* .*[0-9*:%]:'$port' [ ]*:::\*')
+		#fi
+		;;
+	    FreeBSD) l=$(netstat -an |egrep '^udpl(6|46) .*[0-9*]\.'$port' .* \*\.\*') ;;
+	    NetBSD)  l=$(netstat -an |grep '^udpl6 .* \*\.'$port' [ ]* \*\.\*') ;;
+	    OpenBSD) l=$(netstat -an |grep '^udpl6 .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
+	    Darwin)  l=$(netstat -an |egrep '^udpl4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+') ;;
+	    #AIX)        l=$(netstat -an |grep '^udp[6 ]       0      0 .*[*0-9]\.'$port' .* \*\.\*[ ]*$') ;;
+	    #SunOS)   l=$(netstat -an -f inet6 -P udp |grep '.*[1-9*]\.'$port' [ ]*Idle') ;;
+	    #HP-UX)   l=$(netstat -an |grep '^udp        0      0  .*[0-9*]\.'$port' ') ;;
+	    #OSF1)    l=$(/usr/sbin/netstat -an |grep '^udp6       0      0  .*[0-9*]\.'$port' [ ]*\*\.\*') ;;
+	    #DragonFly) l=$(netstat -ant |grep '^udp6 .* .*[0-9*]\.'$port' [ ]* \*\.\* [ ]*') ;;
+	    *)       l=$(netstat -an |grep -i 'udp .*[0-9*][:.]'$port' ') ;;
+	esac
+	if [ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
+		\( \( $logic -eq 0 \) -a -z "$l" \) ]; then
+	    set ${vx}vx
+	    return 0
+	fi
+	sleep 1
 	timeout=$((timeout-1))
     done
 
@@ -9897,14 +10002,14 @@ IP6  IP6  [::1]     PROTO ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    
 # test: setting of environment variables that describe a stream socket
 # connection: SOCAT_SOCKADDR, SOCAT_PEERADDR; and SOCAT_SOCKPORT,
 # SOCAT_PEERPORT when applicable
-while read KEYW FEAT TEST_SOCKADDR TEST_PEERADDR PORTMETHOD; do
+while read KEYW FEAT SEL TEST_SOCKADDR TEST_PEERADDR PORTMETHOD; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 #
 protov="$(echo "$KEYW" |tr A-Z a-z)"
 proto="${protov%%[0-9]}"
 NAME=${KEYW}LISTENENV
 case "$TESTS" in
-*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%tcp%*|*%$proto%*|*%$protov%*|*%envvar%*|*%listen%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%$SEL%*|*%$proto%*|*%$protov%*|*%envvar%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: $KEYW-LISTEN sets environment variables with socket addresses"
 # have a server accepting a connection and invoking some shell code. The shell
 # code extracts and prints the SOCAT related environment vars.
@@ -9993,19 +10098,19 @@ N=$((N+1))
 #set +xv
 #
 done <<<"
-TCP4  TCP  127.0.0.1                                 $SECONDADDR                               PORT
-TCP6  IP6  [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
-UDP6  IP6  [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
-SCTP4 SCTP 127.0.0.1                                 $SECONDADDR                               PORT
-SCTP6 SCTP [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
-UNIX  UNIX $td/test\$N.server                        $td/test\$N.client                        ,
+TCP4     TCP  tcp     127.0.0.1                                 $SECONDADDR                               PORT
+TCP6     IP6  tcp     [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+UDP6     IP6  udp     [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+SCTP4    SCTP sctp    127.0.0.1                                 $SECONDADDR                               PORT
+SCTP6    SCTP sctp    [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+UNIX     UNIX unix    $td/test\$N.server                        $td/test\$N.client                        ,
 "
 # this one fails due to weakness in socats UDP4-LISTEN implementation:
 #UDP4 $LOCALHOST $SECONDADDR $((PORT+4)) $((PORT+5))
 
 
 # test: environment variables from ancillary message
-while read PF KEYW ADDR IPPORT SCM_ENABLE SCM_RECV SCM_ENVNAME ROOT SCM_VALUE
+while read PF KEYW SEL ADDR IPPORT SCM_ENABLE SCM_RECV SCM_ENVNAME ROOT SCM_VALUE
 do
 if [ -z "$PF" ] || [[ "$PF" == \#* ]]; then continue; fi
 #
@@ -10013,7 +10118,7 @@ pf="$(echo "$PF" |tr A-Z a-z)"
 proto="$(echo "$KEYW" |tr A-Z a-z)"
 NAME=${KEYW}ENV_$SCM_ENVNAME
 case "$TESTS" in
-*%$N%*|*%functions%*|*%socket%*|*%$pf%*|*%dgram%*|*%udp%*|*%$proto%*|*%recv%*|*%ancillary%*|*%envvar%*|*%$ROOT%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%socket%*|*%$pf%*|*%dgram%*|*%$SEL%*|*%$proto%*|*%recv%*|*%ancillary%*|*%envvar%*|*%$ROOT%*|*%$NAME%*)
 #set -vx
 TEST="$NAME: $KEYW ancillary message sets env SOCAT_$SCM_ENVNAME"
 # idea: start a socat process with *-RECVFROM:..,... , ev. with ancillary
@@ -10110,30 +10215,30 @@ esac
 N=$((N+1))
 #
 done <<<"
-IP4  UDP4 127.0.0.1 PORT  ip-options=x01000000 ip-recvopts       IP_OPTIONS     user x01000000
-IP4  UDP4 127.0.0.1 PORT  ,                    so-timestamp      TIMESTAMP      user timestamp
-IP4  UDP4 127.0.0.1 PORT  ip-ttl=53            ip-recvttl        IP_TTL         user 53
-IP4  UDP4 127.0.0.1 PORT  ip-tos=7             ip-recvtos        IP_TOS         user 7
-IP4  UDP4 127.0.0.1 PORT  ,                    ip-pktinfo        IP_LOCADDR     user 127.0.0.1
-IP4  UDP4 127.0.0.1 PORT  ,                    ip-pktinfo        IP_DSTADDR     user 127.0.0.1
-IP4  UDP4 127.0.0.1 PORT  ,                    ip-pktinfo        IP_IF          user lo
-IP4  UDP4 127.0.0.1 PORT  ,                    ip-recvif         IP_IF          user lo0
-IP4  UDP4 127.0.0.1 PORT  ,                    ip-recvdstaddr    IP_DSTADDR     user 127.0.0.1
-IP4  IP4  127.0.0.1 PROTO ip-options=x01000000 ip-recvopts       IP_OPTIONS     root x01000000
-IP4  IP4  127.0.0.1 PROTO ,                    so-timestamp      TIMESTAMP      root timestamp
-IP4  IP4  127.0.0.1 PROTO ip-ttl=53            ip-recvttl        IP_TTL         root 53
-IP4  IP4  127.0.0.1 PROTO ip-tos=7             ip-recvtos        IP_TOS         root 7
-IP4  IP4  127.0.0.1 PROTO ,                    ip-pktinfo        IP_LOCADDR     root 127.0.0.1
-IP4  IP4  127.0.0.1 PROTO ,                    ip-pktinfo        IP_DSTADDR     root 127.0.0.1
-IP4  IP4  127.0.0.1 PROTO ,                    ip-pktinfo        IP_IF          root lo
-IP4  IP4  127.0.0.1 PROTO ,                    ip-recvif         IP_IF          root lo0
-IP4  IP4  127.0.0.1 PROTO ,                    ip-recvdstaddr    IP_DSTADDR     root 127.0.0.1
-IP6  UDP6 [::1]     PORT  ,                    ipv6-recvpktinfo  IPV6_DSTADDR   user [[]0000:0000:0000:0000:0000:0000:0000:0001[]]
-IP6  UDP6 [::1]     PORT  ipv6-unicast-hops=35 ipv6-recvhoplimit IPV6_HOPLIMIT  user 35
-IP6  UDP6 [::1]     PORT  ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    user x000000aa
-IP6  IP6  [::1]     PROTO ,                    ipv6-recvpktinfo  IPV6_DSTADDR   root [[]0000:0000:0000:0000:0000:0000:0000:0001[]]
-IP6  IP6  [::1]     PROTO ipv6-unicast-hops=35 ipv6-recvhoplimit IPV6_HOPLIMIT  root 35
-IP6  IP6  [::1]     PROTO ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    root x000000aa
+IP4  UDP4     udp     127.0.0.1 PORT  ip-options=x01000000 ip-recvopts       IP_OPTIONS     user x01000000
+IP4  UDP4     udp     127.0.0.1 PORT  ,                    so-timestamp      TIMESTAMP      user timestamp
+IP4  UDP4     udp     127.0.0.1 PORT  ip-ttl=53            ip-recvttl        IP_TTL         user 53
+IP4  UDP4     udp     127.0.0.1 PORT  ip-tos=7             ip-recvtos        IP_TOS         user 7
+IP4  UDP4     udp     127.0.0.1 PORT  ,                    ip-pktinfo        IP_LOCADDR     user 127.0.0.1
+IP4  UDP4     udp     127.0.0.1 PORT  ,                    ip-pktinfo        IP_DSTADDR     user 127.0.0.1
+IP4  UDP4     udp     127.0.0.1 PORT  ,                    ip-pktinfo        IP_IF          user lo
+IP4  UDP4     udp     127.0.0.1 PORT  ,                    ip-recvif         IP_IF          user lo0
+IP4  UDP4     udp     127.0.0.1 PORT  ,                    ip-recvdstaddr    IP_DSTADDR     user 127.0.0.1
+IP4  IP4      rawip   127.0.0.1 PROTO ip-options=x01000000 ip-recvopts       IP_OPTIONS     root x01000000
+IP4  IP4      rawip   127.0.0.1 PROTO ,                    so-timestamp      TIMESTAMP      root timestamp
+IP4  IP4      rawip   127.0.0.1 PROTO ip-ttl=53            ip-recvttl        IP_TTL         root 53
+IP4  IP4      rawip   127.0.0.1 PROTO ip-tos=7             ip-recvtos        IP_TOS         root 7
+IP4  IP4      rawip   127.0.0.1 PROTO ,                    ip-pktinfo        IP_LOCADDR     root 127.0.0.1
+IP4  IP4      rawip   127.0.0.1 PROTO ,                    ip-pktinfo        IP_DSTADDR     root 127.0.0.1
+IP4  IP4      rawip   127.0.0.1 PROTO ,                    ip-pktinfo        IP_IF          root lo
+IP4  IP4      rawip   127.0.0.1 PROTO ,                    ip-recvif         IP_IF          root lo0
+IP4  IP4      rawip   127.0.0.1 PROTO ,                    ip-recvdstaddr    IP_DSTADDR     root 127.0.0.1
+IP6  UDP6     udp     [::1]     PORT  ,                    ipv6-recvpktinfo  IPV6_DSTADDR   user [[]0000:0000:0000:0000:0000:0000:0000:0001[]]
+IP6  UDP6     udp     [::1]     PORT  ipv6-unicast-hops=35 ipv6-recvhoplimit IPV6_HOPLIMIT  user 35
+IP6  UDP6     udp     [::1]     PORT  ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    user x000000aa
+IP6  IP6      rawip   [::1]     PROTO ,                    ipv6-recvpktinfo  IPV6_DSTADDR   root [[]0000:0000:0000:0000:0000:0000:0000:0001[]]
+IP6  IP6      rawip   [::1]     PROTO ipv6-unicast-hops=35 ipv6-recvhoplimit IPV6_HOPLIMIT  root 35
+IP6  IP6      rawip   [::1]     PROTO ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    root x000000aa
 #UNIX UNIX $td/test\$N.server - ,               so-timestamp      TIMESTAMP      user timestamp
 "
 
@@ -11471,7 +11576,8 @@ UNIX  unix  $td/test\$N.server -
 # care for timing, understand what you want :-)
 
 
-while read KEYW FEAT ADDR IPPORT SHUT; do
+# test the max-children option on pseudo connected sockets
+while read KEYW FEAT SEL ADDR IPPORT SHUT; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 RUNS=$(tolower $KEYW)
 PROTO=$KEYW
@@ -11479,7 +11585,7 @@ proto="$(echo "$PROTO" |tr A-Z a-z)"
 # test the max-children option on pseudo connected sockets
 NAME=${KEYW}MAXCHILDREN
 case "$TESTS" in
-*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%socket%*|*%listen%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%$SEL%*|*%socket%*|*%listen%*|*%$NAME%*)
 TEST="$NAME: max-children option"
 # start a listen process with max-children=1; connect with a client, let it
 # send data and then sleep; connect with second client that wants to send
@@ -11546,8 +11652,8 @@ fi # NUMCOND
 esac
 N=$((N+1))
 done <<<"
-UDP4  UDP  127.0.0.1 PORT shut-null
-UDP6  UDP  [::1]     PORT shut-null
+UDP4      UDP      udp      127.0.0.1 PORT shut-null
+UDP6      UDP      udp      [::1]     PORT shut-null
 "
 # debugging this hanging test was difficult - following lessons learned:
 # kill <parent> had no effect when child process existed
@@ -18203,6 +18309,394 @@ wait
 fi ;; # NUMCOND, checkconds
 esac
 N=$((N+1))
+
+
+NAME=UDPLITE4STREAM
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udplite%*|*%$NAME%*)
+TEST="$NAME: echo via connection to UDP-Lite V4 socket"
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 UDPLITE LISTEN STDIO PIPE" \
+		  "UDPLITE4-LISTEN PIPE STDIO UDPLITE4" \
+		  "so-reuseaddr" \
+		  "udplite4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    tsl=$PORT
+    ts="$LOCALHOST:$tsl"
+    da="test$N $(date) $RANDOM"
+    CMD1="$TRACE $SOCAT $opts UDPLITE4-LISTEN:$tsl,$REUSEADDR PIPE"
+    CMD2="$TRACE $SOCAT $opts - UDPLITE4:$ts"
+    printf "test $F_n $TEST... " $N
+    $CMD1 >"$tf" 2>"${te}1" &
+    pid1=$!
+    waitudplite4port $tsl 1
+    echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
+    rc2=$?
+    kill $pid1 2>/dev/null; wait
+    if [ $rc2 -ne 0 ]; then
+	$PRINTF "$FAILED: $TRACE $SOCAT:\n"
+	echo "$CMD1 &"
+	cat "${te}1" >&2
+	echo "$CMD2"
+	cat "${te}2" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+    elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
+	$PRINTF "$FAILED (diff)\n"
+	echo "$CMD1 &" >&2
+	cat "${te}1"
+	echo "$CMD2" >&2
+	cat "${te}2" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi ;; # NUMCOND
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
+NAME=UDPLITE4STREAM
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udplite%*|*%$NAME%*)
+TEST="$NAME: echo via connection to UDP-Lite V4 socket"
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 UDPLITE LISTEN STDIO PIPE" \
+		  "UDPLITE4-LISTEN PIPE STDIO UDPLITE4" \
+		  "so-reuseaddr" \
+		  "udplite4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    tsl=$PORT
+    ts="$LOCALHOST:$tsl"
+    da="test$N $(date) $RANDOM"
+    CMD1="$TRACE $SOCAT $opts UDPLITE4-LISTEN:$tsl,$REUSEADDR PIPE"
+    CMD2="$TRACE $SOCAT $opts - UDPLITE4:$ts"
+    printf "test $F_n $TEST... " $N
+    $CMD1 >"$tf" 2>"${te}1" &
+    pid1=$!
+    waitudplite4port $tsl 1
+    echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
+    rc2=$?
+    kill $pid1 2>/dev/null; wait
+    if [ $rc2 -ne 0 ]; then
+	$PRINTF "$FAILED: $TRACE $SOCAT:\n"
+	echo "$CMD1 &"
+	cat "${te}1" >&2
+	echo "$CMD2"
+	cat "${te}2" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+    elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
+	$PRINTF "$FAILED (diff)\n"
+	echo "$CMD1 &" >&2
+	cat "${te}1"
+	echo "$CMD2" >&2
+	cat "${te}2" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi ;; # NUMCOND
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
+NAME=UDPLITE4STREAM
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udplite%*|*%$NAME%*)
+TEST="$NAME: echo via connection to UDP-Lite V4 socket"
+if ! eval $NUMCOND; then :;
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 UDPLITE LISTEN STDIO PIPE" \
+		  "UDPLITE4-LISTEN PIPE STDIO UDPLITE4" \
+		  "so-reuseaddr" \
+		  "udplite4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    tsl=$PORT
+    ts="$LOCALHOST:$tsl"
+    da="test$N $(date) $RANDOM"
+    CMD1="$TRACE $SOCAT $opts UDPLITE4-LISTEN:$tsl,$REUSEADDR PIPE"
+    CMD2="$TRACE $SOCAT $opts - UDPLITE4:$ts"
+    printf "test $F_n $TEST... " $N
+    $CMD1 >"$tf" 2>"${te}1" &
+    pid1=$!
+    waitudplite4port $tsl 1
+    echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
+    rc2=$?
+    kill $pid1 2>/dev/null; wait
+    if [ $rc2 -ne 0 ]; then
+	$PRINTF "$FAILED: $TRACE $SOCAT:\n"
+	echo "$CMD1 &"
+	cat "${te}1" >&2
+	echo "$CMD2"
+	cat "${te}2" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+    elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
+	$PRINTF "$FAILED (diff)\n"
+	echo "$CMD1 &" >&2
+	cat "${te}1"
+	echo "$CMD2" >&2
+	cat "${te}2" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi ;; # NUMCOND
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+
+
+# test: setting of environment variables that describe a stream socket
+# connection: SOCAT_SOCKADDR, SOCAT_PEERADDR; and SOCAT_SOCKPORT,
+# SOCAT_PEERPORT when applicable
+while read KEYW FEAT SEL TEST_SOCKADDR TEST_PEERADDR PORTMETHOD; do
+if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
+#
+protov="$(echo "$KEYW" |tr A-Z a-z)"
+proto="${protov%%[0-9]}"
+NAME=${KEYW}LISTENENV
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%$SEL%*|*%$proto%*|*%$protov%*|*%envvar%*|*%listen%*|*%$NAME%*)
+TEST="$NAME: $KEYW-LISTEN sets environment variables with socket addresses"
+# have a server accepting a connection and invoking some shell code. The shell
+# code extracts and prints the SOCAT related environment vars.
+# outside code then checks if the environment contains the variables correctly
+# describing the peer and local sockets.
+if ! eval $NUMCOND; then :;
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "$FEAT $(echo $SEL |tr a-z A-Z) STDIO SYSTEM" \
+		  "$KEYW-LISTEN SYSTEM STDIO $KEYW-CONNECT" \
+		  "$REUSEADDR bind" \
+		  "$protov" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+TEST_SOCKADDR="$(echo "$TEST_SOCKADDR" |sed "s/\$N/$N/g")"	# actual vars
+tsa="$TEST_SOCKADDR"	# test server address
+if [ "$PORTMETHOD" = PORT ]; then
+    newport $proto; tsp="$PORT"; 	# test server port
+    tsa1="$tsp"; tsa2="$tsa"; tsa="$tsa:$tsp"	# tsa2 used for server bind=
+else
+    tsa1="$tsa"; tsa2=				# tsa1 used for addr parameter
+fi
+TEST_PEERADDR="$(echo "$TEST_PEERADDR" |sed "s/\$N/$N/g")"	# actual vars
+tca="$TEST_PEERADDR"	# test client address
+if [ "$PORTMETHOD" = PORT ]; then
+    newport $proto; tcp="$PORT"; 	# test client port
+    tca="$tca:$tcp"
+fi
+#CMD0="$TRACE $SOCAT $opts -u $KEYW-LISTEN:$tsa1 SYSTEM:\"export -p\""
+CMD0="$TRACE $SOCAT $opts -u -lpsocat $KEYW-LISTEN:$tsa1,$REUSEADDR SYSTEM:\"echo SOCAT_SOCKADDR=\\\$SOCAT_SOCKADDR; echo SOCAT_PEERADDR=\\\$SOCAT_PEERADDR; echo SOCAT_SOCKPORT=\\\$SOCAT_SOCKPORT; echo SOCAT_PEERPORT=\\\$SOCAT_PEERPORT; sleep 1\""
+CMD1="$TRACE $SOCAT $opts -u - $KEYW-CONNECT:$tsa,bind=$tca"
+printf "test $F_n $TEST... " $N
+eval "$CMD0 2>\"${te}0\" >\"$tf\" &"
+pid0=$!
+wait${protov}port $tsa1 1
+{ echo; sleep 0.1; } |$CMD1 2>"${te}1"
+rc1=$?
+waitfile "$tf" 2
+kill $pid0 2>/dev/null; wait
+#set -vx
+if [ $rc1 != 0 ]; then
+    $PRINTF "$NO_RESULT (client failed):\n"
+    echo "$CMD0 &"
+    cat "${te}0"
+    echo "$CMD1"
+    cat "${te}1"
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif [ "$(grep SOCAT_SOCKADDR "${tf}" |sed -e 's/^[^=]*=//' |sed -e "s/[\"']//g")" = "$TEST_SOCKADDR" -a \
+    "$(grep SOCAT_PEERADDR "${tf}" |sed -e 's/^[^=]*=//' -e "s/[\"']//g")" = "$TEST_PEERADDR" -a \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tsp" \) -a \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tcp" \) \
+    ]; then
+    $PRINTF "$OK\n"
+    if [ "$debug" ]; then
+	echo "$CMD0 &"
+	cat "${te}0"
+	echo "$CMD1"
+	cat "${te}1"
+    fi
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    cat "${te}0"
+    echo "$CMD1"
+    cat "${te}1"
+    echo -e "SOCAT_SOCKADDR=$TEST_SOCKADDR\nSOCAT_PEERADDR=$TEST_PEERADDR\nSOCAT_SOCKPORT=$TEST_SOCKPORT\nSOCAT_PEERPORT=$TEST_PEERPORT" |
+    diff - "${tf}"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND, feats
+ ;;
+esac
+N=$((N+1))
+#set +xv
+#
+done <<<"
+UDPLITE4 IP4  udplite 127.0.0.1                                 $SECONDADDR                               PORT
+UDPLITE6 IP6  udplite [0000:0000:0000:0000:0000:0000:0000:0001] [0000:0000:0000:0000:0000:0000:0000:0001] PORT
+"
+
+
+# test the max-children option on pseudo connected sockets
+while read KEYW FEAT SEL ADDR IPPORT SHUT; do
+if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
+RUNS=$(tolower $KEYW)
+PROTO=$KEYW
+proto="$(echo "$PROTO" |tr A-Z a-z)"
+# test the max-children option on pseudo connected sockets
+NAME=${KEYW}MAXCHILDREN
+case "$TESTS" in
+*%$N%*|*%functions%*|*%fork%*|*%maxchildren%*|*%$SEL%*|*%socket%*|*%listen%*|*%$NAME%*)
+TEST="$NAME: max-children option"
+# start a listen process with max-children=1; connect with a client, let it
+# send data and then sleep; connect with second client that wants to send
+# data immediately, but keep first client active until server terminates.
+#If max-children is working correctly only the first data should
+# arrive.
+if ! eval $NUMCOND; then :;
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "$FEAT IP${KEYW##*[A-Z]} FILE STDIO" \
+		  "FILE $PROTO-LISTEN STDIO $PROTO-CONNECT" \
+		  "$REUSEADDR o-trunc o-creat o-append fork max-children $SHUT" \
+		  "$RUNS" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+case "X$IPPORT" in
+    "XPORT")
+    newport $proto
+    tsl=$PORT 		# test socket listen address
+    tsc="$ADDR:$PORT"	# test socket connect address
+    ;;
+    *)
+    tsl="$(eval echo "$ADDR")"	# resolve $N
+    tsc=$tsl
+esac
+#ts="$td/test$N.sock"
+tf="$td/test$N.stdout"
+te="$td/test$N.stderr"
+tdiff="$td/test$N.diff"
+da="test$N $(date) $RANDOM"
+# on some Linux distributions it hangs, thus -T option here
+CMD0="$TRACE $SOCAT $opts -U -T 4 FILE:$tf,o-trunc,o-creat,o-append $PROTO-LISTEN:$tsl,$REUSEADDR,fork,max-children=1"
+CMD1="$TRACE $SOCAT $opts -u - $PROTO-CONNECT:$tsc,$SHUT"
+printf "test $F_n $TEST... " $N
+$CMD0 >/dev/null 2>"${te}0" &
+pid0=$!
+wait${proto}port $tsl 1
+(echo "$da 1"; sleep 3) |$CMD1 >"${tf}1" 2>"${te}1" &
+pid1=$!
+sleep 1
+echo "$da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
+pid2=$!
+sleep 1
+cpids="$(childpids $pid0)"
+kill $pid1 $pid2 $cpids $pid0 2>/dev/null; wait
+if echo -e "$da 1" |diff - $tf >$tdiff; then
+    $PRINTF "$OK\n"
+    numOK=$((numOK+1))
+else
+    $PRINTF "$FAILED\n"
+    echo "$CMD0 &"
+    echo "(echo \"$da 1\"; sleep 2) |$CMD1"
+    echo "echo \"$da 2\" |$CMD1"
+    cat "${te}0"
+    cat "${te}1"
+    cat "${te}2"
+    cat "$tdiff"
+    numFAIL=$((numFAIL+1))
+    listFAIL="$listFAIL $N"
+fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+done <<<"
+UDPLITE4  UDPLITE  udplite  127.0.0.1 PORT shut-null
+UDPLITE6  UDPLITE  udplite  [::1]     PORT shut-null
+"
 
 
 # end of common tests

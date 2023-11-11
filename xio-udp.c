@@ -19,17 +19,6 @@
 #include "xio-udp.h"
 
 
-static int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
-static int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
-static int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
-static int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
-
-static
-int _xioopen_udp_sendto(const char *hostname, const char *servname,
-			struct opt *opts,
-			int xioflags, xiofile_t *xxfd, groups_t groups,
-			int pf, int socktype, int ipproto);
-
 const struct addrdesc xioaddr_udp_connect  = { "UDP-CONNECT",    1+XIO_RDWR,   xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_UNSPEC HELP(":<host>:<port>") };
 #if WITH_LISTEN
 const struct addrdesc xioaddr_udp_listen   = { "UDP-LISTEN",     1+XIO_RDWR,   xioopen_ipdgram_listen, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_LISTEN|GROUP_CHILD|GROUP_RANGE, PF_UNSPEC, IPPROTO_UDP, PF_UNSPEC HELP(":<port>") };
@@ -338,7 +327,7 @@ int xioopen_ipdgram_listen(
 				  opts, pf, socktype, ipproto);
 }
 
-static int xioopen_udp_sendto(
+int xioopen_udp_sendto(
 	int argc,
 	const char *argv[],
 	struct opt *opts,
@@ -372,7 +361,6 @@ static int xioopen_udp_sendto(
    OFUNC_OFFSET
    OPT_BIND, OPT_SOURCEPORT, OPT_LOWPORT, OPT_SO_TYPE, OPT_SO_PROTOTYPE, OPT_USER, OPT_GROUP, OPT_CLOEXEC
  */
-static
 int _xioopen_udp_sendto(const char *hostname, const char *servname,
 			struct opt *opts,
 		     int xioflags, xiofile_t *xxfd, groups_t groups,
@@ -437,7 +425,7 @@ int _xioopen_udp_sendto(const char *hostname, const char *servname,
 }
 
 
-static int xioopen_udp_datagram(
+int xioopen_udp_datagram(
 	int argc,
 	const char *argv[],
 	struct opt *opts,
@@ -517,7 +505,7 @@ static int xioopen_udp_datagram(
 }
 
 
-static int xioopen_udp_recvfrom(
+int xioopen_udp_recvfrom(
 	int argc,
 	const char *argv[],
 	struct opt *opts,
@@ -609,7 +597,7 @@ static int xioopen_udp_recvfrom(
 }
 
 
-static int xioopen_udp_recv(
+int xioopen_udp_recv(
 	int argc,
 	const char *argv[],
 	struct opt *opts,

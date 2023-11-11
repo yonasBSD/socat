@@ -32,6 +32,7 @@
 #include "xio-udp.h"
 #include "xio-sctp.h"
 #include "xio-dccp.h"
+#include "xio-udplite.h"
 #include "xio-socks.h"
 #include "xio-socks5.h"
 #include "xio-proxy.h"

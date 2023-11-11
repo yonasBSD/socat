@@ -102,6 +102,12 @@ bool xioopts_ignoregroups;
 #  define IF_DCCP(a,b)
 #endif
 
+#if WITH_UDPLITE
+#  define IF_UDPLITE(a,b) {a,b},
+#else
+#  define IF_UDPLITE(a,b)
+#endif
+
 #if WITH_SOCKS4
 #  define IF_SOCKS4(a,b) {a,b},
 #else
@@ -1894,6 +1900,8 @@ const struct optname optionnames[] = {
 	IF_TUN    ("tun-no-pi",	&opt_iff_no_pi)
 	IF_TUN    ("tun-type",	&opt_tun_type)
 	IF_SOCKET ("type",	&opt_so_type)
+	IF_UDPLITE("udplite-recv-cscov",	&xioopt_udplite_recv_cscov)
+	IF_UDPLITE("udplite-send-cscov",	&xioopt_udplite_send_cscov)
 	IF_ANY    ("uid",	&opt_user)
 	IF_NAMED  ("uid-e",	&opt_user_early)
 	IF_ANY    ("uid-l",	&opt_user_late)

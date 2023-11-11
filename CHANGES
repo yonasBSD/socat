@@ -179,6 +179,16 @@ Features:
 	DCCP6-LISTEN (DCCP6-L)
 	New option: dccp-set-ccid (ccid)
 
+	Support for UDP-Lite protocol, new addresses:
+	UDPLITE-CONNECT
+	UDPLITE-LISTEN
+	UDPLITE-DATAGRAM
+	UDPLITE-RECV
+	UDPLITE-RECVFROM
+	UDPLITE-SENDTO
+	All these are also available in UDPLITE4-* and UDPLITE6-* form;
+	options udplite-recv-cscov and udplite-send-cscov.
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

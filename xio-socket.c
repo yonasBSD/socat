@@ -1165,6 +1165,7 @@ int _xioopen_dgram_recvfrom(struct single *sfd, int xioflags,
    }
 
    applyopts(sfd, -1, opts, PH_PASTSOCKET);
+   applyopts(sfd, -1, opts, PH_FD);
 
    applyopts_cloexec(sfd->fd, opts);
 
@@ -1182,6 +1183,24 @@ int _xioopen_dgram_recvfrom(struct single *sfd, int xioflags,
       applyopts_named(((struct sockaddr_un *)us)->sun_path, opts, PH_PREOPEN);
    }
 #endif /* WITH_UNIX */
+
+#if WITH_IP4 /*|| WITH_IP6*/
+   switch (proto) {
+   case IPPROTO_UDP:
+#ifdef IPPROTO_UDPLITE
+   case IPPROTO_UDPLITE:
+#endif
+      if (pf == PF_INET && ((struct sockaddr_in *)us)->sin_port == 0 ||
+	  pf == PF_INET6 && ((struct sockaddr_in6 *)us)->sin6_port == 0) {
+	 struct sockaddr_storage bound;
+	 socklen_t bndlen = sizeof(bound);
+	 char sockbuff[256];
+	 Getsockname(sfd->fd, (struct sockaddr *)&bound, &bndlen);
+	 sockaddr_info((struct sockaddr *)&bound, sizeof(struct sockaddr_storage), sockbuff, sizeof(sockbuff));
+	 Notice1("_xioopen_dgram_recvfrom(): bound to %s", sockbuff);
+      }
+   }
+#endif
 
    /* for generic sockets, this has already been retrieved */
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
@@ -1370,6 +1389,7 @@ int _xioopen_dgram_recv(struct single *sfd, int xioflags,
    }
 
    applyopts(sfd, -1, opts, PH_PASTSOCKET);
+   applyopts(sfd, -1, opts, PH_FD);
 
    applyopts_cloexec(sfd->fd, opts);
 
@@ -1386,6 +1406,23 @@ int _xioopen_dgram_recv(struct single *sfd, int xioflags,
 #endif /* WITH_UNIX */
 
 #if WITH_IP4 /*|| WITH_IP6*/
+   switch (proto) {
+   case IPPROTO_UDP:
+#ifdef IPPROTO_UDPLITE
+   case IPPROTO_UDPLITE:
+#endif
+      if (pf == PF_INET && ((struct sockaddr_in *)us)->sin_port == 0 ||
+	  pf == PF_INET6 && ((struct sockaddr_in6 *)us)->sin6_port == 0) {
+	 struct sockaddr_storage bound;
+	 socklen_t bndlen = sizeof(bound);
+	 char sockbuff[256];
+	 Getsockname(sfd->fd, (struct sockaddr *)&bound, &bndlen);
+	 sockaddr_info((struct sockaddr *)&bound, sizeof(struct sockaddr_storage), sockbuff, sizeof(sockbuff));
+	 Notice1("_xioopen_dgram_recv(): bound to %s", sockbuff);
+      }
+   }
+#endif
+
    if (retropt_string(opts, OPT_RANGE, &rangename) >= 0) {
       if (xioparserange(rangename, pf, &sfd->para.socket.range,
 			sfd->para.socket.ip.ai_flags)
@@ -1396,7 +1433,6 @@ int _xioopen_dgram_recv(struct single *sfd, int xioflags,
       free(rangename);
       sfd->para.socket.dorange = true;
    }
-#endif
 
 #if (WITH_TCP || WITH_UDP) && WITH_LIBWRAP
    xio_retropt_tcpwrap(sfd, opts);

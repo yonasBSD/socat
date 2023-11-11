@@ -255,6 +255,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 		 free(numnode);
 	      return STAT_NORETRY;
 	   }
+	   /* Probably unsupported protocol (e.g. UDP-Lite), fallback to 0 */
 	   hints.ai_protocol = 0;
 	   continue;
 	}

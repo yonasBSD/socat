@@ -28,6 +28,13 @@ extern int _xioopen_ipdgram_listen(struct single *sfd,
 	int xioflags, union sockaddr_union *us, socklen_t uslen,
 	struct opt *opts, int pf, int socktype, int ipproto);
 
+extern int xioopen_udp_sendto(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
+extern int xioopen_udp_datagram(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
+extern int xioopen_udp_recvfrom(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
+extern int xioopen_udp_recv(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xfd, const struct addrdesc *addrdesc);
+
+extern int _xioopen_udp_sendto(const char *hostname, const char *servname, struct opt *opts, int xioflags, xiofile_t *xxfd, groups_t groups, int pf, int socktype, int ipproto);
+
 extern int xioopen_ipdgram_listen(int argc, const char *argv[], struct opt *opts, int rw, xiofile_t *xfd, const struct addrdesc *addrdesc);
 
 #endif /* !defined(__xio_udp_h_included) */

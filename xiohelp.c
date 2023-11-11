@@ -48,7 +48,7 @@ static const char *addressgroupnames[] = {
 	"UNIX",		"IP4",		"IP6",		"INTERFACE",
 	"UDP",		"TCP",		"SOCKS4",	"OPENSSL",
 	"PROCESS",	"APPL",		"HTTP",		"undef",
-	"POSIXMQ",	"SCTP",		"DCCP"
+	"POSIXMQ",	"SCTP",		"DCCP",		"UDPLITE"
 } ;
 
 /* keep consistent with xioopts.h:enum ephase ! */

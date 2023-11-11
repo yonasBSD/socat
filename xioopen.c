@@ -341,6 +341,54 @@ const struct addrname addressnames[] = {
    { "UDP6-SEND",		&xioaddr_udp6_sendto },
    { "UDP6-SENDTO",		&xioaddr_udp6_sendto },
 #endif
+#if (WITH_IP4 || WITH_IP6) && WITH_UDPLITE
+   { "UDPLITE",			&xioaddr_udplite_connect },
+   { "UDPLITE-CONNECT",		&xioaddr_udplite_connect },
+   { "UDPLITE-DATAGRAM",	&xioaddr_udplite_datagram },
+   { "UDPLITE-DGRAM",		&xioaddr_udplite_datagram },
+#endif
+#if (WITH_IP4 || WITH_IP6) && WITH_UDPLITE && WITH_LISTEN
+   { "UDPLITE-L",		&xioaddr_udplite_listen },
+   { "UDPLITE-LISTEN",		&xioaddr_udplite_listen },
+#endif
+#if (WITH_IP4 || WITH_IP6) && WITH_UDPLITE
+   { "UDPLITE-RECV",		&xioaddr_udplite_recv },
+   { "UDPLITE-RECVFROM",	&xioaddr_udplite_recvfrom },
+   { "UDPLITE-SEND",		&xioaddr_udplite_sendto },
+   { "UDPLITE-SENDTO",		&xioaddr_udplite_sendto },
+#endif
+#if WITH_IP4 && WITH_UDPLITE
+   { "UDPLITE4",		&xioaddr_udplite4_connect },
+   { "UDPLITE4-CONNECT",	&xioaddr_udplite4_connect },
+   { "UDPLITE4-DATAGRAM",	&xioaddr_udplite4_datagram },
+   { "UDPLITE4-DGRAM",		&xioaddr_udplite4_datagram },
+#endif
+#if WITH_IP4 && WITH_UDPLITE && WITH_LISTEN
+   { "UDPLITE4-L",		&xioaddr_udplite4_listen },
+   { "UDPLITE4-LISTEN",		&xioaddr_udplite4_listen },
+#endif
+#if WITH_IP4 && WITH_UDPLITE
+   { "UDPLITE4-RECV",		&xioaddr_udplite4_recv },
+   { "UDPLITE4-RECVFROM",	&xioaddr_udplite4_recvfrom },
+   { "UDPLITE4-SEND",		&xioaddr_udplite4_sendto },
+   { "UDPLITE4-SENDTO",		&xioaddr_udplite4_sendto },
+#endif
+#if WITH_IP6 && WITH_UDPLITE
+   { "UDPLITE6",		&xioaddr_udplite6_connect },
+   { "UDPLITE6-CONNECT",	&xioaddr_udplite6_connect },
+   { "UDPLITE6-DATAGRAM",	&xioaddr_udplite6_datagram },
+   { "UDPLITE6-DGRAM",		&xioaddr_udplite6_datagram },
+#endif
+#if WITH_IP6 && WITH_UDPLITE && WITH_LISTEN
+   { "UDPLITE6-L",		&xioaddr_udplite6_listen },
+   { "UDPLITE6-LISTEN",		&xioaddr_udplite6_listen },
+#endif
+#if WITH_IP6 && WITH_UDPLITE
+   { "UDPLITE6-RECV",		&xioaddr_udplite6_recv },
+   { "UDPLITE6-RECVFROM",	&xioaddr_udplite6_recvfrom },
+   { "UDPLITE6-SEND",		&xioaddr_udplite6_sendto },
+   { "UDPLITE6-SENDTO",		&xioaddr_udplite6_sendto },
+#endif
 #if WITH_UNIX
    { "UNIX",		&xioaddr_unix_client },
    { "UNIX-CLIENT",	&xioaddr_unix_client },

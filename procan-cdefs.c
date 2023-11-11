@@ -126,11 +126,14 @@ int procan_cdefs(FILE *outfile) {
 #ifdef IPPROTO_UDP
    fprintf(outfile, "#define IPPROTO_UDP %d\n", IPPROTO_UDP);
 #endif
+#ifdef IPPROTO_DCCP
+   fprintf(outfile, "#define IPPROTO_DCCP %d\n", IPPROTO_DCCP);
+#endif
 #ifdef IPPROTO_SCTP
    fprintf(outfile, "#define IPPROTO_SCTP %d\n", IPPROTO_SCTP);
 #endif
-#ifdef IPPROTO_DCCP
-   fprintf(outfile, "#define IPPROTO_DCCP %d\n", IPPROTO_DCCP);
+#ifdef IPPROTO_UDPLITE
+   fprintf(outfile, "#define IPPROTO_UDPLITE %d\n", IPPROTO_UDPLITE);
 #endif
 #ifdef SOL_SOCKET
    fprintf(outfile, "#define SOL_SOCKET 0x%x\n", SOL_SOCKET);

@@ -927,6 +927,7 @@ label(ADDRESS_SCTP6_LISTEN)dit(bf(tt(SCTP6-LISTEN:<port>)))
    Like link(SCTP-LISTEN)(ADDRESS_SCTP_LISTEN), but only supports IPv6
    protocol.nl() 
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(LISTEN)(GROUP_LISTEN),link(CHILD)(GROUP_CHILD),link(RANGE)(GROUP_RANGE),link(IP6)(GROUP_IP6),link(SCTP)(GROUP_SCTP),link(RETRY)(GROUP_RETRY) nl()
+
 label(ADDRESS_SOCKET_CONNECT)dit(bf(tt(SOCKET-CONNECT:<domain>:<protocol>:<remote-address>)))
    Creates a stream socket using the first and second given socket parameters
    and tt(SOCK_STREAM) (see man NOEXPAND(socket(2))) and connects to the remote-address.
@@ -1301,6 +1302,8 @@ label(ADDRESS_TUN)dit(bf(tt(TUN[:<if-addr>/<bits>])))
    link(netns)(OPTION_NETNS)nl()
    See also:
    link(ip-recv)(ADDRESS_IP_RECV)
+
+label(ADDRESSES_UDP)
 label(ADDRESS_UDP_CONNECT)dit(bf(tt(UDP:<host>:<port>)))
    Connects to <port> [link(UDP service)(TYPE_UDP_SERVICE)] on
    <host> [link(IP address)(TYPE_IP_ADDRESS)] using UDP/IP version 4 or 6
@@ -1503,6 +1506,28 @@ label(ADDRESS_UDP4_RECV)dit(bf(tt(UDP4-RECV:<port>)))
 label(ADDRESS_UDP6_RECV)dit(bf(tt(UDP6-RECV:<port>)))
    Like link(UDP-RECV)(ADDRESS_UDP_RECV), but only supports IPv6 protocol.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP6)(GROUP_IP6),link(RANGE)(GROUP_RANGE)
+
+dit(bf(tt(UDPLITE-CONNECT:<host>:<port>)))
+dit(bf(tt(UDPLITE4-CONNECT:<host>:<port>)))
+dit(bf(tt(UDPLITE6-CONNECT:<host>:<port>)))
+dit(bf(tt(UDPLITE-DATAGRAM:<address>:<port>)))
+dit(bf(tt(UDPLITE4-DATAGRAM:<address>:<port>)))
+dit(bf(tt(UDPLITE6-DATAGRAM:<address>:<port>)))
+dit(bf(tt(UDPLITE-LISTEN:<port>)))
+dit(bf(tt(UDPLITE4-LISTEN:<port>)))
+dit(bf(tt(UDPLITE6-LISTEN:<port>)))
+dit(bf(tt(UDPLITE-SENDTO:<host>:<port>)))
+dit(bf(tt(UDPLITE4-SENDTO:<host>:<port>)))
+dit(bf(tt(UDPLITE6-SENDTO:<host>:<port>)))
+dit(bf(tt(UDPLITE-RECVFROM:<port>)))
+dit(bf(tt(UDPLITE4-RECVFROM:<port>)))
+dit(bf(tt(UDPLITE6-RECVFROM:<port>)))
+dit(bf(tt(UDPLITE-RECV:<port>)))
+dit(bf(tt(UDPLITE4-RECV:<port>)))
+dit(bf(tt(UDPLITE6-RECV:<port>)))
+   The UDPLITE addresses are almost identical to the related link(UDP addresses)(ADDRESSES_UDP)
+   but they use UDP-Lite protocol and have the additional link(UDPLITE option
+   group)(GROUP_UDPLITE).nl()
 
 label(ADDRESS_UNIX_CONNECT)dit(bf(tt(UNIX-CONNECT:<filename>)))
    Connects to link(<filename>)(TYPE_FILENAME) assuming it is a unixdomain()
@@ -2700,6 +2725,21 @@ enddit()
 startdit()enddit()nl()
 
 
+label(GROUP_UDPLITE)em(bf(UDPLITE option group))
+
+These options may be applied to UDPLITE addresses:
+startdit()
+label(OPTION_UDPLITE_SEND_CSCOV)dit(bf(tt(udplite-send-cscov)))
+   Sets the number of bytes for which the checksum is calculated and sent
+   ("checksum coverage").
+label(OPTION_UDPLITE_RECV_CSCOV)dit(bf(tt(udplite-recv-cscov)))
+   Sets the number of bytes for which the checksum is checked ("checksum
+   coverage").
+enddit()
+
+startdit()enddit()nl()
+
+
 label(GROUP_SCTP)em(bf(SCTP option group))
 
 These options may be applied to SCTP stream sockets.
@@ -2726,13 +2766,14 @@ enddit()
 startdit()enddit()nl()
 
 
-em(bf(UDP, TCP, SCTP, and DCCP option group))
+label(GROUP_IPAPP)em(bf(UDP, TCP, SCTP, DCCP, and UDPLITE option group))
 
 Here we find options that are related to the network port mechanism and thus
-can be used with UDP, TCP, SCTP, and DCCP client and server addresses.
+can be used with UDP, TCP, SCTP, DCCP, and UDP-Lite client and server addresses.
+
 startdit()
 label(OPTION_SOURCEPORT)dit(bf(tt(sourceport=<port>)))
-   For outgoing (client) TCP and UDP connections, it sets the source
+   For outgoing (client) connections, it sets the source
    link(<port>)(TYPE_PORT) using an extra code(bind()) call.
    With TCP or UDP listen addresses, socat immediately shuts down the
    connection if the client does not use this sourceport. UDP-RECV,
@@ -2740,7 +2781,7 @@ label(OPTION_SOURCEPORT)dit(bf(tt(sourceport=<port>)))
    it does not match.
    (link(example)(EXAMPLE_OPTION_SOURCEPORT)).
 label(OPTION_LOWPORT)dit(bf(tt(lowport)))
-   Outgoing (client) TCP and UDP connections with this option use
+   Outgoing (client) connections with this option use
    an unused random source port between 640 and 1023 incl. On UNIX class operating
    systems, this requires root privilege, and thus indicates that the
    client process is authorized by local root.

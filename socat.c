@@ -604,6 +604,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_DCCP\n", fd);
 #endif
+#ifdef WITH_UDPLITE
+   fprintf(fd, "  #define WITH_UDPLITE %d\n", WITH_UDPLITE);
+#else
+   fputs("  #undef WITH_UDPLITE\n", fd);
+#endif
 #ifdef WITH_LISTEN
    fprintf(fd, "  #define WITH_LISTEN %d\n", WITH_LISTEN);
 #else

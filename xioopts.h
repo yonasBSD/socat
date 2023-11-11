@@ -190,20 +190,22 @@ enum e_func {
 #define GROUP_HTTP	0x40000000	/* any HTTP client */
 
 /* Keep condition consistent with xio.h:groups_t! */
-#if WITH_POSIXMQ || WITH_SCTP || WITH_DCCP
+#if WITH_POSIXMQ || WITH_SCTP || WITH_DCCP || WITH_UDPLITE
 /* The following groups are not expected on systems without uint64_t */
 #define GROUP_POSIXMQ	0x0100000000U
 #define GROUP_IP_SCTP	0x0200000000U
 #define GROUP_IP_DCCP	0x0400000000U
-#define GROUP_ALL	0x07ffffffffU
-#else /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP) */
+#define GROUP_IP_UDPLITE 0x0800000000U
+#define GROUP_ALL	0x0fffffffffU
+#else /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP || WITH_UDPLITE) */
 #define GROUP_POSIXMQ	0
 #define GROUP_IP_SCTP	0
 #define GROUP_IP_DCCP	0
+#define GROUP_IP_UDPLITE	0
 #define GROUP_ALL	0xffffffffU
-#endif /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP) */
+#endif /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP || WITH_UDPLITE) */
 
-#define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP|GROUP_IP_DCCP)	/* true: indicates one of UDP, TCP, SCTP, DCCP */
+#define GROUP_IPAPP	(GROUP_IP_UDP|GROUP_IP_TCP|GROUP_IP_SCTP|GROUP_IP_DCCP|GROUP_IP_UDPLITE)	/* true: indicates one of UDP, TCP, SCTP, DCCP, UDPlite */
 #define GROUP_ANY	(GROUP_PROCESS|GROUP_APPL)
 
 
@@ -860,6 +862,8 @@ enum e_optcode {
    OPT_TUN_DEVICE,	/* tun: /dev/net/tun ... */
    OPT_TUN_NAME,	/* tun: tun0 */
    OPT_TUN_TYPE,	/* tun: tun|tap */
+   OPT_UDPLITE_RECV_CSCOV,
+   OPT_UDPLITE_SEND_CSCOV,
    OPT_UMASK,
    OPT_UNIX_BIND_TEMPNAME,	/* UNIX domain sockets */
    OPT_UNIX_TIGHTSOCKLEN,

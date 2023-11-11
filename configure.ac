@@ -345,6 +345,25 @@ AC_ARG_ENABLE(udp, [  --disable-udp           disable UDP support],
 	       esac],
 	       [AC_DEFINE(WITH_UDP) AC_MSG_RESULT(yes)])
 
+AC_MSG_CHECKING(whether to include UDP-Lite support)
+AC_ARG_ENABLE(udplite, [  --disable-udplite       disable UDP-Lite support],
+	      [case "$enableval" in
+	       no) AC_MSG_RESULT(no); WITH_UDPLITE= ;;
+	       *) AC_MSG_RESULT(yes); WITH_UDPLITE=1 ;;
+	       esac],
+	       [AC_MSG_RESULT(yes);   WITH_UDPLITE=1 ])
+if test -n "$WITH_UDPLITE"; then
+AC_MSG_CHECKING(for IPPROTO_UDPLITE)
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <netinet/in.h>],
+[IPPROTO_UDPLITE;],
+[ AC_MSG_RESULT(yes); WITH_UDPLITE=1],
+[ AC_MSG_RESULT(no); WITH_UDPLITE=])
+if test "$WITH_UDPLITE"; then
+   AC_DEFINE(WITH_UDPLITE)
+fi
+fi
+
 AC_MSG_CHECKING(whether to include SCTP support)
 AC_ARG_ENABLE(sctp, [  --disable-sctp           disable SCTP support],
 	      [case "$enableval" in

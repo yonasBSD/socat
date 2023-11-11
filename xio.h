@@ -95,7 +95,7 @@ enum xiotag {
 } ;
 
 /* Keep condition consistent with xioopts.h:GROUP_*! */
-#if WITH_POSIXMQ || WITH_SCTP || WITH_DCCP
+#if WITH_POSIXMQ || WITH_SCTP || WITH_DCCP || WITH_UDPLITE
 typedef uint64_t groups_t;
 #define F_groups_t F_uint64_x
 #else
