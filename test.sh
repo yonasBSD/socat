@@ -1044,7 +1044,7 @@ checkconds() {
 	local uname="$(echo $UNAME |tr 'A-Z' 'a-z')"
 	for i in $unames; do
 	    if [ "$uname" = "$(echo "$i" |tr 'A-Z,' 'a-z ')" ]; then
-	        # good, mark as passed
+		# good, mark as passed
 		i=
 		break;
 	    fi
@@ -18838,6 +18838,154 @@ esac
 N=$((N+1))
 
 
+# Test the socat-chain.sh script with SOCKS4 over UNIX-socket
+NAME=SOCAT_CHAIN_SOCKS4
+case "$TESTS" in
+*%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%unix%*|*%socks4%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test socat-chain.sh with SOCKS4 over UNIX-socket"
+# Run a socks4 server on UNIX-listen
+# Connect with socat-chein.sh; check if data transfer is correct
+if ! eval $NUMCOND; then :
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 TCP LISTEN STDIO UNIX" \
+		  "TCP4-LISTEN PIPE STDIN STDOUT TCP4 UNIX UNIX-LISTEN" \
+		  "so-reuseaddr" \
+		  "tcp4 unix" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    ts="$td/test$N.sock"
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    CMD0="$TRACE $SOCAT $opts UNIX-LISTEN:$ts,reuseaddr EXEC:./socks4echo.sh"
+    CMD1="$TRACE ./socat-chain.sh $opts - SOCKS4::32.98.76.54:32109,socksuser=nobody UNIX:$ts"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    waitunixport $ts 1
+    #relsleep 1 	# if no matching wait*port function
+    echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$FAILED (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$da" |diff - "${tf}1" >$tdiff; then
+	$PRINTF "$FAILED (diff)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test the socat-chain.sh script by driving SSL over serial
+NAME=SOCAT_CHAIN_SSL_PTY
+case "$TESTS" in
+*%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%unix%*|*%socket%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test socat-chain.sh with SSL over PTY"
+# Run a socat-chain.sh instance with SSL listening behind a PTY;
+# open the PTY with socat-chein.sh using SSL;
+# check if data transfer is correct
+if ! eval $NUMCOND; then :
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 TCP LISTEN OPENSSL STDIO PTY" \
+		  "TCP4-LISTEN SOCKETPAIR STDIN STDOUT TCP4 SSL SSL-L" \
+		  "so-reuseaddr" \
+		  "tcp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+elif [[ $BASH_VERSION =~ ^[1-3]\. ]]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}requires bash 4 or higher${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    gentestcert testsrv
+    tp="$td/test$N.pty"
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    CMD0="$TRACE ./socat-chain.sh $opts PTY,link=$tp SSL-L,cert=testsrv.pem,verify=0 SOCKETPAIR"
+    CMD1="$TRACE ./socat-chain.sh $opts - SSL,cafile=testsrv.crt,commonname=localhost $tp,cfmakeraw"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    waitfile $tp 1
+    echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+    rc1=$?
+    kill $pid0 2>/dev/null
+    wait 2>/dev/null
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$FAILED (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    elif ! echo "$da" |diff - "${tf}1" >$tdiff; then
+	$PRINTF "$FAILED (diff)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	echo "// diff:" >&2
+	cat "$tdiff" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
@@ -19015,7 +19163,7 @@ else
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
 	namesFAIL="$namesFAIL $NAME"
-    elif ! echo "$da" |diff "${tf}1" - >$tdiff; then
+    elif ! echo "$da" |diff - "${tf}1" >$tdiff; then
 	$PRINTF "$FAILED (diff)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2

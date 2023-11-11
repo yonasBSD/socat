@@ -225,8 +225,8 @@ int xiohelp_syntax(
 	int isnum,
 	const char *syntax)
 {
-	Error4("%s: wrong number of parameters (%d instead of %d): usage: %s",
-	       addr, isnum, expectnum, syntax);
+	Error5("%s: wrong number of parameters (%d instead of %d): usage: %s%s",
+	       addr, isnum, expectnum, addr, syntax);
 	return -1;
 }
 

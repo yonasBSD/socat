@@ -38,7 +38,8 @@ static int xioopen_pty(
 {
    /* we expect the form: filename */
    struct single *sfd = &xfd->stream;
-   int ptyfd = -1, ttyfd = -1;
+   int ptyfd = -1; 	/* master */
+   int ttyfd = -1; 	/* slave */
 #if defined(HAVE_DEV_PTMX) || defined(HAVE_DEV_PTC)
    bool useptmx = false;	/* use /dev/ptmx or equivalent */
 #endif
@@ -101,6 +102,18 @@ static int xioopen_pty(
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts2(sfd, -1, opts, PH_INIT, PH_EARLY);
 
+#if HAVE_OPENPTY
+   if (ptyfd < 0) {
+      int result;
+      if ((result = Openpty(&ptyfd, &ttyfd, ptyname, NULL, NULL)) < 0) {
+	 Error4("openpty(%p, %p, %p, NULL, NULL): %s",
+		&ptyfd, &ttyfd, ptyname, strerror(errno));
+	 return -1;
+      }
+      Notice1("PTY is %s", ptyname);
+   }
+#endif /* HAVE_OPENPTY */
+
    applyopts(sfd, -1, opts, PH_PREBIGEN);
 
 #if defined(HAVE_DEV_PTMX)
@@ -109,7 +122,7 @@ static int xioopen_pty(
 #  define PTMX "/dev/ptc"	/* AIX 4.3.3 */
 #endif
 #if HAVE_DEV_PTMX || HAVE_DEV_PTC
-   if (useptmx) {
+   if (useptmx || ptyfd < 0) {
       if ((ptyfd = Open(PTMX, O_RDWR|O_NOCTTY, 0620)) < 0) {
 	 Warn1("open(\""PTMX"\", O_RDWR|O_NOCTTY, 0620): %s",
 	       strerror(errno));
@@ -117,7 +130,7 @@ static int xioopen_pty(
       } else {
 	 ;/*0 Info1("open(\""PTMX"\", O_RDWR|O_NOCTTY, 0620) -> %d", ptyfd);*/
       }
-      if (ptyfd >= 0 && ttyfd < 0) {
+      if (ptyfd >= 0) {
 	 /* we used PTMX before forking */
 	 /*0 extern char *ptsname(int);*/
 #if HAVE_GRANTPT	/* AIX, not Linux */
@@ -146,17 +159,6 @@ static int xioopen_pty(
       }
    }
 #endif /* HAVE_DEV_PTMX || HAVE_DEV_PTC */
-#if HAVE_OPENPTY
-   if (ptyfd < 0) {
-      int result;
-      if ((result = Openpty(&ptyfd, &ttyfd, ptyname, NULL, NULL)) < 0) {
-	 Error4("openpty(%p, %p, %p, NULL, NULL): %s",
-		&ptyfd, &ttyfd, ptyname, strerror(errno));
-	 return -1;
-      }
-      Notice1("PTY is %s", ptyname);
-   }
-#endif /* HAVE_OPENPTY */
 
    if (!retropt_string(opts, OPT_SYMBOLIC_LINK, &linkname)) {
       xio_unlink(linkname, E_ERROR);
@@ -178,7 +180,7 @@ static int xioopen_pty(
    applyopts_cloexec(ptyfd, opts);/*!*/
    sfd->dtype    = XIODATA_PTY;
 
-   applyopts(sfd, ptyfd, opts, PH_FD);
+   applyopts(sfd, ttyfd, opts, PH_FD);
 
    {
       /* special handling of user-late etc.; with standard behaviour (up to

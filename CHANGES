@@ -197,6 +197,10 @@ Features:
 	reads info from /proc/self/stat and searches for a device with matching
 	major and minor numbers.
 
+	Added socat-chain.sh that makes it possible to stack protocols, e.g. to
+	drive socks through TLS, or to use TLS over a serial line.
+	Tests: SOCAT_CHAIN_SOCKS4 SOCAT_CHAIN_SSL_PTY
+
 Corrections:
 	When a sub process (EXEC, SYSTEM) terminated with exit code other than
 	0, its last sent data might have been lost depending on timing of read/

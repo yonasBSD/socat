@@ -76,7 +76,8 @@ HFILES = sycls.h sslcls.h error.h dalan.h procan.h filan.h hostan.h sysincludes.
 
 
 DOCFILES = README README.FIPS CHANGES FILES EXAMPLES PORTING SECURITY DEVELOPMENT doc/socat.yo doc/socat.1 doc/socat.html FAQ BUGREPORTS COPYING COPYING.OpenSSL doc/dest-unreach.css doc/socat-openssltunnel.html doc/socat-multicast.html doc/socat-tun.html doc/socat-genericsocket.html
-SHFILES = daemon.sh mail.sh ftp.sh readline.sh \
+SHFILES = socat-chain.sh \
+	daemon.sh mail.sh ftp.sh readline.sh \
 	socat_buildscript_for_android.sh
 TESTFILES = test.sh socks4echo.sh proxyecho.sh readline-test.sh \
 	proxy.sh socks4a-echo.sh
@@ -131,6 +132,7 @@ install: progs $(srcdir)/doc/socat.1
 	mkdir -p $(DESTDIR)$(BINDEST)
 	$(INSTALL) -m 755 socat $(DESTDIR)$(BINDEST)/socat1
 	ln -s socat1 $(DESTDIR)$(BINDEST)/socat
+	$(INSTALL) -m 755 socat-chain.sh  $(DESTDIR)$(BINDEST)
 	$(INSTALL) -m 755 procan $(DESTDIR)$(BINDEST)
 	$(INSTALL) -m 755 filan $(DESTDIR)$(BINDEST)
 	mkdir -p $(DESTDIR)$(MANDEST)/man1
@@ -140,6 +142,7 @@ install: progs $(srcdir)/doc/socat.1
 uninstall:
 	rm -f $(DESTDIR)$(BINDEST)/socat
 	rm -f $(DESTDIR)$(BINDEST)/socat1
+	rm -f $(DESTDIR)$(BINDEST)/socat-chain.sh
 	rm -f $(DESTDIR)$(BINDEST)/procan
 	rm -f $(DESTDIR)$(BINDEST)/filan
 	rm -f $(DESTDIR)$(MANDEST)/man1/socat.1
