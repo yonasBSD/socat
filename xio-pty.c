@@ -102,6 +102,8 @@ static int xioopen_pty(
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts2(sfd, -1, opts, PH_INIT, PH_EARLY);
 
+   applyopts(sfd, -1, opts, PH_PREBIGEN);
+
 #if HAVE_OPENPTY
    if (ptyfd < 0) {
       int result;
@@ -113,8 +115,6 @@ static int xioopen_pty(
       Notice1("PTY is %s", ptyname);
    }
 #endif /* HAVE_OPENPTY */
-
-   applyopts(sfd, -1, opts, PH_PREBIGEN);
 
 #if defined(HAVE_DEV_PTMX)
 #  define PTMX "/dev/ptmx"	/* Linux */

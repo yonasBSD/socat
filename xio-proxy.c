@@ -179,7 +179,7 @@ static int xioopen_proxy_connect(
 
    result =
       _xioopen_connect(sfd,
-		       needbind?us:NULL, sizeof(*us),
+		       needbind?us:NULL, uslen,
 		       themp->ai_addr, themp->ai_addrlen,
 		       opts, pf?pf:themp->ai_family, socktype, IPPROTO_TCP, lowport, level);
        if (result == STAT_OK)

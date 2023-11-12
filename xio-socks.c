@@ -156,7 +156,7 @@ static int xioopen_socks4_connect(
       /* this cannot fork because we retrieved fork option above */
 	 result =
 	    _xioopen_connect(sfd,
-			     needbind?us:NULL, sizeof(*us),
+			     needbind?us:NULL, uslen,
 			     themp->ai_addr, themp->ai_addrlen,
 			     opts, pf?pf:themp->ai_family, socktype, IPPROTO_TCP, lowport, level);
 	 if (result == STAT_OK)

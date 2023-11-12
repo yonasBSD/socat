@@ -41,8 +41,8 @@ usage() {
     $ECHO "\t-C \t\tClear/remove left over certificates from previous runs"
     $ECHO "\t-x \t\tShow commands executed, even when test succeeded"
     #$ECHO "\t-d \t\tShow log output of commands, even when they did not fail"
-    $ECHO "\t-internet \tAllow tests that send packets to Internet"
-    $ECHO "\t-expect-fail N1,N2,... \tIgnore failure of these tests"
+    $ECHO "\t--internet \tAllow tests that send packets to Internet"
+    $ECHO "\t--expect-fail N1,N2,... \tIgnore failure of these tests"
     $ECHO "\ttest-spec \Number of test or name of test"
     $ECHO "Contents of environment variable OPTS are passed to Socat invocations, e.'g:"
     $ECHO "OPTS=\"-d -d -d -d -lu\" ./test.sh"
@@ -71,8 +71,8 @@ while [ "$1" ]; do
 	X-N?*) NUMCOND="test \$N -gt ${1#-N}" ;;
 	X-N)   shift; NUMCOND="test \$N -ge $1" ;;
 	X-C)   rm -f testcert*.conf testcert.dh testcli*.* testsrv*.* ;;
-	X-internet|X--internet)	INTERNET=1 ;; 	# allow access to 3rd party Internet hosts
-	X-expect-fail|X--expect-fail) OPT_EXPECT_FAIL=1; shift; EXPECT_FAIL="$1" ;;
+	X--internet|X-internet)	INTERNET=1 ;; 	# allow access to 3rd party Internet hosts
+	X--expect-fail|X-expect-fail) OPT_EXPECT_FAIL=1; shift; EXPECT_FAIL="$1" ;;
 	X-*)   echo "Unknown option \"$1\"" >&2
                usage >&2
                exit 1 ;;
@@ -1448,6 +1448,9 @@ waitudplite4port () {
 	    Linux) #if [ "$SS" ]; then
 		#l=$($SS -4 -l -n -u |grep "^UNCONN .*:$port\>")
 		#else
+		if ! netstat -nU >/dev/null 2>&1; then
+                    return 0    # speculative
+		fi
 		l=$(netstat -a -n -U -l |grep '^udpl .* .*[0-9*]:'$port' [ ]*0\.0\.0\.0:\*')
 		#fi
 		;;
@@ -1635,6 +1638,9 @@ waitudplite6port () {
 	    Linux) #if [ "$SS" ]; then
 		#l=$($SS -6 -u -l -n |grep "^UNCONN .*:$port\>")
 		#else
+		if ! netstat -nU >/dev/null 2>&1; then
+                    return 0    # speculative
+		fi
 		l=$(netstat -an |grep -E '^udpl6? .* .*[0-9*:%]:'$port' [ ]*:::\*')
 		#fi
 		;;
@@ -2522,6 +2528,7 @@ N=$((N+1))
 
 # TCP6-LISTEN may also listen for IPv4 connections. Test if option
 # ipv6-v6only=0 shows this behaviour.
+# On OpenBSD-7.2 ipv6-v6only=0 gives "Invalid argument"
 NAME=IPV6ONLY0
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip6%*|*%ipapp%*|*%tcp%*|*%listen%*|*%$NAME%*)
@@ -8101,7 +8108,8 @@ printf "test $F_n $TEST... " $N
 waitfile "${te}"
 psleep 0.5	# 0.1 is too few for FreeBSD-10
 PTY=$(grep "N PTY is " $te |sed 's/.*N PTY is //')
-[ -e "$PTY" ] && cat $PTY >/dev/null 2>/dev/null
+# So this for AIX? but "cat" hangs on OpenBSD, thus use socat with timeout instead
+[ -e "$PTY" ] && $SOCAT -T 0.1 -u $PTY,o-nonblock - >/dev/null 2>/dev/null
 rc=$(cat "$td/test$N.rc0")
 if [ "$rc" = 0 ]; then
     $PRINTF "$OK\n"
@@ -8136,8 +8144,8 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 newport udp4 	# provide free port number in $PORT
-CMD0="$TRACE $SOCAT $opts -u UDP-RECV:$PORT,null-eof CREAT:$tf"
-CMD1="$TRACE $SOCAT $opts -u - UDP-SENDTO:127.0.0.1:$PORT,shut-null"
+CMD0="$TRACE $SOCAT $opts -u UDP4-RECV:$PORT,null-eof CREAT:$tf"
+CMD1="$TRACE $SOCAT $opts -u - UDP4-SENDTO:127.0.0.1:$PORT,shut-null"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
@@ -9866,8 +9874,12 @@ elif [ "$ROOT" = root -a $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     $PRINTF "test $F_n $TEST... ${YELLOW}must be root${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ "$PF" = "IP6" ] && ( ! feat=$(testfeats ip6) || ! runsip6 >/dev/null ); then
-    $PRINTF "test $F_n $TEST... ${YELLOW}IP6 not available${NORMAL}\n" $N
+elif ! feat=$(testfeats ${KEYW%[46]} IP${KEYW##*[A-Z]}); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$KEYW not configured in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! runs${proto} >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$KEYW not available on host${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! testoptions $SCM_RECV >/dev/null; then
@@ -10021,16 +10033,10 @@ elif ! feat=$(testfeats $FEAT); then
     $PRINTF "test $F_n $TEST... ${YELLOW}$(echo "$feat" |tr a-z A-Z) not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ "$KEYW" = "TCP6" -o "$KEYW" = "UDP6" -o "$KEYW" = "SCTP6" ] && \
-    ! runsip6 >/dev/null; then
+elif ! runs${protov} >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IP6 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [ "$KEYW" = "SCTP4" ] && ! runssctp4 >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}$KEYW not available${NORMAL}\n" $N
-elif [ "$KEYW" = "SCTP6" ] && ! runssctp6 >/dev/null; then
-    #!!! branch not reached - caught above!
-    $PRINTF "test $F_n $TEST... ${YELLOW}$KEYW not available${NORMAL}\n" $N
 else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
@@ -11069,7 +11075,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 init_openssl_s_client
 newport tcp4
-CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
+CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 #CMD1="openssl s_client -port $PORT -verify 0" 	# not with openssl 1.1.0g
 CMD1="openssl s_client $OPENSSL_S_CLIENT_4 $OPENSSL_METHOD -port $PORT"
 printf "test $F_n $TEST... " $N
@@ -11086,13 +11092,22 @@ if echo "$da" |diff - ${tf}1 >"$tdiff"; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+elif grep -i "Connection refused" "${te}1" >/dev/null; then
+    $PRINTF "$CANT (conn failed)\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (diff)\n"
     echo "$CMD0 &"
-    cat "${te}0"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}1"
-    cat "$tdiff"
+    cat "${te}1" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 fi
@@ -11134,7 +11149,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 init_openssl_s_client
 newport tcp4
-CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 SYSTEM:\"sleep 1; echo \\\\\\\"\\\"$da\\\"\\\\\\\"; sleep 1\"!!STDIO"
+CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,pf=ip4,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 SYSTEM:\"sleep 1; echo \\\\\\\"\\\"$da\\\"\\\\\\\"; sleep 1\"!!STDIO"
 #CMD1="openssl s_client -port $PORT -verify 0" 	# not with openssl 1.1.0g
 CMD1="openssl s_client $OPENSSL_S_CLIENT_4 $OPENSSL_METHOD -port $PORT"
 printf "test $F_n $TEST... " $N
@@ -11151,13 +11166,22 @@ if echo "$da" |diff - ${tf}1 >"$tdiff"; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+elif grep -i "Connection refused" "${te}1" >/dev/null; then
+    $PRINTF "$CANT (conn failed)\n"
+    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (diff)\n"
     echo "$CMD0 &"
-    cat "${te}0"
+    cat "${te}0" >&2
     echo "$CMD1"
-    cat "${te}1"
-    cat "$tdiff"
+    cat "${te}1" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 fi
@@ -12187,7 +12211,11 @@ pipe          .       .        file     -u       FILE:/dev/null
 "
 
 
-# tests: option perm with "passive" NAMED group addresses
+# Tests: option perm with "passive" NAMED group addresses
+# Note tests UNIX_RECVFROM_PERM and UNIX_RECV_PERM had chmod() applied after
+# bind() due to an error but succeeded. After a correction with  Socat 1.8.0.0
+# the perm option is applied as fchown() call which does not affect the FS
+# entry on Freebsd (10.3) and OpenIndiana (2021-04), so they fail now
 while read addr fileopt addropts feat waitfor diropt; do
 if [ -z "$addr" ] || [[ "$addr" == \#* ]]; then continue; fi
 # test if passive (listening...) filesystem based addresses implement option perm
@@ -12297,21 +12325,23 @@ user=$(fileuser "$tsock")
 kill $pid0 2>>"$tlog"
 wait
 if [ "$ERRNOENT" ]; then
-    $PRINTF "${RED}no entry${NORMAL}\n"
+    $PRINTF "${FAILED}(no entry)\n"
     echo "$CMD0 &"
-    cat "$te0"
-    cat "$tlog"
+    cat "$te0" >&2
+    cat "$tlog" >&2
     let numFAIL=numFAIL+1
     listFAIL="$listFAIL $N"
 elif [ "$user" != "$SUBSTUSER" ]; then
-    $PRINTF "${RED}user \"$user\", expected \"$SUBSTUSER\" ${NORMAL}\n"
+    $PRINTF "${FAILD}(user \"$user\", expected \"$SUBSTUSER\")\n"
     echo "$CMD0 &"
-    cat "$te0"
+    cat "$te0" >&2
     let numFAIL=numFAIL+1
     listFAIL="$listFAIL $N"
 else
-    $PRINTF "$OK\n"
-    let numOK=numOK+1
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
 fi
                                       set +vx
 fi # NUMCOND
@@ -13691,7 +13721,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 init_openssl_s_client
 newport udp4
-CMD1="$TRACE $SOCAT $opts OPENSSL-DTLS-SERVER:$PORT,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
+CMD1="$TRACE $SOCAT $opts OPENSSL-DTLS-SERVER:$PORT,pf=ip4,$REUSEADDR,cert=testsrv.crt,key=testsrv.key,verify=0 PIPE"
 CMD="openssl s_client $OPENSSL_S_CLIENT_4 -host $LOCALHOST -port $PORT $OPENSSL_S_CLIENT_DTLS"
 printf "test $F_n $TEST... " $N
 $CMD1 >/dev/null 2>"${te}1" &
@@ -13786,7 +13816,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 newport tcp4
-CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,$SOCAT_EGD,cert=testalt.crt,key=testalt.key,verify=0 pipe"
+CMD0="$TRACE $SOCAT $opts OPENSSL-LISTEN:$PORT,$REUSEADDR,pf=ip4,$SOCAT_EGD,cert=testalt.crt,key=testalt.key,verify=0 pipe"
 CMD1="$TRACE $SOCAT $opts - OPENSSL:127.0.0.1:$PORT,verify=1,cafile=testalt.crt,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
 eval "$CMD0 2>\"${te}0\" &"
@@ -13934,7 +13964,7 @@ elif ! feat=$(testoptions openssl-snihost); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif [ -z "$INTERNET" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option --internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -13982,7 +14012,7 @@ elif ! feat=$(testoptions openssl-no-sni); then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif [ -z "$INTERNET" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option --internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -15549,7 +15579,8 @@ echo "0 $da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
 pid2=$!
 sleep 2
 cpids="$(childpids $pid0 </dev/null)"
-kill $pid1 $pid2 $cpids $pid0 2>/dev/null; wait
+kill $pid1 $pid2 $cpids $pid0 2>/dev/null
+wait 2>/dev/null
 if $ECHO "$da 2\n$da 1" |diff - $tf >$tdiff; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -15613,7 +15644,8 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 relsleep 1 	# give process time to start
-kill -TERM $pid0 2>/dev/null; wait
+kill -TERM $pid0 2>/dev/null
+wait 2>/dev/null
 if ! grep "exiting on signal" ${te}0 >/dev/null; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -15866,7 +15898,8 @@ echo "$da" |$CMD1 >"${tf}1a" 2>"${te}1a"
 rc1a=$?
 echo "$da" |$CMD1 >"${tf}1b" 2>"${te}1b"
 rc1b=$?
-kill $(childpids $pid0) $pid0 2>/dev/null; wait
+kill $(childpids $pid0) $pid0 2>/dev/null
+wait 2>/dev/null
 if [ $rc1a != 0 -o $rc1b != 0 ]; then
     $PRINTF "$FAILED (client problem)\n"
     echo "$CMD0 &"
@@ -16457,7 +16490,7 @@ elif ! runsip4 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif [ -z "$INTERNET" ]; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option --internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16509,6 +16542,8 @@ N=$((N+1))
 
 
 # Test if Socats TCP-client tries all addresses (IPv4+IPv6) if necessary
+# Gives useful result only when getaddrinfo() to return both IPv4 and IPv6 addresses
+# Therefore it appears useful to use AI-ADDRCONFIG on non-Linux systems
 NAME=TRY_ADDRS_4_6
 case "$TESTS" in
 *%$N%*|*%functions%*|*%tcp%*|*%tcp4%*|*%tcp6%*|*%socket%*|*%internet%*|*%$NAME%*)
@@ -16517,10 +16552,6 @@ TEST="$NAME: for TCP try all available IPv4 and IPv6 addresses"
 # neither IPv4 nor IPv6
 # Check the log if Socat tried both addresses
 if ! eval $NUMCOND; then :;
-elif [ -z "$FOREIGN" ]; then	# only needs Internet DNS
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -foreign${NORMAL}\n" $N
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
 #elif ! $(type nslookup >/dev/null 2>&1) && ! $(type host >/dev/null 2>&1); then
 #    $PRINTF "test $F_n $TEST... ${YELLOW}nslookup and host not available${NORMAL}\n" $N
 #    numCANT=$((numCANT+1))
@@ -16542,7 +16573,7 @@ elif ! runsip6 >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif [ -z "$INTERNET" ]; then	# only needs Internet DNS
-    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option -internet${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}use test.sh option --internet${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -16561,6 +16592,8 @@ fi
 if test -f /etc/os-release &&
 	grep -q '^NAME="Ubuntu"' /etc/os-release &&
 	grep -q '^VERSION="12\.04' /etc/os-release; then
+    AI_ADDRCONFIG="ai-addrconfig=0,"
+elif [ $UNAME != 'Linux' ]; then
     AI_ADDRCONFIG="ai-addrconfig=0,"
 fi
 # Check if PORT is really closed on both addresses
@@ -17195,7 +17228,8 @@ rc1b=$?
 psleep 0.5
 echo "$da 2" >>"${tf}0"
 sleep 1 	# as in SYSTEM
-kill $(childpids $pid0) $pid0; wait
+kill $(childpids $pid0) $pid0 2>/dev/null
+wait 2>/dev/null
 if [ $rc1a -ne 0 -o $rc1b -ne 0 ]; then
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -17289,8 +17323,8 @@ pid1=$!
 psleep 0.5
 echo "$da 2" >>"${tf}0"
 sleep 1 	# as in SYSTEM
-kill $pid0 $(childpids $pid0) $pid1 $(childpids $pid1)
-wait
+kill $pid0 $(childpids $pid0) $pid1 $(childpids $pid1) 2>/dev/null
+wait 2>/dev/null
 $SOCAT -u --experimental /dev/null POSIXMQ-SEND:$tq-data,unlink-close
 if $ECHO "$da 1\n$da 2\n$da 3" |diff - ${tf}0 >${tdiff}0; then
     $PRINTF "$OK\n"
@@ -17514,8 +17548,8 @@ printf "test $F_n $TEST... " $N
 eval $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 sleep 1
-kill -INT $(childpids $pid0)
-wait
+kill -INT $(childpids $pid0) 2>/dev/null
+wait 2>/dev/null
 if grep -q " W waitpid..: child .* exited with status 130" "${te}0"; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -17818,6 +17852,7 @@ else
     echo "Original umask:  $oumask" >>$tdebug
     echo "Temporary umask: $tumask" >>$tdebug
     echo "Created umask:   $tperms" >>$tdebug
+    echo "Restored umask:  $(cat $tc)" >>$tdebug
     if [ "$rc0" -ne 0 ]; then
 	$PRINTF "$FAILED\n"
 	echo "$CMD0 &"
@@ -17832,10 +17867,11 @@ else
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
 	namesFAIL="$namesFAIL $NAME"
-    elif ! echo "$oumask" |diff "$tc" - >$tdiff; then
+    elif ! [ "$oumask" -eq $(cat "$tc") ]; then
 	$PRINTF "$FAILED (bad umask)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
+	cat "$tdebug" >&2
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
 	namesFAIL="$namesFAIL $NAME"
@@ -17885,7 +17921,7 @@ else
 	*066) tumask=0026 ;;
 	*)    tumask=0066 ;;
     esac
-    CMD0="$TRACE $SOCAT $opts -U SHELL:\"cat\ >$tc\",umask=$tumask SYSTEM:umask"
+    CMD0="$TRACE $SOCAT $opts -U SHELL:\"cat\ >$tc\",umask=$tumask SYSTEM:\"umask; sleep 1\""
     printf "test $F_n $TEST... " $N
     eval "$CMD0" >/dev/null 2>"${te}0"
     rc0=$?
@@ -17897,6 +17933,7 @@ else
     echo "Original umask:  $oumask" >>$tdebug
     echo "Temporary umask: $tumask" >>$tdebug
     echo "Created umask:   $tperms" >>$tdebug
+    echo "Restored umask:  $(cat $tc)" >>$tdebug
     if [ "$rc0" -ne 0 ]; then
 	$PRINTF "$FAILED\n"
 	echo "$CMD0 &"
@@ -17911,10 +17948,11 @@ else
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
 	namesFAIL="$namesFAIL $NAME"
-    elif ! echo "$oumask" |diff "$tc" - >$tdiff; then
+    elif ! [ "$oumask" -eq $(cat "$tc") ]; then
 	$PRINTF "$FAILED (bad umask)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
+	cat "$tdebug" >&2
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
 	namesFAIL="$namesFAIL $NAME"
@@ -18828,7 +18866,7 @@ N=$((N+1))
 # Test the socat-chain.sh script by driving SSL over serial
 NAME=SOCAT_CHAIN_SSL_PTY
 case "$TESTS" in
-*%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%unix%*|*%socket%*|*%socket%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%unix%*|*%socket%*|*%pty%*|*%$NAME%*)
 TEST="$NAME: test socat-chain.sh with SSL over PTY"
 # Run a socat-chain.sh instance with SSL listening behind a PTY;
 # open the PTY with socat-chein.sh using SSL;
@@ -19056,7 +19094,7 @@ else
     { sleep 2; echo "$da_b"; sleep 1; } |$CMD1 >"${tf}1b" 2>"${te}1b"
     rc1b=$?
     kill $(childpids $pid0) $pid0 $pid1a 2>/dev/null
-    wait  2>/dev/null
+    wait 2>/dev/null
     #kill $pid0 2>/dev/null; wait
     if [ "$rc1b" -ne 0 ]; then
 	$PRINTF "$FAILED (rc1b=$rc1b)\n"

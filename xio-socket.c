@@ -1165,7 +1165,7 @@ int _xioopen_dgram_recvfrom(struct single *sfd, int xioflags,
    }
 
    applyopts(sfd, -1, opts, PH_PASTSOCKET);
-   applyopts(sfd, -1, opts, PH_FD);
+   //applyopts(sfd, -1, opts, PH_FD);
 
    applyopts_cloexec(sfd->fd, opts);
 
@@ -1389,7 +1389,7 @@ int _xioopen_dgram_recv(struct single *sfd, int xioflags,
    }
 
    applyopts(sfd, -1, opts, PH_PASTSOCKET);
-   applyopts(sfd, -1, opts, PH_FD);
+   //applyopts(sfd, -1, opts, PH_FD);
 
    applyopts_cloexec(sfd->fd, opts);
 
