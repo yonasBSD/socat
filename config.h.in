@@ -613,6 +613,12 @@
 /* is uint64_t already defined? */
 #undef HAVE_TYPE_UINT64
 
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
 /* Define if snprintf() returns required len on truncation (C-99 conform) */
 #undef HAVE_C99_SNPRINTF
 

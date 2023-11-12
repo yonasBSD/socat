@@ -294,6 +294,10 @@ Porting:
 	Thanks to Paul Hunt for sending a fix of the configure
 	--enable-openssl-base processing.
 
+	Enable direct largefile support on "smaller" systems per
+	_FILE_OFFSET_BITS and _LARGE_FILES.
+	Thanks to Fergus Dall for sending a patch.
+
 Testing:
 	Removed obselete parts from test.sh
 

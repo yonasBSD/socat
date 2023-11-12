@@ -41,6 +41,14 @@ int procan_cdefs(FILE *outfile) {
    fprintf(outfile, "#define SHUT_RDWR %u\n", SHUT_RDWR);
 #endif
 
+   /* Compile time controls */
+#ifdef _FILE_OFFSET_BITS
+   fprintf(outfile, "#define _FILE_OFFSET_BITS %u\n", _FILE_OFFSET_BITS);
+#endif
+#ifdef _LARGE_FILES
+   fprintf(outfile, "#define _LARGE_FILES %u\n", _LARGE_FILES);
+#endif
+
    /* termios constants */
 #ifdef CRDLY
    fprintf(outfile, "#define CRDLY 0%011o\n", CRDLY);

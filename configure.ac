@@ -30,6 +30,8 @@ if test -z "$CFLAGS"; then
    export CFLAGS=-O
 fi
 
+AC_SYS_LARGEFILE
+
 dnl Checks for programs.
 AC_PROG_INSTALL(install)
 AC_PROG_CC
