@@ -256,6 +256,10 @@ Corrections:
 
 	Fixed the end-close option, it just did not work.
 
+	In configure.ac was a direct call to gcc instead of $CC which broke
+	cross compiling.
+	Thanks to Fergus Dall for sending a patch.
+
 Coding:
 	Introduced groups_t instead of uint32_t, for more flexibility.
 

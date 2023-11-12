@@ -16,7 +16,7 @@ fi
 # find out which defines gcc passes to cpp, so makedepend does not run into
 # (harmless) "error architecture not supported"
 AC_MSG_CHECKING(which defines needed for makedepend)
-__cpp_defs=`gcc -v -E - </dev/null 2>&1 |$FGREP -e '/cpp ' -e '/cc1 '`
+__cpp_defs=`$CC -v -E - </dev/null 2>&1 |$FGREP -e '/cpp ' -e '/cc1 '`
 SYSDEFS=`aa=; for a in $__cpp_defs
 	do case "$a" in -D*) aa="$aa $a";; esac; done; echo "$aa"`
 AC_SUBST(SYSDEFS)
