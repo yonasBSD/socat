@@ -735,10 +735,10 @@ int xioopen_single(xiofile_t *xfd, int xioflags) {
       return -1;
 #endif /* WITH_NAMESPACES */
 
-#if HAVE_RESOLV_H
+#if WITH_RESOLVE && HAVE_RESOLV_H
    if ((do_res = xio_res_init(sfd, &save_res)) < 0)
       return STAT_NORETRY;
-#endif /* HAVE_RESOLV_H */
+#endif /* WITH_RESOLVE && HAVE_RESOLV_H */
 
    if (xio_chdir(sfd->opts, &orig_dir) < 0)
       return STAT_NORETRY;

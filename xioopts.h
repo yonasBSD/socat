@@ -192,11 +192,11 @@ enum e_func {
 /* Keep condition consistent with xio.h:groups_t! */
 #if WITH_POSIXMQ || WITH_SCTP || WITH_DCCP || WITH_UDPLITE
 /* The following groups are not expected on systems without uint64_t */
-#define GROUP_POSIXMQ	0x0100000000U
-#define GROUP_IP_SCTP	0x0200000000U
-#define GROUP_IP_DCCP	0x0400000000U
-#define GROUP_IP_UDPLITE 0x0800000000U
-#define GROUP_ALL	0x0fffffffffU
+#define GROUP_POSIXMQ	((groups_t)0x0100000000ULL)
+#define GROUP_IP_SCTP	((groups_t)0x0200000000ULL)
+#define GROUP_IP_DCCP	((groups_t)0x0400000000ULL)
+#define GROUP_IP_UDPLITE ((groups_t)0x0800000000ULL)
+#define GROUP_ALL	((groups_t)0x0fffffffffULL) 	/* OMG... for 32bit systems */
 #else /* !(WITH_POSIXMQ || WITH_SCTP || WITH_DCCP || WITH_UDPLITE) */
 #define GROUP_POSIXMQ	0
 #define GROUP_IP_SCTP	0

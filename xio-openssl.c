@@ -640,7 +640,11 @@ static int xioopen_openssl_listen(
 
       /* this can fork() for us; it only returns on error or on
 	 successful establishment of connection */
-      if (ipproto == IPPROTO_TCP || ipproto == IPPROTO_DCCP) {
+      if (ipproto == IPPROTO_TCP
+#ifdef IPPROTO_DCCP
+	  || ipproto == IPPROTO_DCCP
+#endif
+	  ) {
 	 result = _xioopen_listen(sfd, xioflags,
 			       (struct sockaddr *)us, uslen,
 			       opts, pf, socktype, ipproto,

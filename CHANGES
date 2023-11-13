@@ -103,7 +103,7 @@ Features:
 	application to the getaddrinfo() function, when this flag is set while
 	no IP version is preferred by build, environment, option, or address
 	type, Socat chooses IPv6 because this might activate both versions (but
-	confirm option ipv6-v6only).
+	check option ipv6-v6only).
 	Added option ai-passive to control this flag explicitely.
 
 	New option ai-v4mapped (v4mapped) sets or unsets the AI_V4MAPPED flag
@@ -297,6 +297,8 @@ Porting:
 	Enable direct largefile support on "smaller" systems per
 	_FILE_OFFSET_BITS and _LARGE_FILES.
 	Thanks to Fergus Dall for sending a patch.
+
+	Some corrections for better 32bit systems support.
 
 Testing:
 	Removed obselete parts from test.sh

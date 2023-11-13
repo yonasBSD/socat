@@ -6,7 +6,7 @@
 
 #include "xiosysincludes.h"
 
-#if WITH_UDP && (WITH_IP4 || WITH_IP6)
+#if _WITH_UDP && (WITH_IP4 || WITH_IP6)
 
 #include "xioopen.h"
 #include "xio-socket.h"
@@ -18,6 +18,7 @@
 
 #include "xio-udp.h"
 
+#if WITH_UDP
 
 const struct addrdesc xioaddr_udp_connect  = { "UDP-CONNECT",    1+XIO_RDWR,   xioopen_ipapp_connect, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_UDP, SOCK_DGRAM, IPPROTO_UDP, PF_UNSPEC HELP(":<host>:<port>") };
 #if WITH_LISTEN
@@ -49,6 +50,8 @@ const struct addrdesc xioaddr_udp6_datagram= { "UDP6-DATAGRAM",  1+XIO_RDWR,   x
 const struct addrdesc xioaddr_udp6_recvfrom= { "UDP6-RECVFROM",  1+XIO_RDWR,   xioopen_udp_recvfrom, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_CHILD|GROUP_RANGE, PF_INET6, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
 const struct addrdesc xioaddr_udp6_recv    = { "UDP6-RECV",      1+XIO_RDONLY, xioopen_udp_recv,     GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP6|GROUP_IP_UDP|GROUP_RANGE,             PF_INET6, SOCK_DGRAM, IPPROTO_UDP  HELP(":<port>") };
 #endif /* WITH_IP6 */
+
+#endif /* WITH_UDP */
 
 
 int _xioopen_ipdgram_listen(struct single *sfd,
@@ -469,13 +472,17 @@ int xioopen_udp_datagram(
 
    if (sfd->para.socket.ip.dosourceport) {
       switch (sfd->peersa.soa.sa_family) {
-      case PF_INET:
       default:
+#if WITH_IP4
+      case PF_INET:
 	 sfd->para.socket.ip.sourceport = ntohs(sfd->peersa.ip4.sin_port);
 	 break;
+#endif /* WITH_IP4 */
+#if WITH_IP6
       case PF_INET6:
 	 sfd->para.socket.ip.sourceport = ntohs(sfd->peersa.ip6.sin6_port);
 	 break;
+#endif /* WITH_IP6 */
       }
    }
 
@@ -708,4 +715,4 @@ int xioopen_udp_recv(
    return result;
 }
 
-#endif /* WITH_UDP && (WITH_IP4 || WITH_IP6) */
+#endif /* _WITH_UDP && (WITH_IP4 || WITH_IP6) */

@@ -219,13 +219,14 @@ label(option_W)dit(bf(tt(-W))tt(<lockfile>))
    creates it and continues, unlinks lockfile on exit.
 label(option_4)dit(bf(tt(-4)))
    Use IP version 4 in case the addresses do not implicitly or explicitly
-   specify a version; this is the default.
+   specify a version. Since version 1.8.0 the default is no preference.
 label(option_6)dit(bf(tt(-6)))
    Use IP version 6 in case the addresses do not implicitly or explicitly
    specify a version.
 label(option_statistics)dit(bf(tt(--statistics)))
+dit(bf(tt(-S)))
    Logs transfer statistics (bytes and blocks counters for both directions)
-   before terminating Socat.nl()
+   before terminating socat().nl()
    See also link(signal USR1)(signal_usr1).nl()
    This feature is experimental and might change in future versions.
 enddit()
@@ -1064,14 +1065,14 @@ label(ADDRESS_ACCEPT_FD)dit(bf(tt(ACCEPT-FD:<fdnum>)))
    Expects a listening socket in <fdnum> and accepts one or (with option
    link(fork)(OPTION_FORK)) more connections. This address type is useful under
    systemd control with "inetd mode".nl()
-   Example: (link(example)(EXAMPLE_ADDRESS_ACCEPT_FD))
-   Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET)link(TCP)(GROUP_TCP),link(CHILD)(GROUP_CHILD),link(RETRY)(GROUP_RETRY) nl()
+   Example: (link(example)(EXAMPLE_ADDRESS_ACCEPT_FD))nl()
+   Option groups: link(FD)(GROUP_FD), link(SOCKET)(GROUP_SOCKET), link(TCP)(GROUP_TCP), link(CHILD)(GROUP_CHILD), link(RETRY)(GROUP_RETRY)nl()
    Useful options:
-   link(fork)(OPTION_FORK)),
+   link(fork)(OPTION_FORK),
    link(range)(OPTION_RANGE),
    link(sourceport)(OPTION_SOURCEPORT),
    link(lowport)(OPTION_LOWPORT),
-   link(tcpwrap)(OPTION_TCPWRAPPERS),
+   link(tcpwrap)(OPTION_TCPWRAPPERS)
 label(ADDRESS_SOCKS4)dit(bf(tt(SOCKS4:<socks-server>:<host>:<port>)))
    Connects via <socks-server> [link(IP address)(TYPE_IP_ADDRESS)]
    to <host> [link(IPv4 address)(TYPE_IPV4_ADDRESS)]
@@ -1507,6 +1508,7 @@ label(ADDRESS_UDP6_RECV)dit(bf(tt(UDP6-RECV:<port>)))
    Like link(UDP-RECV)(ADDRESS_UDP_RECV), but only supports IPv6 protocol.nl()
    Option groups: link(FD)(GROUP_FD),link(SOCKET)(GROUP_SOCKET),link(IP6)(GROUP_IP6),link(RANGE)(GROUP_RANGE)
 
+label(ADDRESS_UDPLITE)
 dit(bf(tt(UDPLITE-CONNECT:<host>:<port>)))
 dit(bf(tt(UDPLITE4-CONNECT:<host>:<port>)))
 dit(bf(tt(UDPLITE6-CONNECT:<host>:<port>)))
@@ -4120,7 +4122,7 @@ mancommand(\.fi)
 
 htmlcommand(<hr><div class="shell">socat &#x5C;
     TCP-L:7777,reuseaddr,fork &#x5C;
-    SYSTEM:'filan -i 0 -s >&2',nofork</div>)
+    SYSTEM:'filan -i 0 -s >&amp;2',nofork</div>)
 
 listens for incoming TCP connections on port 7777. For each accepted
 connection, invokes a shell. This shell has its stdin and stdout directly
@@ -4212,7 +4214,7 @@ mancommand(\.RE)
 mancommand(\.fi)
 
 htmlcommand(<hr><div class="shell">socat - &#x5C;
-    TCP:<server>:10021,reuseaddr,socktype=6,protocol=33,fork</div>)
+    TCP:&lt;server&gt;:10021,reuseaddr,socktype=6,protocol=33,fork</div>)
 
 is a simple DCCP client. DCCP is now directly provisioned in socat(),
 however this example shows how use socat()s TCP procedures, but changes the

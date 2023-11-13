@@ -253,7 +253,8 @@ static int xioopen_proxy_connect(
 	 /* parent process */
 	 Close(sfd->fd);
 	 Nanosleep(&sfd->intervall, NULL);
-	 dropopts(opts, PH_ALL);  opts = copyopts(opts0, GROUP_ALL);
+	 dropopts(opts, PH_ALL);
+	 opts = copyopts(opts0, GROUP_ALL);
 	 continue;
       } else
 #endif /* WITH_RETRY */

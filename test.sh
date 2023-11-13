@@ -146,7 +146,8 @@ if type ip >/dev/null 2>&1; then
 fi
 
 if type ss >/dev/null 2>&1; then
-    if ss -V |grep -q "^ss utility, iproute2-"; then
+    # on Ubuntu-10 ss has differing output format
+    if ss -V |grep -q "^ss utility, iproute2-[2-6]"; then
 	SS=$(type -p ss)
     else
 	unset SS
@@ -1050,13 +1051,13 @@ checkconds() {
 		break;
 	    fi
 	done
-	[ "$i" ] && { echo "Only on (one of) $unames"; return -1; }
+	[ "$i" ] && { echo "Only on (one of) $unames"; return 255; }
     fi
 
     if [ "$root" = "root" ]; then
 	if [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
 	    echo "Must be root"
-	    return -1;
+	    return 255
 	fi
     fi
 
@@ -1064,7 +1065,7 @@ checkconds() {
 	for i in $progs; do
 	    if ! type  >/dev/null 2>&1; then
 		echo "Program $i not available"
-		return -1
+		return 255
 	    fi
 	done
     fi
@@ -1072,21 +1073,21 @@ checkconds() {
     if [ "$feats" ]; then
 	if ! F=$(testfeats $feats); then
 	    echo "Feature $F not configured in $SOCAT"
-	    return -1
+	    return 255
 	fi
     fi
 
     if [ "$addrs" ]; then
 	if ! A=$(testaddrs - $addrs); then
 	    echo "Address $A not available in $SOCAT"
-	    return -1
+	    return 255
 	fi
     fi
 
     if [ "$opts" ]; then
 	if ! o=$(testoptions $opts); then
 	    echo "Option $o not available in $SOCAT"
-	    return -1
+	    return 255
 	fi
     fi
 
@@ -1094,7 +1095,7 @@ checkconds() {
 	for i in $runs; do
 	    if ! runs$i >/dev/null; then
 		echo "$i not available on host"
-		return -1;
+		return 255;
 	    fi
 	done
     fi
@@ -1102,7 +1103,7 @@ checkconds() {
     if [ "$inet" ]; then
 	if [ -z "$NTERNET" ]; then
 	    echo "Use test.sh option --internet"
-	    return -1
+	    return 255
 	fi
     fi
     return 0
@@ -10045,6 +10046,7 @@ tsa="$TEST_SOCKADDR"	# test server address
 if [ "$PORTMETHOD" == PORT ]; then
     newport $proto; tsp="$PORT"; 	# test server port
     tsa1="$tsp"; tsa2="$tsa"; tsa="$tsa:$tsp"	# tsa2 used for server bind=
+    TEST_SOCKPORT=$tsp
 else
     tsa1="$tsa"; tsa2=				# tsa1 used for addr parameter
 fi
@@ -10053,6 +10055,7 @@ tca="$TEST_PEERADDR"	# test client address
 if [ $PORTMETHOD = PORT ]; then
     newport $proto; tcp="$PORT"; 	# test client port
     tca="$tca:$tcp"
+    TEST_PEERPORT=$tcp
 fi
 #CMD0="$TRACE $SOCAT $opts -u $KEYW-LISTEN:$tsa1 SYSTEM:\"export -p\""
 CMD0="$TRACE $SOCAT $opts -u -lpsocat $KEYW-LISTEN:$tsa1,$REUSEADDR SYSTEM:\"echo SOCAT_SOCKADDR=\\\$SOCAT_SOCKADDR; echo SOCAT_PEERADDR=\\\$SOCAT_PEERADDR; echo SOCAT_SOCKPORT=\\\$SOCAT_SOCKPORT; echo SOCAT_PEERPORT=\\\$SOCAT_PEERPORT; sleep 1\""
@@ -10076,8 +10079,8 @@ if [ $rc1 != 0 ]; then
     listCANT="$listCANT $N"
 elif [ "$(grep SOCAT_SOCKADDR "${tf}" |sed -e 's/^[^=]*=//' |sed -e "s/[\"']//g")" = "$TEST_SOCKADDR" -a \
     "$(grep SOCAT_PEERADDR "${tf}" |sed -e 's/^[^=]*=//' -e "s/[\"']//g")" = "$TEST_PEERADDR" -a \
-    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tsp" \) -a \
-    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tcp" \) \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$TEST_SOCKPORT" \) -a \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$TEST_PEERPORT" \) \
     ]; then
     $PRINTF "$OK\n"
     if [ "$debug" ]; then
@@ -18589,6 +18592,7 @@ tsa="$TEST_SOCKADDR"	# test server address
 if [ "$PORTMETHOD" = PORT ]; then
     newport $proto; tsp="$PORT"; 	# test server port
     tsa1="$tsp"; tsa2="$tsa"; tsa="$tsa:$tsp"	# tsa2 used for server bind=
+    TEST_SOCKPORT=$tsp
 else
     tsa1="$tsa"; tsa2=				# tsa1 used for addr parameter
 fi
@@ -18597,6 +18601,7 @@ tca="$TEST_PEERADDR"	# test client address
 if [ "$PORTMETHOD" = PORT ]; then
     newport $proto; tcp="$PORT"; 	# test client port
     tca="$tca:$tcp"
+    TEST_PEERPORT=$tcp
 fi
 #CMD0="$TRACE $SOCAT $opts -u $KEYW-LISTEN:$tsa1 SYSTEM:\"export -p\""
 CMD0="$TRACE $SOCAT $opts -u -lpsocat $KEYW-LISTEN:$tsa1,$REUSEADDR SYSTEM:\"echo SOCAT_SOCKADDR=\\\$SOCAT_SOCKADDR; echo SOCAT_PEERADDR=\\\$SOCAT_PEERADDR; echo SOCAT_SOCKPORT=\\\$SOCAT_SOCKPORT; echo SOCAT_PEERPORT=\\\$SOCAT_PEERPORT; sleep 1\""
@@ -18620,8 +18625,8 @@ if [ $rc1 != 0 ]; then
     listCANT="$listCANT $N"
 elif [ "$(grep SOCAT_SOCKADDR "${tf}" |sed -e 's/^[^=]*=//' |sed -e "s/[\"']//g")" = "$TEST_SOCKADDR" -a \
     "$(grep SOCAT_PEERADDR "${tf}" |sed -e 's/^[^=]*=//' -e "s/[\"']//g")" = "$TEST_PEERADDR" -a \
-    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tsp" \) -a \
-    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$tcp" \) \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_SOCKPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$TEST_SOCKPORT" \) -a \
+    \( "$PORTMETHOD" = ',' -o "$(grep SOCAT_PEERPORT "${tf}" |sed -e 's/^[^=]*=//' |sed -e 's/"//g')" = "$TEST_PEERPORT" \) \
     ]; then
     $PRINTF "$OK\n"
     if [ "$debug" ]; then
@@ -18866,7 +18871,7 @@ N=$((N+1))
 # Test the socat-chain.sh script by driving SSL over serial
 NAME=SOCAT_CHAIN_SSL_PTY
 case "$TESTS" in
-*%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%unix%*|*%socket%*|*%pty%*|*%$NAME%*)
+*%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%openssl%*|*%unix%*|*%socket%*|*%pty%*|*%$NAME%*)
 TEST="$NAME: test socat-chain.sh with SSL over PTY"
 # Run a socat-chain.sh instance with SSL listening behind a PTY;
 # open the PTY with socat-chein.sh using SSL;

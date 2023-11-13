@@ -537,7 +537,7 @@ AC_ARG_ENABLE(system, [  --disable-system        disable system (shell) support]
 	       [AC_DEFINE(WITH_SYSTEM) AC_MSG_RESULT(yes)])
 
 AC_MSG_CHECKING([whether to include shell invocation support])
-AC_ARG_ENABLE(system, [  --disable-shell         disable shell invocation support],
+AC_ARG_ENABLE(shell, [  --disable-shell         disable shell invocation support],
 	      [case "$enableval" in
 	       no) AC_MSG_RESULT(no);;
 	       *) AC_DEFINE(WITH_SHELL) AC_MSG_RESULT(yes);;

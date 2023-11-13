@@ -451,7 +451,7 @@ const struct optname optionnames[] = {
 #ifdef VDISCARD
 	IF_TERMIOS("discard",	&opt_vdiscard)
 #endif
-#if HAVE_RES_NSADDR_LIST
+#if WITH_RESOLVE && HAVE_RESOLV_H && HAVE_RES_NSADDR_LIST
 	IF_IP     ("dns",		&opt_res_nsaddr)
 #endif
 #if HAVE_RESOLV_H
@@ -566,7 +566,7 @@ const struct optname optionnames[] = {
 	IF_ANY 	  ("f-setlkw",	&opt_f_setlkw_wr)
 	IF_ANY 	  ("f-setlkw-rd",	&opt_f_setlkw_rd)
 	IF_ANY 	  ("f-setlkw-wr",	&opt_f_setlkw_wr)
-#if defined(F_SETPIPE_SZ)
+#if WITH_PIPE && defined(F_SETPIPE_SZ)
 	IF_ANY    ("f-setpipe-sz",	&opt_f_setpipe_sz)
 #endif
 	IF_EXEC   ("fdin",	&opt_fdin)
@@ -1047,7 +1047,7 @@ const struct optname optionnames[] = {
 	IF_IP     ("multicast-ttl",	&opt_ip_multicast_ttl)
 	IF_IP     ("multicastloop",	&opt_ip_multicast_loop)
 	IF_IP     ("multicastttl",	&opt_ip_multicast_ttl)
-#if HAVE_RES_NSADDR_LIST
+#if WITH_RESOLVE && HAVE_RESOLV_H && HAVE_RES_NSADDR_LIST
 	IF_IP     ("nameserver",	&opt_res_nsaddr)
 #endif
 #if defined(O_NDELAY) && (!defined(O_NONBLOCK) || O_NDELAY != O_NONBLOCK)
@@ -1115,7 +1115,7 @@ const struct optname optionnames[] = {
 	IF_OPENSSL("nosni",		&opt_openssl_no_sni)
 #endif
 	IF_INTERFACE("notrailers",	&opt_iff_notrailers)
-#if HAVE_RES_NSADDR_LIST
+#if WITH_RESOLVE && HAVE_RESOLV_H && HAVE_RES_NSADDR_LIST
 	IF_IP     ("nsaddr",		&opt_res_nsaddr)
 #endif
 #ifdef O_NSHARE
@@ -1326,7 +1326,7 @@ const struct optname optionnames[] = {
 	IF_SOCKET ("pf",	&opt_protocol_family)
 	IF_EXEC   ("pgid",	&opt_setpgid)
 	IF_EXEC   ("pipes",	&opt_pipes)
-#if defined(F_SETPIPE_SZ)
+#if WITH_PIPE && defined(F_SETPIPE_SZ)
 	IF_ANY    ("pipesz",	&opt_f_setpipe_sz)
 #endif
 #ifdef IP_PKTINFO
@@ -1462,7 +1462,7 @@ const struct optname optionnames[] = {
 #  if HAVE_RES_RETRY
 	IF_RESOLVE("res-maxretry",	&opt_res_retry)
 #  endif
-#  if HAVE_RES_NSADDR_LIST
+#if WITH_RESOLVE && HAVE_RESOLV_H && HAVE_RES_NSADDR_LIST
 	IF_IP     ("res-nsaddr",	&opt_res_nsaddr)
 #  endif
 #  if WITH_RES_PRIMARY

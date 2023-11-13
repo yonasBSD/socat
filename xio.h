@@ -348,6 +348,7 @@ typedef union bipipe {
       enum xiotag tag;
       const struct addrdesc *addr;
       int         flags;
+      /* until here, keep consistent with struct single, and with .dual */
    } common; 	/* "bipipe.common" */
    struct single  stream;
    struct {
@@ -368,6 +369,7 @@ typedef union bipipe {
       bool      havelock;	/* we are happy owner of the above lock */
       int 	triggerfd; 	/* close this FD in child process to notify parent */
       bool      cool_write;	/* downlevel EPIPE, ECONNRESET to notice */
+      /* until here, keep consistent with struct single ! */
       struct single *stream[2];	/* input stream, output stream */
    } dual;
 } xiofile_t;

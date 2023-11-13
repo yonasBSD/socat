@@ -52,9 +52,9 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
 		   struct opt **optsp,	/* in: opts; out: opts for parent/child */
 		   int *duptostderr	/* out: redirect stderr to output fd */
 		) {
-   struct opt *opts;	/* common options */
-   struct opt *popts;	/* parent options */
-   struct opt *copts;	/* child options */
+   struct opt *opts;		/* common options */
+   struct opt *popts = NULL;	/* parent options */
+   struct opt *copts;		/* child options */
    int numleft;
    int d, sv[2], rdpip[2], wrpip[2];
    int rw = (xioflags & XIO_ACCMODE);
@@ -613,7 +613,9 @@ int _xioopen_foxec(int xioflags,	/* XIO_RDONLY etc. */
       Info("child process notified parent that it is ready");
    }
 
+#if HAVE_PTY
    applyopts(sfd, ptyfd, popts, PH_LATE);
+#endif /* HAVE_PTY */
    if (applyopts_single(sfd, popts, PH_LATE) < 0)
       return -1;
 

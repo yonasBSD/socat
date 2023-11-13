@@ -48,9 +48,13 @@
 #endif
 
 #if !WITH_IP4 && !WITH_IP6
-#  if WITH_TCP || WITH_UDP || WITH_RAWIP
+#  if WITH_TCP || WITH_UDP || WITH_SCTP || WITH_DCCP || WITH_UDPLITE || WITH_RAWIP
 #    define WITH_IP4 1
 #  endif
+#endif
+
+#if WITH_UDP || WITH_UDPLITE
+#  define _WITH_UDP 1
 #endif
 
 #if WITH_UNIX || WITH_IP4 || WITH_IP6 || WITH_SOCKS4 || WITH_RAWIP || WITH_GENERICSOCKET
