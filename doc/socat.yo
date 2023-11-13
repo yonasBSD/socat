@@ -774,7 +774,7 @@ label(ADDRESS_POSIXMQ_READ)dit(bf(tt(POSIXMQ-READ:/<mqueue>)))
    link(-U)(option_U) and link(dual addresses)(ADDRESS_DUAL).nl()
    Socat() provides this address type only on Linux because POSIX MQ is based
    on UNIX filedescriptors there.nl()
-   This feature is new in version 1.7.5.0 and might change in the future,
+   This feature is new in version 1.8.0.0 and might change in the future,
    therefore it is link(experimental)(option_experimental).nl()
    Useful options:
    link(posixmq-priority)(OPTION_POSIXMQ_PRIORITY),
@@ -2294,7 +2294,7 @@ label(OPTION_RCVLOWAT)dit(bf(tt(rcvlowat=<bytes>)))
 label(OPTION_SO_REUSEADDR)dit(bf(tt(reuseaddr[=[0|1]])))
    Allows other sockets to bind to an address even if parts of it (e.g. the
    local port) are already in use by socat().nl()
-   With version 1.7.5, this socket option is set automatically for TCP LISTEN
+   With version 1.8.0, this socket option is set automatically for TCP LISTEN
    addresses. If you prefer the system default (no related
    tt(setsockopt(...SO_REUSEADDR...)) call at all), use form tt(reuseaddr=).nl()
    (link(example)(EXAMPLE_OPTION_SO_REUSEADDR)).
@@ -4775,7 +4775,7 @@ standard specifications available on the Internet for free.
 label(VERSION)
 manpagesection(VERSION)
 
-This man page describes version 1.7.4 of socat().
+This man page describes version 1.8.0 of socat().
 
 
 label(BUGS)
