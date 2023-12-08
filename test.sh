@@ -19761,6 +19761,95 @@ esac
 N=$((N+1))
 
 
+# Socat 1.8.0.0 with addresses of type RECVFROM and option fork had a file
+# descriport leak that could lead to FD exhaustion.
+NAME=RECVFROM_FORK_LEAK
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%ip4%*|*%udp%*|*%udp4%*|*%fork%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: FD leak on RECVFROM with fork"
+# Start a Socat process that uses UDP4-RECFROM with fork option.
+# Send two UDP4-packets to the receiver.
+# Check the server logs: when the socketpair calls on the second packet returns
+# the same FDs as the first call, the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 UDP FILE STDIO" \
+		  "UDP4-RECVFROM FILE STDIO UDP4-SENDTO" \
+		  "fork" \
+		  "udp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    newport udp4
+    CMD0="$TRACE $SOCAT $opts -ddd UDP4-RECVFROM:$PORT,fork FILE:/dev/null"
+    CMD1="$TRACE $SOCAT $opts - UDP4-SEND:$LOCALHOST4:$PORT"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    waitudp4port $PORT 1
+    echo "$da a" |$CMD1 >"${tf}1a" 2>"${te}1a"
+    echo "$da b" |$CMD1 >"${tf}1b" 2>"${te}1b"
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$CANT (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "echo \$da a\" |$CMD1"
+	cat "${te}1a" >&2
+	echo "echo \$da b\" |$CMD1"
+	cat "${te}1b" >&2
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+	namesCANT="$namesCANT $NAME"
+    elif [ $(grep -c " I socketpair(" "${te}0") -ne 2 ]; then
+	$PRINTF "$CANT (not 2 socketpair())\n"
+	echo "$CMD0 &"
+	#cat "${te}0" >&2
+	echo "echo \$da a\" |$CMD1"
+	cat "${te}1a" >&2
+	echo "echo \$da b\" |$CMD1"
+	cat "${te}1b" >&2
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+	namesCANT="$namesCANT $NAME"
+    elif ! diff <(grep " I socketpair(" "${te}0" |head -n 1 |sed 's/.*\( I socketpair.*\)/\1/') <(grep " I socketpair(" "${te}0" |tail -n 1 |sed 's/.*\( I socketpair.*\)/\1/') >/dev/null 2>&1; then
+	$PRINTF "$FAILED (this bug)\n"
+	echo "$CMD0 &"
+	grep " I socketpair(" "${te}0" >&2
+	echo "echo \$da a\" |$CMD1"
+	cat "${te}1a" >&2
+	echo "echo \$da b\" |$CMD1"
+	cat "${te}1b" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "echo \$da a\" |$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1a" >&2; fi
+	if [ "$VERBOSE" ]; then echo "echo \$da b\" |$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################

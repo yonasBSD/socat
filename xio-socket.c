@@ -1362,6 +1362,7 @@ int _xioopen_dgram_recvfrom(struct single *sfd, int xioflags,
 	    char buf[1];
 	    while (Read(trigger[0], buf, 1) < 0 && errno == EINTR) ;
 	 }
+	 Close(trigger[0]);
 
 	 Info("continue listening");
       } else {
