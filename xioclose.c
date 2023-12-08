@@ -28,6 +28,16 @@ int xioclose1(struct single *pipe) {
    }
    pipe->tag |= XIO_TAG_CLOSED;
 
+   if (pipe->dtype & XIOREAD_RECV_ONESHOT) {
+      if (pipe->triggerfd >= 0) {
+	 char r[1];
+	 Info("consuming packet to prevent loop in parent");
+	 Read(pipe->fd, r, sizeof(r));
+	 Close(pipe->triggerfd);
+	 pipe->triggerfd = -1;
+      }
+   }
+
 #if WITH_READLINE
    if ((pipe->dtype & XIODATA_MASK) == XIODATA_READLINE) {
       Write_history(pipe->para.readline.history_file);

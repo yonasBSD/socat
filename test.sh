@@ -19679,6 +19679,88 @@ esac
 N=$((N+1))
 
 
+# Socat 1.8.0.0 with addresses of type RECVFROM and option fork entered a
+# loop that was only stopped by FD exhaustion cause by FD leak, when the
+# second address failed to connect/open in the child process
+NAME=RECVFROM_FORK_LOOP
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%ip4%*|*%udp%*|*%udp4%*|*%fork%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: Bug on RECVFROM with fork and child failure"
+# Start a Socat process that uses UDP4-RECFROM with fork options, and in the
+# second address opens a file in a non existent directory.
+# Send a UDP4-packet to the receiver.
+# When only one child process is forked off, thus when only one appropriate
+# error message is in the log file, the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 UDP STDIO FILE" \
+		  "UDP4-RECVFROM OPEN STDIO UDP4-SEND" \
+		  "fork" \
+		  "udp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    newport udp4
+    CMD0="$TRACE $SOCAT $opts UDP4-RECVFROM:$PORT,fork OPEN:$td/nonexistent/file"
+    CMD1="$TRACE $SOCAT $opts - UDP4-SENDTO:$LOCALHOST4:$PORT"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    waitudp4port $PORT 1
+    echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$CANT (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "echo \$da\" |$CMD1"
+	cat "${te}1" >&2
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+	namesCANT="$namesCANT $NAME"
+    elif [ $(grep -c " E open(" "${te}0") -eq 0 ]; then
+	$PRINTF "$CANT (no error)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "echo \$da\" |$CMD1"
+	cat "${te}1" >&2
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+	namesCANT="$namesCANT $NAME"
+    elif [ $(grep -c " E open(" "${te}0") -ge 2 ]; then
+	$PRINTF "$FAILED (this bug)\n"
+	echo "$CMD0 &"
+	head -n 2 "${te}0" >&2
+	echo "echo \$da\" |$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################
