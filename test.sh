@@ -11439,8 +11439,9 @@ tw="$td/test$N.wc-c"
 # this is the size we write() in one call; data is never stored on disk, so
 # make it large enough to exceed any atomic write size; but higher number might
 # take much time
+# Note: in OpenBSD-4 the PIPE does not deliver EOF, thus -T
 bytes=100000	# for Linux 2.6.? this must be >65536
-CMD0="$TRACE $SOCAT $opts -u PIPE:$tp STDOUT"
+CMD0="$TRACE $SOCAT $opts -u -T 2 PIPE:$tp STDOUT"
 CMD1="$TRACE $SOCAT $opts -u -b $bytes OPEN:/dev/zero,readbytes=$bytes FILE:$tp,o-nonblock"
 printf "test $F_n $TEST... " $N
 $CMD0 2>"${te}0" |wc -c >"$tw" &
@@ -11450,21 +11451,41 @@ $CMD1 2>"${te}1" >"${tf}1"
 rc1=$?
 wait
 if [ $rc1 -ne 0 ]; then
-    $PRINTF "$NO_RESULT\n"
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
+	$PRINTF "$FAILED (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
 elif [ ! -e "$tw" ]; then 
-    $PRINTF "$NO_RESULT\n"
-    numCANT=$((numCANT+1))
-    listCANT="$listCANT $N"
+	$PRINTF "$NO_RESULT (no wc -c output)\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+	namesCANT="$namesCANT $NAME"
 elif [ "$bytes" -eq $(cat "$tw") ]; then
-    $PRINTF "$OK\n"
-    numOK=$((numOK+1))
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
 else
-    $PRINTF "$FAILED\n"
-    echo "transferred only $(cat $tw) of $bytes bytes" >&2
-    numFAIL=$((numFAIL+1))
-    listFAIL="$listFAIL $N"
+	$PRINTF "$FAILED (incomplete)\n"
+	echo "transferred only $(cat $tw) of $bytes bytes" >&2
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
 fi
 fi # NUMCOND
  ;;
@@ -17545,8 +17566,9 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-#CMD0="$TRACE $SOCAT $opts PIPE SHELL:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
-CMD0="$TRACE $SOCAT $opts SOCKETPAIR SHELL:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
+#CMD0="$TRACE $SOCAT $opts PIPE SYSTEM:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
+# -T is required on (only?) OpenBSD-4
+CMD0="$TRACE $SOCAT $opts -T 2 SOCKETPAIR SYSTEM:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
 printf "test $F_n $TEST... " $N
 eval $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
