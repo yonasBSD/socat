@@ -30,6 +30,7 @@ extern const struct optdesc opt_ip_recvif;
 extern const struct optdesc opt_ip_transparent;
 
 extern const struct optdesc opt_ai_addrconfig;
+extern const struct optdesc opt_ai_all;
 extern const struct optdesc opt_ai_passive;
 extern const struct optdesc opt_ai_v4mapped;
 

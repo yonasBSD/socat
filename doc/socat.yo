@@ -2566,8 +2566,11 @@ label(OPTION_AI_V4MAPPED)
 dit(bf(tt(ai-v4mapped[=0|1]))) dit(bf(tt(v4mapped[=0|1])))
    Sets or unsets the AI_V4MAPPED flag for code(getaddrinfo()). With socat()
    addresses requiring IPv6 addresses, this resolves IPv4 addresses to the
-   approriate IPv6 address [::ffff:*:*]. For IPv6 Socat addresses, the default
-   is 1.
+   appropriate IPv6 address [::ffff:*:*]. For IPv6 socat() addresses, the
+   default is 1.
+label(OPTION_AI_ALL)
+dit(bf(tt(ai-all[=0|1])))
+   Sets or unsets the AI_ALL flag for code(getaddrinfo()).
 
 label(OPTION_RES_DEBUG)dit(bf(tt(res-debug)))
 label(OPTION_RES_AAONLY)dit(bf(tt(res-aaonly)))

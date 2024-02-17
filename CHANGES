@@ -29,6 +29,8 @@ Features:
 	socat-mux.sh and socat-broker.sh, when run as root, now internally use
 	low (512..1023) UDP ports to increase security.
 
+	Added option ai-all (sets AI_ALL flag of getaddrinfo() resolver)
+
 Porting:
 	Changes for building and testing on NetBSD
 

@@ -199,6 +199,9 @@ const struct optname optionnames[] = {
 #if defined(AI_ADDRCONFIG)
 	IF_IP	  ("ai-addrconfig", 		&opt_ai_addrconfig)
 #endif
+#if defined(AI_ALL)
+	IF_IP	  ("ai-all", 			&opt_ai_all)
+#endif
 #if defined(AI_PASSIVE	)
 	IF_IP	  ("ai-passive", 		&opt_ai_passive)
 #endif
