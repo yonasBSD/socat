@@ -21,7 +21,7 @@ usage () {
     $ECHO "	<listener> is a passive address like TCP4-L or SSL-L"
     $ECHO "	<options>:"
     $ECHO "		-d*  -S  -t <timeout>  -T <timeout> 	are passed to socat"
-    $ECHO "		-V	prints the socat command before starting it"
+    $ECHO "		-V	Shows executed Socat commands and some infos"
     $ECHO "For example:"
     $ECHO "	$0 \\"
     $ECHO "		TCP4-L:1234"
@@ -60,15 +60,29 @@ if ! [[ "$LISTENER" =~ .*,fork ]] || [[ "$LISTENER" =~ .*,fork, ]]; then
 fi
 
 case "$0" in
-    */*) SOCAT=${0%/*}/socat ;;
-    *) SOCAT=socat ;;
+    */*) if [ -x ${0%/*}/socat ]; then SOCAT=${0%/*}/socat; fi ;;
 esac
+if [ -z "$SOCAT" ]; then SOCAT=socat; fi
+[ "$VERBOSE" ] && echo "# $0: Using executable $SOCAT" >&2
 
+# We need a free UDP port (on loopback)
 PORT=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
 if [ -z "$PORT" ]; then
-    echo "$0: Failed to determine free UDP port" >&2
-    exit 1
+    # Probably old Socat version, use a different approach
+    if type ss >/dev/null 2>&1; then
+	:
+    elif type netstat >/dev/null 2>&1; then
+	alias ss=netstat
+    else
+	echo "$0: Failed to determine free UDP port (old Socat version, no ss, no netstat?)" >&2
+	exit 1
+    fi
+    PORT=
+    while [ -z "$PORT" ] || ss -aun |grep -e ":$PORT\>" >/dev/null; do
+	PORT=$((16384+RANDOM))
+    done
 fi
+[ "$VERBOSE" ] && echo "# $0: Using UDP port $PORT" >&2
 
 BCADDR=127.255.255.255
 

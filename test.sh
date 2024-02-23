@@ -30,6 +30,11 @@ fi
 ECHO="echo $E"
 PRINTF="printf"
 
+GREP_E="grep -E"
+GREP_F="grep -F"
+
+TRUE=$(type -p true)
+
 usage() {
     $ECHO "Usage: $0 <options> [<test-spec> ...]"
     $ECHO "options:"
@@ -18025,7 +18030,7 @@ elif [ "$UNAME" = "NetBSD" ]; then
     $PRINTF "test $F_n $TEST... ${YELLOW}might hang on $UNAME${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! F=$(testfeats STDIO SYSTEM SOCKETPAIR); then
+elif ! F=$(testfeats SYCLS STDIO SYSTEM SOCKETPAIR); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -19325,7 +19330,7 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%unix%*|*%socks4%*|*%socket%*|*%$NAME%*)
 TEST="$NAME: test socat-chain.sh with SOCKS4 over UNIX-socket"
 # Run a socks4 server on UNIX-listen
-# Connect with socat-chein.sh; check if data transfer is correct
+# Connect with socat-chain.sh; check if data transfer is correct
 if ! eval $NUMCOND; then :
 # Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
@@ -19396,7 +19401,7 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%scripts%*|*%socat-chain%*|*%listen%*|*%fork%*|*%ip4%*|*%tcp4%*|*%openssl%*|*%unix%*|*%socket%*|*%pty%*|*%$NAME%*)
 TEST="$NAME: test socat-chain.sh with SSL over PTY"
 # Run a socat-chain.sh instance with SSL listening behind a PTY;
-# open the PTY with socat-chein.sh using SSL;
+# open the PTY with socat-chain.sh using SSL;
 # check if data transfer is correct
 if ! eval $NUMCOND; then :
 # Remove unneeded checks, adapt lists of the remaining ones
