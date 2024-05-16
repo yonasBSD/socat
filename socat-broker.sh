@@ -65,8 +65,18 @@ esac
 if [ -z "$SOCAT" ]; then SOCAT=socat; fi
 [ "$VERBOSE" ] && echo "# $0: Using executable $SOCAT" >&2
 
+# When run as root we try low ports
+LOWPORT=
+PATTERN=bound
+if [ "$(id -u)" = 0 ]; then
+    LOWPORT="lowport"
+    PATTERN="successfully prepared local socket"
+fi
+
 # We need a free UDP port (on loopback)
-PORT=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
+if [ -z "$LOWPORT" ]; then
+    PORT=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
+fi
 if [ -z "$PORT" ]; then
     # Probably old Socat version, use a different approach
     if type ss >/dev/null 2>&1; then
@@ -79,7 +89,11 @@ if [ -z "$PORT" ]; then
     fi
     PORT=
     while [ -z "$PORT" ] || ss -aun |grep -e ":$PORT\>" >/dev/null; do
-	PORT=$((16384+RANDOM))
+	if [ -z "$LOWPORT" ]; then
+	    PORT=$((16384+RANDOM))
+	else
+	    PORT=$((512+(RANDOM>>6) ))
+	fi
     done
 fi
 [ "$VERBOSE" ] && echo "# $0: Using UDP port $PORT" >&2

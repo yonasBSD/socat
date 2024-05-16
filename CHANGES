@@ -26,6 +26,9 @@ Features:
 	Changed socat-chain.sh, socat-mux.sh, and socat-broker.sh to work with
 	older Socat versions.
 
+	socat-mux.sh and socat-broker.sh, when run as root, now internally use
+	low (512..1023) UDP ports to increase security.
+
 Porting:
 	Changes for building and testing on NetBSD
 

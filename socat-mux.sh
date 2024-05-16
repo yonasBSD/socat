@@ -72,9 +72,19 @@ esac
 if [ -z "$SOCAT" ]; then SOCAT=socat; fi
 [ "$VERBOSE" ] && echo "# $0: Using executable $SOCAT" >&2
 
+# When run as root we try low ports
+LOWPORT=
+PATTERN=bound
+if [ "$(id -u)" = 0 ]; then
+    LOWPORT="lowport"
+    PATTERN="successfully prepared local socket"
+fi
+
 # We need two free UDP ports (on loopback)
-PORT1=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
-PORT2=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep bound |sed 's/.*:\([1-9][0-9]*\)$/\1/')
+if [ -z "$LOWPORT" ]; then
+    PORT1=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep "$PATTERN" |sed 's/.*:\([1-9][0-9]*\)$/\1/')
+    PORT2=$($SOCAT -d -d -T 0.000001 UDP4-RECV:0 /dev/null 2>&1 |grep "$PATTERN" |sed 's/.*:\([1-9][0-9]*\)$/\1/')
+fi
 if [ -z "$PORT1" -o -z "$PORT2" ]; then
     # Probably old Socat version, use a different approach
     if type ss >/dev/null 2>&1; then
@@ -87,8 +97,13 @@ if [ -z "$PORT1" -o -z "$PORT2" ]; then
     fi
     PORT1= PORT2=
     while [ -z "$PORT1" -o -z "$PORT2" -o "$PORT1" = "$PORT2" ] || ss -aun |grep -e ":$PORT1\>" -e ":$PORT2\>" >/dev/null; do
-	PORT1=$((16384+RANDOM))
-	PORT2=$((16384+RANDOM))
+	if [ -z "$LOWPORT" ]; then
+	    PORT1=$((16384+RANDOM))
+	    PORT2=$((16384+RANDOM))
+	else
+	    PORT1=$((512+(RANDOM>>6) ))
+	    PORT2=$((512+(RANDOM>>6) ))
+	fi
     done
 fi
 [ "$VERBOSE" ] && echo "# $0: Using UDP ports $PORT1, $PORT2" >&2
