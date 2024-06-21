@@ -305,6 +305,16 @@ if test "$ac_cv_apple_use_rfc_2292" = yes; then
 fi
 AC_MSG_RESULT($ac_cv_apple_use_rfc_2292)
 
+AC_MSG_CHECKING(if including netinet/in.h suffices)
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <netinet/in.h>],
+[struct sockaddr_in6 s;],
+[ AC_MSG_RESULT(yes); WITH_IP6=1],
+[ AC_MSG_RESULT(no); WITH_IP6=])
+if test "$WITH_IP6"; then
+   AC_DEFINE(WITH_IP6)
+fi
+
 fi
 
 AC_MSG_CHECKING(whether to include raw IP support)

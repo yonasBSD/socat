@@ -216,9 +216,11 @@ int xiogetaddrinfo(const char *node, const char *service,
       if (family == PF_UNSPEC)  family = PF_INET6;
 #endif /* WITH_IP6 */
    }
+#if HAVE_GETADDRINFO
+#ifdef AI_ADDRCONFIG
    if (family == 0)
       hints.ai_flags |= AI_ADDRCONFIG;
-#if HAVE_GETADDRINFO
+#endif
    if (node != NULL || service != NULL) {
       struct addrinfo *record;
 

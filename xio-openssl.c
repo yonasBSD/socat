@@ -1121,7 +1121,7 @@ int
 #elif HAVE_DTLSv1_client_method
 	 method = sycDTLSv1_client_method();
 #else
-#        error "OpenSSL does not seem to provide DTLS client methods"
+#        warning "OpenSSL does not seem to provide DTLS client methods"
 #endif
 	 *use_dtls = true;
       }
@@ -1192,10 +1192,15 @@ int
 #elif HAVE_DTLSv1_server_method
 	 method = sycDTLSv1_server_method();
 #else
-#        error "OpenSSL does not seem to provide DTLS server methods"
+#        warning "OpenSSL does not seem to provide DTLS server methods"
 #endif
 	 *use_dtls = true;
       }
+   }
+
+   if (method == NULL) {
+      Error("no OpenSSL method available");
+      return STAT_NORETRY;
    }
 
    if (opt_egd) {
