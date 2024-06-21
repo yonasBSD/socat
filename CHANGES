@@ -8,6 +8,9 @@ Porting:
 
 	New Linux distributions dislike egrep, fgrep
 
+	When NETDB_INTERNAL is not available it should be set to -1.
+	Thanks to Baruch Siach for sending a patch.
+
 Testing:
 	test.sh: lots of corrections and improvements
 

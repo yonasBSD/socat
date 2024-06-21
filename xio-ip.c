@@ -391,6 +391,9 @@ int xiogetaddrinfo(const char *node, const char *service,
       }
    }
 
+#else
+   Error("no resolver function available");
+   return STAT_NORETRY;
 #endif
 
    if (numnode)  free(numnode);
