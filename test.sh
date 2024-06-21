@@ -52,7 +52,7 @@ usage() {
     $ECHO "Find the tests' stdout,stderr,diff in $TMPDIR/$USER/\$PID"
 }
 
-val_t=0.1
+val_t=
 NUMCOND=true
 #NUMCOND="test \$N -gt 70"
 VERBOSE=
@@ -82,23 +82,8 @@ while [ "$1" ]; do
 done
 debug=$DEBUG
 
-opt_t="-t $val_t"
-
 UNAME=`uname`
 UNAME_R=`uname -r`
-
-#MICROS=100000
-case "X$val_t" in
-    X*.???????*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS:0:6}" ;;
-    X*.*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS}000000"; uS="${uS:0:6}" ;;
-    X*) S="${val_t}"; uS="000000" ;;
-esac
-MICROS=${S}${uS}
-MICROS=${MICROS##0000}; MICROS=${MICROS##00}; MICROS=${MICROS##0}
-#echo MICROS=$MICROS >&2
-#
-_MICROS=$((MICROS+999999)); SECONDs="${_MICROS%??????}"
-[ -z "$SECONDs" ] && SECONDs=0
 
 withroot=0	# perform privileged tests even if not run by root
 
@@ -113,12 +98,35 @@ fi
 if [ -z "$PROCAN" ]; then if test -x ./procan; then PROCAN="./procan"; elif type procan >/dev/null 2>&1; then PROCAN=procan; elif test -x ${SOCAT%/*}/procan; then PROCAN=${SOCAT%/*}/procan; else PROCAN=false; fi; fi
 if [ -z "$FILAN" ]; then if test -x ./filan; then FILAN="./filan"; elif ! type filan >/dev/null 2>&1; then FILAN=filan; elif test -x ${SOCAT%/*}/filan; then FILAN=${SOCAT%/*}/filan; else FILAN=false; fi; fi
 
+# Determine the time Socat needs for an empty run
+$SOCAT /dev/null /dev/null 	# populate kernel caches
+V=$(bash -c 'time socat /dev/null /dev/null' 2>&1 |grep ^real |sed 's/.*m\(.*\)s.*/\1/' |tr , .)
+[ -z "$val_t" ] && val_t=$V
+
+opt_t="-t $val_t"
+#echo "val_t=\"$val_t\""
+
+case "X$val_t" in
+    X*.???????*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS:0:6}" ;;
+    X*.*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS}000000"; uS="${uS:0:6}" ;;
+    X*) S="${val_t}"; uS="000000" ;;
+esac
+MICROS=${S}${uS}
+MICROS=${MICROS##0000}; MICROS=${MICROS##00}; MICROS=${MICROS##0}
+export MICROS
+#echo MICROS=$MICROS >&2
+#
+_MICROS=$((MICROS+999999)); SECONDs="${_MICROS%??????}"
+[ -z "$SECONDs" ] && SECONDs=0
+
 #PATH=$PATH:/opt/freeware/bin
 #PATH=$PATH:/usr/local/ssl/bin
 PATH=$PATH:/sbin 	# RHEL6:ip
 case "$0" in
     */*) PATH="${0%/*}:$PATH"
 esac
+PATH=.:$PATH 	# for usleep,relsleep
+
 #OPENSSL_RAND="-rand /dev/egd-pool"
 #SOCAT_EGD="egd=/dev/egd-pool"
 MISCDELAY=1
@@ -293,11 +301,30 @@ tolower () {
     esac
 }
 
-# precision sleep; takes seconds with fractional part
+if ! which usleep >/dev/null 2>&1; then
+cat >usleep <<EOF
+#! /bin/bash
+# temporary script from Socat test.sh:
+# sleep for a number of µs
+u=\$1
+l=\${#u}
+i=0
+[ "\$l" -gt 6 ] && i=\${u%??????}
+u0=000000\$u
+s=\${i}.\${u0: -6:6};
+#echo \$s
+sleep \$s
+EOF
+chmod a+x usleep
+fi
+
+# precision sleep; takes seconds with fractional part; sleep does this on all test platforms
+if false; then
 psleep () {
     local T="$1"
     [ "$T" = 0 ] && T=0.000002
-    $SOCAT -T "$T" pipe pipe 2>/dev/null
+    #$SOCAT -T "$T" PIPE PIPE 2>/dev/null
+    sleep "$T"
 }
 # time in microseconds to wait in some situations
 if ! type usleep >/dev/null 2>&1 ||
@@ -308,10 +335,24 @@ if ! type usleep >/dev/null 2>&1 ||
 	*???????) S="${n%??????}"; uS="${n:${#n}-6}" ;;
 	*) S=0; uS="00000$n"; uS="${uS:${#uS}-6}" ;;
 	esac
-	$SOCAT -T "$S.$uS" pipe pipe 2>/dev/null
+	#$SOCAT -T "$S.$uS" PIPE PIPE 2>/dev/null
+	usleep "$S.$uS"
     }
 fi
 #USLEEP=usleep
+fi
+
+# calculate the time i*MICROS, output as float number for us with -t
+reltime () {
+    local n="$1"
+    local S uS
+    local N=$((n*MICROS))
+    case "$N" in
+	*???????) S="${N%??????}"; uS="${N:${#N}-6}" ;;
+	*) S=0; uS="00000$N"; uS="${uS:${#uS}-6}" ;;
+    esac
+    echo "$S.$uS"
+}
 
 # A sleep with configurable clocking ($vat_t)
 # val_t should be at least the time that a Socat invocation, no action, and
@@ -319,6 +360,18 @@ fi
 relsleep () {
     usleep $(($1*MICROS))
 }
+
+cat >relsleep <<-'EOF'
+#! /bin/bash
+    n="$1"
+    N=$((n*MICROS))
+    case "$N" in
+	*???????) S="${N%??????}"; uS="${N:${#N}-6}" ;;
+	*) S=0; uS="00000$N"; uS="${uS:${#uS}-6}" ;;
+    esac
+    sleep "$S.$uS"
+EOF
+chmod a+x relsleep
 
 if type ping6 >/dev/null 2>&1; then
     PING6=ping6
@@ -664,7 +717,7 @@ testecho () {
     local arg1="$3";	[ -z "$arg1" ] && arg1="-"
     local arg2="$4";	[ -z "$arg2" ] && arg2="echo"
     local opts="$5"
-    local T="$6";	[ -z "$T" ] && T=0
+    local T="$6";	[ -z "$T" ] && T=0 	# fractional seconds
     local tf="$td/test$N.stdout"
     local te="$td/test$N.stderr"
     local tdiff="$td/test$N.diff"
@@ -674,11 +727,11 @@ testecho () {
     #$ECHO "testing $title (test $N)... \c"
     $PRINTF "test $F_n %s... " $N "$title"
     #echo "$da" |$cmd >"$tf" 2>"$te"
-    (psleep $T; echo "$da"; psleep $T) |($TRACE $SOCAT $opts "$arg1" "$arg2" >"$tf" 2>"$te"; echo $? >"$td/test$N.rc") &
-    export rc1=$!
+    { sleep $T; echo "$da"; sleep $T; } | { $TRACE $SOCAT $opts "$arg1" "$arg2" >"$tf" 2>"$te"; echo $? >"$td/test$N.rc"; } &
+    pid1=$!
     #sleep 5 && kill $rc1 2>/dev/null &
 #    rc2=$!
-    wait $rc1
+    wait $pid1
 #    kill $rc2 2>/dev/null
     if [ "$(cat "$td/test$N.rc")" != 0 ]; then
 	$PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -712,7 +765,7 @@ testod () {
     local arg1="$3";	[ -z "$arg1" ] && arg1="-"
     local arg2="$4";	[ -z "$arg2" ] && arg2="echo"
     local opts="$5"
-    local T="$6";	[ -z "$T" ] && T=0
+    local T="$6";	[ -z "$T" ] && T=0 	# fractional seconds
     local tf="$td/test$N.stdout"
     local te="$td/test$N.stderr"
     local tr="$td/test$N.ref"
@@ -722,7 +775,7 @@ testod () {
     echo "$dain" |$OD_C >"$tr"
 #    local daout="$(echo "$dain" |$OD_C)"
     $PRINTF "test $F_n %s... " $num "$title"
-    (psleep $T; echo "$dain"; psleep $T) |$TRACE $SOCAT $opts "$arg1" "$arg2" >"$tf" 2>"$te"
+    (sleep $T; echo "$dain"; sleep $T) |$TRACE $SOCAT $opts "$arg1" "$arg2" >"$tf" 2>"$te"
     if [ "$?" != 0 ]; then
 	$PRINTF "$FAILED: $TRACE $SOCAT:\n"
 	echo "$TRACE $SOCAT $opts $arg1 $arg2"
@@ -867,7 +920,7 @@ runsunix () {
     return 0;
     $TRACE $SOCAT /dev/null UNIX-LISTEN:"$td/unix.socket" 2>"$td/unix.stderr" &
     pid=$!
-    usleep $MICROS
+    relsleep 1
     kill "$pid" 2>/dev/null
     test ! -s "$td/unix.stderr"
 }
@@ -1136,16 +1189,16 @@ waitip4proto () {
 #		*) l=$(netstat -an |grep '^raw4.* .*[0-9*]\.'$proto' .* \*\.\* .*') ;;
 #		esac ;;
 	AIX)	 # does not seem to show raw sockets in netstat
-		 sleep 1;  return 0 ;;
+		 relsleep 5;  return 0 ;;
 #	SunOS)   l=$(netstat -an -f inet -P raw |grep '.*[1-9*]\.'$proto' [ ]*Idle') ;;
 #	HP-UX)   l=$(netstat -an |grep '^raw        0      0  .*[0-9*]\.'$proto' .* \*\.\* ') ;;
 #	OSF1)    l=$(/usr/sbin/netstat -an |grep '^raw        0      0  .*[0-9*]\.'$proto' [ ]*\*\.\*') ;;
  	*)       #l=$(netstat -an |grep -i 'raw .*[0-9*][:.]'$proto' ') ;;
-		 sleep 1;  return 0 ;;
+		 relsleep 5;  return 0 ;;
 	esac
 	[ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
 	  \( \( $logic -eq 0 \) -a -z "$l" \) ] && return 0
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1182,16 +1235,16 @@ waitip6proto () {
 #		*) l=$(netstat -an |grep '^raw4.* .*[0-9*]\.'$proto' .* \*\.\* .*') ;;
 #		esac ;;
 	AIX)	 # does not seem to show raw sockets in netstat
-		 sleep 1;  return 0 ;;
+		 relsleep 5;  return 0 ;;
 #	SunOS)   l=$(netstat -an -f inet -P raw |grep '.*[1-9*]\.'$proto' [ ]*Idle') ;;
 #	HP-UX)   l=$(netstat -an |grep '^raw        0      0  .*[0-9*]\.'$proto' .* \*\.\* ') ;;
 #	OSF1)    l=$(/usr/sbin/netstat -an |grep '^raw        0      0  .*[0-9*]\.'$proto' [ ]*\*\.\*') ;;
  	*)       #l=$(netstat -an |egrep -i 'raw6? .*[0-9*][:.]'$proto' ') ;;
-		 sleep 1;  return 0 ;;
+		 relsleep 5;  return 0 ;;
 	esac
 	[ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
 	  \( \( $logic -eq 0 \) -a -z "$l" \) ] && return 0
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1276,7 +1329,7 @@ waittcp4port () {
 	    set ${vx}vx
 	    return 1
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1353,7 +1406,7 @@ waitudp4port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1429,7 +1482,7 @@ waitsctp4port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1477,7 +1530,7 @@ waitudplite4port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	relsleep 1
 	timeout=$((timeout-1))
     done
 
@@ -1524,7 +1577,7 @@ waittcp6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1574,7 +1627,7 @@ waitudp6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1619,7 +1672,7 @@ waitsctp6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -1664,7 +1717,7 @@ waitudplite6port () {
 	    set ${vx}vx
 	    return 0
 	fi
-	sleep 1
+	relsleep 1
 	timeout=$((timeout-1))
     done
 
@@ -1701,7 +1754,7 @@ waitfile () {
 	    set ${vx}vx
 	    return 0
 	fi
-	psleep $val_t
+	sleep $val_t
 	timeout=$((timeout-1))
     done
 
@@ -3120,7 +3173,8 @@ mkfifo $tp
 $CMD >$tf 2>"$te" &
 #($CMD >$tf 2>"$te" || rm -f "$tp") 2>/dev/null &
 bg=$!	# background process id
-usleep $MICROS
+#relsleep 1
+waitfile "$tp"
 if [ ! -p "$tp" ]; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
     echo "$CMD"
@@ -3129,9 +3183,9 @@ if [ ! -p "$tp" ]; then
    listFAIL="$listFAIL $N"
 else
 #echo "$da" >"$tp"	# might hang forever
-echo "$da" >"$tp" & export pid=$!; (sleep 1; kill $pid 2>/dev/null) &
+echo "$da" >"$tp" & export pid=$!; (relsleep 1; kill $pid 2>/dev/null) &
 # Solaris needs more time:
-sleep 1
+relsleep 1
 kill "$bg" 2>/dev/null; wait
 if ! echo "$da" |diff - "$tf" >"$tdiff"; then
     if [ -s "$te" ]; then
@@ -3320,7 +3374,7 @@ printf "test $F_n $TEST... " $N
 touch "$ti"
 $CMD >"$tf" 2>"$te" &
 bg=$!
-usleep 500000
+sleep 0.1
 echo "$da" >>"$ti"
 sleep 1
 kill $bg 2>/dev/null; wait
@@ -3354,7 +3408,7 @@ printf "test $F_n $TEST... " $N
 touch "$ti"
 $CMD >"$tf" 2>"$te" &
 bg=$!
-usleep 500000
+relsleep 1
 echo "$da" >>"$ti"
 sleep 1
 kill $bg 2>/dev/null
@@ -3674,7 +3728,7 @@ pid=$!	# background process id
 waittcp4port $PORT
 #echo "$da" |$CMD >$tf 2>"${te}2"
 #note: with about OpenSSL 1.1 s_server lost the half close feature, thus:
-(echo "$da"; psleep 0.1) |$CMD >$tf 2>"${te}2"
+(echo "$da"; sleep 0.1) |$CMD >$tf 2>"${te}2"
 if ! echo "$da" |diff - "$tf" >"$tdiff"; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
     echo "$CMD2 &"
@@ -4405,7 +4459,7 @@ printf "test $F_n $TEST... " $N
 #$CMD1 >"$tf" 2>"${te}1" &
 $CMD1 >/dev/null 2>"${te}1" &
 waittcp4port $tsl
-#usleep $MICROS
+#relsleep 1
 echo "$da" |$CMD2 >"$tf" 2>>"${te}2"
 if [ $? -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -4547,27 +4601,30 @@ case "$TESTS" in
 TEST="$NAME: ignoreeof and inactivity timeout"
 if ! eval $NUMCOND; then :; else
 #set -vx
+SAVEMICS=$MICROS
+MICROS=1000000
 ti="$td/test$N.file"
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD="$TRACE $SOCAT $opts -T 2 -u file:\"$ti\",ignoreeof -"
+CMD="$TRACE $SOCAT $opts -T $(reltime 4) -u file:\"$ti\",ignoreeof -"
 printf "test $F_n $TEST... " $N
 touch "$ti"
 $CMD >"$tf" 2>"$te" &
 bg=$!	# background process id
-psleep 0.5
+relsleep 1
 echo "$da" >>"$ti"
-sleep 4
+relsleep 8
 echo X >>"$ti"
-sleep 1
+relsleep 2
 kill $bg 2>/dev/null
 if ! echo "$da" |diff - "$tf" >"$tdiff"; then
-    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-    echo "$CMD &"
-    cat "$te"
-    cat "$tdiff"
+    $PRINTF "$FAILED (diff):\n"
+    echo "$CMD &" >&2
+    cat "$te" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
@@ -4577,6 +4634,7 @@ else
    listOK="$listOK $N"
 fi
 wait
+MICROS=$SAVEMICS
 fi ;; # NUMCOND, feats
 esac
 N=$((N+1))
@@ -4784,24 +4842,24 @@ touch "$tpo"
 # the following cat, in case of socat failure, reads the pipe to prevent below writer from hanging
 PATH=${SOCAT%socat}:$PATH eval "$CMD 2>$te || cat $tpi >/dev/null &"
 pid=$!	# background process id
-usleep $MICROS
+relsleep 1
 
 (
-usleep $((3*MICROS))
+relsleep 3
 $ECHO "user\n\c"
-usleep $MICROS
+relsleep 1
 $ECHO "password\c"
-usleep $MICROS
+relsleep 1
 $ECHO "\n\c"
-usleep $MICROS
+relsleep 1
 $ECHO "test 1\n\c"
-usleep $MICROS
+relsleep 1
 $ECHO "\003\c"
-usleep $MICROS
+relsleep 1
 $ECHO "test 2\n\c"
-usleep $MICROS
+relsleep 1
 $ECHO "exit\n\c"
-usleep $MICROS
+relsleep 1
 ) >"$tpi"
 
 cat >$tr <<EOF
@@ -5025,37 +5083,37 @@ newport tcp4; PORT3=$PORT
 newport tcp4; PORT4=$PORT
 newport tcp4; PORT5=$PORT
 # this is the server in the protected network that we want to reach
-CMD1="$TRACE $SOCAT $opts -lpserver -t1 tcp4-l:$PORT1,reuseaddr,bind=$LOCALHOST,fork echo"
+CMD1="$TRACE $SOCAT $opts -lpserver -t$(reltime 10) TCP4-L:$PORT1,reuseaddr,bind=$LOCALHOST,fork ECHO"
 # this is the proxy in the protected network that provides a way out
 # note: the proxy.sh script starts one or two more socat processes without
 # setting the program name 
-CMD2="$TRACE $SOCAT $opts -lpproxy -t1 tcp4-l:$PORT2,reuseaddr,bind=$LOCALHOST,fork exec:./proxy.sh"
+CMD2="$TRACE $SOCAT $opts -lpproxy -t$(reltime 10) TCP4-L:$PORT2,reuseaddr,bind=$LOCALHOST,fork EXEC:./proxy.sh"
 # this is our proxy connect wrapper in the protected network
-CMD3="$TRACE $SOCAT $opts -lpwrapper -t3 tcp4-l:$PORT3,reuseaddr,bind=$LOCALHOST,fork proxy:$LOCALHOST:$LOCALHOST:$PORT4,pf=ip4,proxyport=$PORT2,resolve"
+CMD3="$TRACE $SOCAT $opts -lpwrapper -t$(reltime 30) TCP4-L:$PORT3,reuseaddr,bind=$LOCALHOST,fork PROXY:$LOCALHOST:$LOCALHOST:$PORT4,pf=ip4,proxyport=$PORT2,resolve"
 # this is our double client in the protected network using SSL
-CMD4="$TRACE $SOCAT $opts -lp2client -t3 ssl:$LOCALHOST:$PORT3,retry=10,interval=1,cert=testcli.pem,cafile=testsrv.crt,verify,fork,$SOCAT_EGD tcp4:$LOCALHOST:$PORT1,forever,interval=0.1"
+CMD4="$TRACE $SOCAT $opts -lp2client -t$(reltime 30) SSL:$LOCALHOST:$PORT3,retry=10,interval=$(reltime 10),cert=testcli.pem,cafile=testsrv.crt,verify,fork,$SOCAT_EGD TCP4:$LOCALHOST:$PORT1,forever,interval=$(reltime 1)"
 # this is the double server in the outside network
-CMD5="$TRACE $SOCAT $opts -lp2server -t4 tcp4-l:$PORT5,reuseaddr,bind=$LOCALHOST,backlog=3,fork ssl-l:$PORT4,pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt,retry=20,interval=0.5"
+CMD5="$TRACE $SOCAT $opts -lp2server -t$(reltime 40) TCP4-L:$PORT5,reuseaddr,bind=$LOCALHOST,backlog=3,fork SSL-L:$PORT4,pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt,retry=20,interval=$(reltime 5)"
 # this is the outside client that wants to use the protected server
-CMD6="$TRACE $SOCAT $opts -lpclient -t6 - tcp4:$LOCALHOST:$PORT5,retry=3"
+CMD6="$TRACE $SOCAT $opts -lpclient -t$(reltime 60) - TCP4:$LOCALHOST:$PORT5,retry=3,interval=$(reltime 10)"
 printf "test $F_n $TEST... " $N
 # start the intranet infrastructure
 eval "$CMD1 2>\"${te}1\" &"
 pid1=$!
 eval "$CMD2 2>\"${te}2\" &"
 pid2=$!
-waittcp4port $PORT1 1 || $PRINTF "$FAILED: port $PORT1\n" >&2 </dev/null
-waittcp4port $PORT2 1 || $PRINTF "$FAILED: port $PORT2\n" >&2 </dev/null
+waittcp4port $PORT1 1 50 || $PRINTF "$FAILED: port $PORT1\n" >&2 </dev/null
+waittcp4port $PORT2 1 50 || $PRINTF "$FAILED: port $PORT2\n" >&2 </dev/null
 # initiate our internal measures
 eval "$CMD3 2>\"${te}3\" &"
 pid3=$!
 eval "$CMD4 2>\"${te}4\" &"
 pid4=$!
-waittcp4port $PORT3 1 || $PRINTF "$FAILED: port $PORT3\n" >&2 </dev/null
+waittcp4port $PORT3 1 50 || $PRINTF "$FAILED: port $PORT3\n" >&2 </dev/null
 # now we start the external daemon
 eval "$CMD5 2>\"${te}5\" &"
 pid5=$!
-waittcp4port $PORT5 1 || $PRINTF "$FAILED: port $5PORT\n" >&2 </dev/null
+waittcp4port $PORT5 1 50 || $PRINTF "$FAILED: port $5PORT\n" >&2 </dev/null
 # and this is the outside client:
 echo "$da1" |$CMD6 >${tf}_1 2>"${te}6_1" &
 pid6_1=$!
@@ -5066,9 +5124,9 @@ pid6_3=$!
 wait $pid6_1 $pid6_2 $pid6_3
 kill $pid1 $pid2 $pid3 $pid4 $pid5 2>/dev/null
 #
-(echo "$da1"; sleep 2) |diff - "${tf}_1" >"${tdiff}1"
-(echo "$da2"; sleep 2) |diff - "${tf}_2" >"${tdiff}2"
-(echo "$da3"; sleep 2) |diff - "${tf}_3" >"${tdiff}3"
+(echo "$da1"; relsleep 2) |diff - "${tf}_1" >"${tdiff}1"
+(echo "$da2"; relsleep 2) |diff - "${tf}_2" >"${tdiff}2"
+(echo "$da3"; relsleep 2) |diff - "${tf}_3" >"${tdiff}3"
 if test -s "${tdiff}1" -o -s "${tdiff}2" -o -s "${tdiff}3"; then
   # FAILED only when none of the three transfers succeeded
   if test -s "${tdiff}1" -a -s "${tdiff}2" -a -s "${tdiff}3"; then
@@ -5961,16 +6019,17 @@ testptywaitslave () {
     local te4="$td/test$N.stderr4"
     local da="test$N $(date) $RANDOM"
 printf "test $F_n $TEST... " $N
+#    set -vx
 # first generate a pty, then a socket
-($TRACE $SOCAT $opts -lpsocat1 PTY,$PTYTYPE,pty-wait-slave,link="$tp" UNIX-LISTEN:"$ts" 2>"$te1"; rm -f "$tp") 2>/dev/null &
+($TRACE $SOCAT $opts -lpsocat1 PTY,$PTYTYPE,pty-wait-slave,pty-interval=$V,link="$tp" UNIX-LISTEN:"$ts" 2>"$te1"; rm -f "$tp") 2>/dev/null &
 pid=$!
-waitfile "$tp"
+waitfile "$tp" 1 100
 # if pty was non-blocking, the socket is active, and socat1 will term
 $TRACE $SOCAT $opts -T 10 -lpsocat2 FILE:/dev/null UNIX-CONNECT:"$ts" 2>"$te2"
 # if pty is blocking, first socat is still active and we get a connection now
 #((echo "$da"; sleep 2) |$TRACE $SOCAT -lpsocat3 $opts - file:"$tp",$PTYOPTS2 >"$tf" 2>"$te3") &
-( (waitfile "$ts" 1 20; echo "$da"; sleep 1) |$TRACE $SOCAT -lpsocat3 $opts - FILE:"$tp",$PTYOPTS2 >"$tf" 2>"$te3") &
-waitfile "$ts" 1 20
+( (waitfile "$ts" 1 100; echo "$da"; sleep 1) |$TRACE $SOCAT -lpsocat3 $opts - FILE:"$tp",$PTYOPTS2 >"$tf" 2>"$te3") &
+waitfile "$ts" 1 100
 # but we need an echoer on the socket
 $TRACE $SOCAT $opts -lpsocat4 UNIX:"$ts" ECHO 2>"$te4"
 # now $tf file should contain $da
@@ -5996,6 +6055,7 @@ else
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 fi
+set +vx
 }
 
 NAME=PTMXWAITSLAVE
@@ -6070,7 +6130,7 @@ $PRINTF "test $F_n $TEST... " $N
 CMD="$TRACE $SOCAT $opts - TCP:$HANGIP:1"
 $CMD >"$te1" 2>$te1 </dev/null &
 pid1=$!
-sleep 2
+relsleep 2
 if ! kill $pid1 2>"$tk1"; then
     $PRINTF "${YELLOW}does not hang${NORMAL}\n"
     echo "$CMD" >&2
@@ -6079,12 +6139,12 @@ if ! kill $pid1 2>"$tk1"; then
     listCANT="$listCANT $N"
 else
 # Second, set connect-timeout and see if socat exits before kill
-CMD="$TRACE $SOCAT $opts - TCP:$HANGIP:1,connect-timeout=1.0"
+CMD="$TRACE $SOCAT $opts - TCP:$HANGIP:1,connect-timeout=$(reltime 1)"
 $CMD >"$te1" 2>$te2 </dev/null &
 pid2=$!
-sleep 2
+relsleep 10
 if kill $pid2 2>"$tk2"; then
-    $PRINTF "$FAILED\n"
+    $PRINTF "$FAILED (\n"
     echo "$CMD" >&2
     cat "$te2" >&2
     numFAIL=$((numFAIL+1))
@@ -6127,27 +6187,33 @@ $CMD1 >"$tf" 2>"${te}1" &
 pid1=$!
 waittcp4port $tsl 1
 echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
-if [ $? -ne 0 ]; then
-   $PRINTF "$FAILED: $TRACE $SOCAT:\n"
-   echo "$CMD1 &"
-   cat "${te}1"
-   echo "$CMD2"
-   cat "${te}2"
-   numFAIL=$((numFAIL+1))
+rc2=$?
+kill $pid1 2>/dev/null
+wait
+if [ $rc2 -ne 0 ]; then
+    $PRINTF "$FAILED (rc2=$rc2)\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
-   $PRINTF "$FAILED\n"
-   cat "$tdiff"
-   numFAIL=$((numFAIL+1))
+   $PRINTF "$FAILED (diff)\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
+    numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
    listOK="$listOK $N"
-fi
-kill $pid1 2>/dev/null
-wait ;;
+fi ;;
 esac
 fi # NUMCOND
 N=$((N+1))
@@ -6342,9 +6408,9 @@ tdiff="$td/test$N.diff"
 da1="test$N $(date) $RANDOM"
 da2="test$N $(date) $RANDOM"
 #establish a listening and forking udp socket in background
-#processes hang forever without -T
 newport udp4 	# provide free port number in $PORT
-CMD0="$TRACE $SOCAT -T 5 $opts -lpserver UDP4-LISTEN:$PORT,bind=$LOCALHOST,$REUSEADDR,fork PIPE"
+#processes hang forever without -T
+CMD0="$TRACE $SOCAT -T $(reltime 5) $opts -lpserver UDP4-LISTEN:$PORT,bind=$LOCALHOST,$REUSEADDR,fork PIPE"
 #make a first and a second connection
 CMD1="$TRACE $SOCAT $opts -lpclient - UDP4-CONNECT:$LOCALHOST:$PORT"
 $PRINTF "test $F_n $TEST... " $N
@@ -6372,7 +6438,7 @@ elif ! echo "$da1" |diff - "${tf}1" >"$tdiff"; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-sleep 2		# UDP-LISTEN sleeps 1s
+relsleep 2		# UDP-LISTEN sleeps 1s
 echo "$da2" |eval "$CMD1" >"${tf}2" 2>"${te}2"
 rc="$?"; kill "$pids" 2>/dev/null
 if [ $rc -ne 0 ]; then
@@ -6460,22 +6526,22 @@ esac
 echo -e "$da1a\n$da2\n$da1b" >"$tref"
 # establish a listening and forking listen socket in background
 # UDP processes hang forever without -T
-CMD0="$TRACE $SOCAT -T 5 $opts -lpserver $PROTOV-LISTEN:$tla,$REUSEADDR,fork PIPE"
+CMD0="$TRACE $SOCAT -T $(reltime 20) $opts -lpserver $PROTOV-LISTEN:$tla,$REUSEADDR,fork PIPE"
 # make a first and a second connection
-CMD1="$TRACE $SOCAT $opts -lpclient - $PROTOV-CONNECT:$tca"
+CMD1="$TRACE $SOCAT $opts -t $(reltime 1) -lpclient - $PROTOV-CONNECT:$tca"
 $PRINTF "test $F_n $TEST... " $N
 eval "$CMD0 2>${te}0 &"
 pid0=$!
 wait$waitproto "$waitfor" 1 2
-(echo "$da1a"; sleep 2; echo "$da1b") |eval "$CMD1" >>"${tf}" 2>"${te}1" &
-sleep 1
+(echo "$da1a"; relsleep 10; echo "$da1b") |eval "$CMD1" >>"${tf}" 2>"${te}1" &
+relsleep 5
 # trailing sleep req for sctp because no half close
-(echo "$da2"; sleep 1) |eval "$CMD1" >>"${tf}" 2>"${te}2" &
-sleep 2
+(echo "$da2"; relsleep 5) |eval "$CMD1" >>"${tf}" 2>"${te}2" &
+relsleep 10
 kill $pid0 2>/dev/null
 wait
-if ! diff "$tref" "$tf" >"$tdiff"; then
-    $PRINTF "$FAILED\n"
+if ! diff -u "$tref" "$tf" >"$tdiff"; then
+    $PRINTF "$FAILED (diff)\n"
     echo "$CMD0 &"
     cat "${te}0" >&2
     echo "$CMD1 &"
@@ -6637,13 +6703,14 @@ testecho "$N" "$TEST" "" "exec:$CAT,pipes,stderr" "$opts"
 opts="$SAVE_opts"
 esac
 N=$((N+1))
+#TTY=$(tty); ps -fade |grep "${TTY#/*/}\>" >/tmp/ps.out
 
 
 NAME=SIMPLEPARSE
 case "$TESTS" in
 *%$N%*|*%functions%*|*%PARSE%*|*%$NAME%*)
 TEST="$NAME: invoke socat from socat"
-testecho "$N" "$TEST" "" exec:"$SOCAT - exec\:$CAT,pipes" "$opts"
+testecho "$N" "$TEST" "" exec:"$SOCAT - exec\:$CAT,pipes" "$opts" "$val_t"
 esac
 N=$((N+1))
 
@@ -7040,7 +7107,7 @@ waitudp4port $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
 #ls -l $tf
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -7097,7 +7164,7 @@ waitudp6port $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
 #ls -l $tf
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -7149,7 +7216,7 @@ waitip4proto $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
 #ls -l $tf
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -7204,7 +7271,7 @@ pid1="$!"
 waitip6proto $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -7249,7 +7316,7 @@ pid1="$!"
 waitfile $ts1 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -8078,7 +8145,7 @@ pid0=$!
 waittcp4port $p0 1
 $CMD1 2>"${te}1" &
 pid1=$!
-usleep $MICROS
+relsleep 1
 waittcp4port $p1 1
 echo "$da2a" |$CMD2 2>>"${te}2a"
 rc2a=$?
@@ -8148,9 +8215,9 @@ $CMD 2>"${te}2" &
 pid2=$!
 waitfile $ts 1
 echo "$da1a" |$CMD1 2>>"${te}1a" >"$tf"
-usleep $MICROS
+relsleep 1
 echo "$da1b" |$CMD1 2>>"${te}1b" >>"$tf"
-#usleep $MICROS
+#relsleep 1
 kill "$pid2" 2>/dev/null
 wait
 if [ $? -ne 0 ]; then
@@ -8197,7 +8264,7 @@ printf "test $F_n $TEST... " $N
 # output for the PTY name
 { $CMD 2>"${te}"; echo $? >"$td/test$N.rc0"; } &
 waitfile "${te}"
-psleep 0.5	# 0.1 is too few for FreeBSD-10
+sleep 0.5	# 0.1 is too few for FreeBSD-10
 PTY=$(grep "N PTY is " $te |sed 's/.*N PTY is //')
 # So this for AIX? but "cat" hangs on OpenBSD, thus use socat with timeout instead
 [ -e "$PTY" ] && $SOCAT -T 0.1 -u $PTY,o-nonblock - >/dev/null 2>/dev/null
@@ -8242,9 +8309,9 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 waitudp4port $PORT 1
-{ echo "$da"; psleep 0.1; } |$CMD1 >"${tf}1" 2>"${te}1"
+{ echo "$da"; sleep 0.1; } |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-{ echo "xyz"; psleep 0.1; } |$CMD1 >"${tf}2" 2>"${te}2"
+{ echo "xyz"; sleep 0.1; } |$CMD1 >"${tf}2" 2>"${te}2"
 rc2=$?
 kill $pid0 2>/dev/null; wait
 if [ $rc1 != 0 -o $rc2 != 0 ]; then
@@ -8614,7 +8681,7 @@ pid1="$!"
 waitudp4port $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
-usleep $MICROS
+relsleep 1
 kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -8673,10 +8740,10 @@ printf "test $F_n $TEST... " $N
 $CMD1 2>"${te}1"  >"${tf}" &
 pid1="$!"
 waitip4proto $ts1p 1
-usleep $MICROS
+relsleep 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
-#usleep $MICROS
+#relsleep 1
 sleep 1
 kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
@@ -8748,7 +8815,7 @@ pid1="$!"
 waitudp6port $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
-usleep $MICROS
+relsleep 1
 kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -8871,7 +8938,7 @@ printf "test $F_n $TEST... " $N
 $CMD1 2>"${te}1" &
 pid1="$!"
 waitip4port $ts1p 1
-usleep 100000	# give process a chance to add multicast membership
+relsleep 1	# give process a chance to add multicast membership
 echo "$da" |$CMD2 >>"$tf" 2>>"${te}2"
 rc2="$?"
 kill "$pid1" 2>/dev/null; wait;
@@ -8996,10 +9063,10 @@ printf "test $F_n $TEST... " $N
 $CMD0 2>"${te}1" &
 pid0="$!"
 #waitinterface "$TUNNAME"
-usleep $MICROS
-{ echo "$da"; usleep $MICROS ; } |$CMD1 >"$tf" 2>"${te}"
+relsleep 1
+{ echo "$da"; relsleep 1; } |$CMD1 >"$tf" 2>"${te}"
 rc1=$?
-usleep $MICROS
+relsleep 1
 kill $pid0 2>/dev/null
 wait
 if [ "$rc1" -ne 0 ]; then
@@ -9175,7 +9242,7 @@ pid1="$!"
 sleep 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -9345,7 +9412,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"; da="$da$($ECHO '\r')"
 CMD="$TRACE $SOCAT $opts SYSTEM:\"echo A; sleep $((2*SECONDs))\",readbytes=2!!- -!!/dev/null"
 printf "test $F_n $TEST... " $N
-(usleep $((2*MICROS)); echo) |eval "$CMD" >"$to" 2>"$te"
+(relsleep 2; echo) |eval "$CMD" >"$to" 2>"$te"
 if test -s "$to"; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
     echo "$CMD"
@@ -9380,18 +9447,18 @@ tda="$td/test$N.data"
 tsh="$td/test$N.sh"
 tdiff="$td/test$N.diff"
 cat >"$tsh" <<EOF
-sleep $SECONDs; echo; sleep $SECONDs;  touch "$tda"; echo
+relsleep $SECONDs; echo; relsleep $SECONDs;  touch "$tda"; echo
 EOF
 chmod a+x "$tsh"
-CMD1="$TRACE $SOCAT $opts -t $SECONDs -U UNIX-LISTEN:$ts,fork EXEC:$tsh,pty"
-CMD="$TRACE $SOCAT $opts -t $SECONDs /dev/null UNIX-CONNECT:$ts"
+CMD1="$TRACE $SOCAT $opts -t $(reltime 1) -U UNIX-LISTEN:$ts,fork EXEC:$tsh,pty"
+CMD="$TRACE $SOCAT $opts -t $(reltime 1) /dev/null UNIX-CONNECT:$ts"
 printf "test $F_n $TEST... " $N
 $CMD1 2>"${te}2" &
 pid1=$!
-sleep $SECONDs
-waitfile $ts $SECONDs
+relsleep 1
+waitfile $ts 1
 $CMD 2>>"${te}1" >>"$tf"
-sleep $((2*SECONDs))
+relsleep 2
 kill "$pid1" 2>/dev/null
 wait
 if [ $? -ne 0 ]; then
@@ -9682,7 +9749,7 @@ waitip4proto $ts1p 1
 echo "$da" |$CMD2 2>>"${te}2"
 rc2="$?"
 #ls -l $tf
-i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "$tf" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid1" 2>/dev/null; wait
 if [ "$rc2" -ne 0 ]; then
    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -9877,7 +9944,7 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts /dev/null,ignoreeof!!- -!!/dev/null"
 printf "test $F_n $TEST... " $N
-(usleep 333333; echo "$da") |$CMD0 >"$tf" 2>"${te}0"
+(sleep 0.333333; echo "$da") |$CMD0 >"$tf" 2>"${te}0"
 rc0=$?
 if [ $rc0 != 0 ]; then
     $PRINTF "$FAILED\n"
@@ -10043,7 +10110,7 @@ wait${proto}port $tra 1
 echo "XYZ" |$CMD1 2>"${te}1"
 rc1="$?"
 sleep 1
-i=0; while [ ! -s "${te}0" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+i=0; while [ ! -s "${te}0" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid0" 2>/dev/null; wait
 # do not show more messages than requested
 case "$opts" in
@@ -10304,7 +10371,7 @@ wait${proto}port $tra 1
 { echo "XYZ"; sleep 0.1; } |$CMD1 2>"${te}1"
 rc1="$?"
 waitfile "$tf" 2
-#i=0; while [ ! -s "${te}0" -a "$i" -lt 10 ]; do  usleep 100000; i=$((i+1));  done
+#i=0; while [ ! -s "${te}0" -a "$i" -lt 10 ]; do  relsleep 1; i=$((i+1));  done
 kill "$pid0" 2>/dev/null; wait
 # do not show more messages than requested
 if [ "$SCM_VALUE" = "timestamp" ]; then
@@ -10870,7 +10937,7 @@ pid0=$!
 waitfile $tp 1
 (echo "$da"; sleep 2) |$CMD1 >"$tf" 2>"${te}1" &	# this should always work
 pid1=$!
-usleep 1000000
+sleep 1.0
 $CMD2 >/dev/null 2>"${te}2" </dev/null
 rc2=$?
 kill $pid0 $pid1 2>/dev/null; wait
@@ -10933,10 +11000,10 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 waittcp4port $PORT 1
-(echo "$da"; sleep 1) |$CMD1 >"${tf}1" 2>"${te}1" 	# this should always work
+(echo "$da"; relsleep 1) |$CMD1 >"${tf}1" 2>"${te}1" 	# this should always work
 rc1=$?
-usleep 1000000
-(echo "$da"; sleep 1) |$CMD2 >"${tf}2" 2>"${te}2" 	# this should fail
+relsleep 1
+(echo "$da"; relsleep 1) |$CMD2 >"${tf}2" 2>"${te}2" 	# this should fail
 rc2=$?
 kill $pid0 $pid1 $pid2 2>/dev/null; wait
 if ! echo "$da" |diff - "${tf}1" >"$tdiff"; then
@@ -11732,12 +11799,12 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 wait${proto}port $tsl 1
-(echo "$da 1"; sleep 2) |$CMD1 >"${tf}1" 2>"${te}1" &
+(echo "$da 1"; relsleep 2) |$CMD1 >"${tf}1" 2>"${te}1" &
 pid1=$!
-sleep 1
+relsleep 1
 echo "$da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
 pid2=$!
-sleep 2
+relsleep 2
 kill $pid1 $pid2 $pid0 2>/dev/null; wait
 if echo -e "$da 1\n$da 2" |diff - $tf >$tdiff; then
     $PRINTF "$OK\n"
@@ -11815,18 +11882,18 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 # on some Linux distributions it hangs, thus -T option here
-CMD0="$TRACE $SOCAT $opts -U -T 4 FILE:$tf,o-trunc,o-creat,o-append $PROTO-LISTEN:$tsl,$REUSEADDR,fork,max-children=1"
+CMD0="$TRACE $SOCAT $opts -U -T $(reltime 4) FILE:$tf,o-trunc,o-creat,o-append $PROTO-LISTEN:$tsl,$REUSEADDR,fork,max-children=1"
 CMD1="$TRACE $SOCAT $opts -u - $PROTO-CONNECT:$tsc,$SHUT"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 wait${proto}port $tsl 1
-(echo "$da 1"; sleep 3) |$CMD1 >"${tf}1" 2>"${te}1" &
+(echo "$da 1"; relsleep 3) |$CMD1 >"${tf}1" 2>"${te}1" &
 pid1=$!
-sleep 1
+relsleep 1
 echo "$da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
 pid2=$!
-sleep 1
+relsleep 1
 cpids="$(childpids $pid0)"
 kill $pid1 $pid2 $pid0 $cpids 2>/dev/null; wait
 if echo -e "$da 1" |diff - $tf >$tdiff; then
@@ -13102,9 +13169,9 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 waittcp4port $tp 1
-(echo "$da"; sleep 3) |$CMD1 >"$tf" 2>"${te}1" &	# this should always work
+(echo "$da"; relsleep 3) |$CMD1 >"$tf" 2>"${te}1" &	# this should always work
 pid1=$!
-usleep 1000000
+relsleep 1
 $CMD2 >/dev/null 2>"${te}2" &
 pid2=$!
 waittcp4port $tp 1
@@ -13361,7 +13428,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 newport udp6
-CMD0="$TRACE $SOCAT $opts UDP6-RECV:$PORT,ipv6-join-group=[ff02::2]:$MCINTERFACE /dev/null"
+CMD0="$TRACE $SOCAT $opts UDP6-RECV:$PORT,ipv6-join-group=[ff02::1]:$MCINTERFACE /dev/null"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0"
 rc0=$?
@@ -13870,9 +13937,9 @@ da="test$N $(date) $RANDOM"
 init_openssl_s_server
 newport udp4
 CMD1="$TRACE openssl s_server $OPENSSL_S_SERVER_4 $OPENSSL_S_SERVER_DTLS -accept $PORT -quiet $OPENSSL_S_SERVER_NO_IGN_EOF -cert testsrv.pem"
-CMD="$TRACE $SOCAT $opts -T 3 - OPENSSL-DTLS-CLIENT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
+CMD="$TRACE $SOCAT $opts -T $(reltime 3) - OPENSSL-DTLS-CLIENT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
 printf "test $F_n $TEST... " $N
-( sleep 2; echo "$da"; sleep 1 ) |$CMD1 2>"${te}1" &
+( relsleep 2; echo "$da"; relsleep 1 ) |$CMD1 2>"${te}1" &
 pid1=$!	# background process id
 waitudp4port $PORT
 $CMD >$tf 2>"$te"
@@ -13938,7 +14005,7 @@ printf "test $F_n $TEST... " $N
 $CMD1 >/dev/null 2>"${te}1" &
 pid1=$!
 waitudp4port $PORT 1
-( echo "$da"; psleep 0.1 ) |$CMD 2>"$te" |grep "$da" >"$tf"
+( echo "$da"; sleep 0.1 ) |$CMD 2>"$te" |grep "$da" >"$tf"
 rc=$?
 kill $pid1 2>/dev/null; wait
 if echo "$da" |diff - $tf >"$tdiff"; then
@@ -14285,7 +14352,7 @@ newport tcp4
 CMD1="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr PIPE"
 $CMD1 >"$te1" 2>&1 </dev/null &
 pid1=$!
-sleep 1
+relsleep 1
 if ! kill $pid1 2>"$tk1"; then
     $PRINTF "${YELLOW}does not hang${NORMAL}\n"
     echo $CMD1 >&2
@@ -14295,10 +14362,10 @@ if ! kill $pid1 2>"$tk1"; then
     listCANT="$listCANT $N"
 else
 # Second, set accept-timeout and see if socat exits before kill
-CMD2="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr,accept-timeout=1 PIPE"
+CMD2="$TRACE $SOCAT $opts TCP-LISTEN:$PORT,reuseaddr,accept-timeout=$(reltime 1) PIPE"
 $CMD2 >"$te2" 2>&1 </dev/null &
 pid2=$!
-sleep 2
+relsleep 2
 if kill $pid2 2>"$tk2"; then
     $PRINTF "$FAILED\n"
     echo "$CMD2" >&2
@@ -14347,7 +14414,7 @@ pid0=$!
 waitudp4port $PORT1 1
 echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-psleep 0.1
+sleep 0.1
 kill $pid0 2>/dev/null; wait
 if [ -f ${tf}0 ] && echo "$da" |diff - ${tf}0 >$tdiff; then
     $PRINTF "$OK\n"
@@ -14544,7 +14611,7 @@ pid0=$!
 waittcp4port $PORT 1
 $CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-usleep $MICROS
+relsleep 1
 kill $pid0 2>/dev/null; wait
 if [ $rc1 -ne 0 ]; then
     $PRINTF "$FAILED\n"
@@ -14616,7 +14683,7 @@ pid0=$!
 waittcp4port $PORT 1
 $CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-usleep $MICROS
+relsleep 1
 kill $pid0 2>/dev/null; wait
 if [ $rc1 -ne 0 ]; then
     $PRINTF "$FAILED\n"
@@ -14691,7 +14758,7 @@ pid0=$!
 waitudp4port $PORT 1
 $CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-usleep $MICROS
+relsleep 1
 kill $pid0 2>/dev/null; wait
 if [ $rc1 -ne 0 ]; then
     $PRINTF "$FAILED\n"
@@ -14766,7 +14833,7 @@ pid0=$!
 waitudp4port $PORT 1
 $CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-usleep $MICROS
+relsleep 1
 kill $pid0 2>/dev/null; wait
 if [ $rc1 -ne 0 ]; then
     $PRINTF "$FAILED\n"
@@ -14835,7 +14902,7 @@ pid0=$!
 waittcp4port $PORT 1
 $CMD1 >"${tf}1" 2>"${te}1"
 rc1=$?
-psleep 0.5
+sleep 0.5
 kill $pid0 2>/dev/null; wait
 if [ $rc1 -ne 0 ]; then
     $PRINTF "$CANT\n"
@@ -15430,10 +15497,12 @@ for addr in exec system; do
 # Pass two packets to the UNIX datagram socket; let Socat wait a little time
 # before processing,
 # so the packets are at the same time in the receive queue.
-# The process that sends thes packet uses a short packet size (-b),
+# The process that sends these packet uses a short packet size (-b),
 # so the returned data is truncated in case the packets were merged.
 # When the complete data is returned, the test succeeded.
 	if ! eval $NUMCOND; then :; else
+	    SAVEMICS=$MICROS
+	    MICROS=500000
 	    ts0="$td/test$N.sock0"
 	    ts1="$td/test$N.sock1"
 	    tf="$td/test$N.stdout"
@@ -15441,22 +15510,22 @@ for addr in exec system; do
 	    tdiff="$td/test$N.diff"
 	    da="test$N $(date) $RANDOM"
 	    #CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0 $ADDR:\"$SOCAT -lp echoer -u - -\",pty,echo=0,pipes" 	# test the test
-	    CMD0="$TRACE $SOCAT $opts -lp server -T 2 UNIX-SENDTO:$ts1,bind=$ts0,null-eof $ADDR:\"$SOCAT -lp echoer -u - -\",socktype=$SOCK_DGRAM",shut-null
-	    CMD1="$SOCAT $opts -lp client -b 24 -t 2 -T 3 - UNIX-SENDTO:$ts0,bind=$ts1",shut-null
+	    CMD0="$TRACE $SOCAT $opts -lp server -t $(reltime 1) -T $(reltime 2) UNIX-SENDTO:$ts1,bind=$ts0,null-eof $ADDR:\"$SOCAT -lp echoer -u - -\",socktype=$SOCK_DGRAM",shut-null
+	    CMD1="$SOCAT $opts -lp client -b 24 -t $(reltime 2) -T $(reltime 3) - UNIX-SENDTO:$ts0,bind=$ts1",shut-null
 	    printf "test $F_n $TEST... " $N
-	    export SOCAT_TRANSFER_WAIT=2
+	    export SOCAT_TRANSFER_WAIT=1
 	    eval "$CMD0" >/dev/null 2>"${te}0" &
 	    pid0="$!"
 	    unset SOCAT_TRANSFER_WAIT
 	    waitunixport $ts0 1
-	    { echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1 >"${tf}1" 2>"${te}1"
+	    { echo -n "${da:0:20}"; relsleep 1; echo "${da:20}"; } |$CMD1 >"${tf}1" 2>"${te}1"
 	    rc1=$?
 	    kill $pid0 2>/dev/null; wait
 	    if [ "$rc1" -ne 0 ]; then
 		$PRINTF "$FAILED (rc1=$rc1): $TRACE $SOCAT:\n"
 		echo "$CMD0 &"
 		cat "${te}0"
-		echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1"
+		echo "{ echo -n \"${da:0:20}\"; relsleep 1; echo \"${da:20}\"; } |$CMD1"
 		cat "${te}1"
 		numFAIL=$((numFAIL+1))
 		listFAIL="$listFAIL $N"
@@ -15464,7 +15533,7 @@ for addr in exec system; do
 		$PRINTF "$FAILED (diff)\n"
 		echo "$CMD0 &" >&2
 		cat "${te}0" >&2
-		echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1" >&2
+		echo "{ echo -n \"${da:0:20}\"; relsleep 1; echo \"${da:20}\"; } |$CMD1" >&2
 		cat "${te}1" >&2
 		echo "diff:" >&2
 		cat $tdiff >&2
@@ -15474,11 +15543,12 @@ for addr in exec system; do
 		$PRINTF "$OK\n"
 		if [ "$VERBOSE" ]; then
 		    echo "$CMD0 &" >&2
-		    echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1" >&2
+		    echo "{ echo -n \"${da:0:20}\"; relsleep 1; echo \"${da:20}\"; } |$CMD1" >&2
 		fi
 		numOK=$((numOK+1))
 		listOK="$listOK $N"
 	    fi
+	    MICROS=$SAVEMICS
 	fi # NUMCOND
 	;;
   esac
@@ -15810,22 +15880,22 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -t 3 $PROTO-RECVFROM:$tsl,fork SYSTEM:'read t x; sleep \$t; echo \\\"\$x\\\" >>'\"$tf\""
-CMD1="$TRACE $SOCAT $opts -t 3 - $PROTO-SENDTO:$tsc"
+CMD0="$TRACE $SOCAT $opts -t $(reltime 30) $PROTO-RECVFROM:$tsl,fork SYSTEM:'read t x; sleep \$t; echo \\\"\$x\\\" >>'\"$tf\""
+CMD1="$TRACE $SOCAT $opts -t $(reltime 30) - $PROTO-SENDTO:$tsc"
 printf "test $F_n $TEST... " $N
 eval $CMD0 </dev/null 2>"${te}0" &
 pid0=$!
 wait${proto}port $tsl 1
-echo "2 $da 1" |$CMD1 >"${tf}1" 2>"${te}1" &
+echo "$(reltime 20) $da 1" |$CMD1 >"${tf}1" 2>"${te}1" &
 pid1=$!
-sleep 1
-echo "0 $da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
+relsleep 10
+echo "$(reltime 0) $da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
 pid2=$!
-sleep 2
+relsleep 20
 cpids="$(childpids $pid0 </dev/null)"
 kill $pid1 $pid2 $cpids $pid0 2>/dev/null
 wait 2>/dev/null
-if $ECHO "$da 2\n$da 1" |diff - $tf >$tdiff; then
+if $ECHO "$da 2\n$da 1" |diff -u - $tf >$tdiff; then
     $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
@@ -16066,7 +16136,7 @@ $PRINTF "test $F_n $TEST... " $N
 CMD1="$TRACE $SOCAT $opts - DTLS:$HANGIP:1,verify=0"
 $CMD1 >"$te1" 2>$te1 </dev/null &
 pid1=$!
-sleep 2
+relsleep 2
 if ! kill -0 $pid1 2>"$tk1"; then
     $PRINTF "${YELLOW}does not hang${NORMAL}\n"
     if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
@@ -16078,14 +16148,15 @@ else
     # DTLS restarts read() a few times
     while kill $pid1 2>/dev/null; do :; done
 # Second, set so-rcvtimeo and see if Socat exits before kill
-CMD2="$TRACE $SOCAT $opts - DTLS:$HANGIP:1,verify=0,so-rcvtimeo=1.0"
+CMD2="$TRACE $SOCAT $opts - DTLS:$HANGIP:1,verify=0,so-rcvtimeo=$(reltime 1)"
 $CMD2 >"$te1" 2>$te2 </dev/null &
 pid2=$!
-sleep 3 	# in OpenSSL 1.1.1f DTLS takes two timeouts
+relsleep 8 	# in OpenSSL 1.1.1f DTLS takes two timeouts
 if kill $pid2 2>"$tk2"; then
     $PRINTF "$FAILED\n"
-    echo "$CMD2"
+    echo "$CMD2" >&2
     cat "$te2" >&2
+    cat "$tk2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
     while kill $pid2 2>/dev/null; do :; done
@@ -16298,12 +16369,12 @@ da="test$N $(date) $RANDOM"
 CMD0="$TRACE $SOCAT $opts STDIO SYSTEM:'tee /dev/stdout 2>/dev/null',pty,cfmakeraw"
 #set -vx
 printf "test $F_n $TEST... " $N
-{ echo "$da"; relsleep 3; } |eval "$CMD0" >"${tf}0" 2>"${te}0" &
+{ echo "$da"; relsleep 10; } |eval "$CMD0" >"${tf}0" 2>"${te}0" &
 pid0=$!
 relsleep 2
 TTY=$(tty |sed 's|/dev/||')
 pkill -USR1 -t $TTY socat || { echo "pkill -t $TTY -USR1 socat"; }
-relsleep 1
+relsleep 2
 pkill -t $TTY socat
 wait
 if [ "$(grep STATISTICS "${te}0" |wc -l)" -eq 2 ]; then
@@ -16437,13 +16508,13 @@ printf "test $F_n $TEST... " $N
 sleep 1 |$CMD0 2>"${te}0" >/dev/null &
 pid0="$!"
 #waitinterface "$TUNNAME"
-usleep $MICROS
+relsleep 1
 $CMD1 >"${tf}1" 2>"${te}1" &
 pid1="$!"
-usleep $MICROS
+relsleep 1
 $CMD2 2>"${te}2" 1>&2
 kill $pid1 2>/dev/null
-usleep $MICROS
+relsleep 1
 kill $pid0 2>/dev/null
 wait
 if [ $? -ne 0 ]; then
@@ -17173,7 +17244,7 @@ $CMD1 2>"${te}1" &
 pid1="$!"
 unset SOCAT_TRANSFER_WAIT
 waitudp4port $ts1p 1
-{ echo -n "${da:0:20}"; usleep 100000; echo "${da:20}"; } |$CMD2 >>"$tf" 2>>"${te}2"
+{ echo -n "${da:0:20}"; relsleep 1; echo "${da:20}"; } |$CMD2 >>"$tf" 2>>"${te}2"
 rc2="$?"
 kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
@@ -17490,7 +17561,7 @@ echo "$da 1" |$CMD1a >/dev/null 2>"${te}1a"
 rc1a=$?
 echo "$da 3" |$CMD1b >/dev/null 2>"${te}1b"
 rc1b=$?
-psleep 0.5
+sleep 0.5
 echo "$da 2" >>"${tf}0"
 sleep 1 	# as in SYSTEM
 kill $(childpids $pid0) $pid0 2>/dev/null
@@ -17586,7 +17657,7 @@ pid0=$!
 relsleep 1
 eval $CMD1 2>"${te}1" &
 pid1=$!
-psleep 0.5
+sleep 0.5
 echo "$da 2" >>"${tf}0"
 sleep 1 	# as in SYSTEM
 kill $pid0 $(childpids $pid0) $pid1 $(childpids $pid1) 2>/dev/null
@@ -18295,12 +18366,12 @@ wait${proto}port ${ts}0 1
 $CMD1 2>"${te}1" &
 pid1=$!
 waittcp4port $PORT 1
-{ echo "$da a"; sleep 2; } |$CMD2 >"${tf}2a" 2>"${te}2a" &
+{ echo "$da a"; relsleep 2; } |$CMD2 >"${tf}2a" 2>"${te}2a" &
 pid2a=$!
-sleep 1
+relsleep 1
 echo "$da b" |$CMD2 >"${tf}2b" 2>"${te}2b"
 rc2b=$?
-sleep 1
+relsleep 1
 kill $pid0 $pid1 $pid2a 2>/dev/null; wait
 if [ $rc2b -ne 0 ]; then
     $PRINTF "$FAILED\n"
@@ -18992,12 +19063,12 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 wait${proto}port $tsl 1
-(echo "$da 1"; sleep 3) |$CMD1 >"${tf}1" 2>"${te}1" &
+(echo "$da 1"; relsleep 3) |$CMD1 >"${tf}1" 2>"${te}1" &
 pid1=$!
-sleep 1
+relsleep 1
 echo "$da 2" |$CMD1 >"${tf}2" 2>"${te}2" &
 pid2=$!
-sleep 1
+relsleep 1
 cpids="$(childpids $pid0)"
 kill $pid1 $pid2 $cpids $pid0 2>/dev/null; wait
 if echo -e "$da 1" |diff - $tf >$tdiff; then
@@ -19191,7 +19262,7 @@ else
     printf "test $F_n $TEST... " $N
     $CMD0 >/dev/null 2>"${te}0" &
     pid0=$!
-    waitfile $tp 1
+    waittcp4port $tp
     echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
     rc1=$?
     kill $pid0 2>/dev/null
@@ -19240,7 +19311,7 @@ TEST="$NAME: test the socat-mux.sh script"
 # Start a simple TCP server
 # Start socat-mux.sh to connect to this server
 # Connect with two clients to mux, send different data records from both.
-# Check if both client received both records in order.
+# Check if both clients received both records in order.
 if ! eval $NUMCOND; then :
 # Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
@@ -19275,9 +19346,9 @@ else
     $CMD1 >/dev/null 2>"${te}1" &
     pid1=$!
     waittcp4port $PORT1 1
-    { sleep 1; echo "$da_a"; sleep 2; } </dev/null |$CMD2 >"${tf}2a" 2>"${te}2a" &
+    { relsleep 10; echo "$da_a"; relsleep 20; } </dev/null |$CMD2 >"${tf}2a" 2>"${te}2a" &
     pid2a=$!
-    { sleep 2; echo "$da_b"; sleep 1; } |$CMD2 >"${tf}2b" 2>"${te}2b"
+    { relsleep 20; echo "$da_b"; relsleep 10; } |$CMD2 >"${tf}2b" 2>"${te}2b"
     rc2b=$?
     kill $pid0 $(childpids $pid1) $pid1 2>/dev/null
     wait 2>/dev/null
@@ -19288,9 +19359,9 @@ else
 	cat "${te}0" >&2
 	echo "$CMD1 &"
 	cat "${te}1" >&2
-	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2 &"
+	echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD2 &"
 	cat "${te}2a" >&2
-	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"
+	echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD2"
 	cat "${te}2b" >&2
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
@@ -19301,9 +19372,9 @@ else
 	cat "${te}0" >&2
 	echo "$CMD1 &"
 	cat "${te}1" >&2
-	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2 &"
+	echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD2 &"
 	cat "${te}2a" >&2
-	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"
+	echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD2"
 	cat "${te}2b" >&2
 	echo "// diff a:" >&2
 	cat "${tdiff}_a" >&2
@@ -19316,9 +19387,9 @@ else
 	cat "${te}0" >&2
 	echo "$CMD1 &"
 	cat "${te}1" >&2
-	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2 &"
+	echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD2 &"
 	cat "${te}2a" >&2
-	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"
+	echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD2"
 	cat "${te}2b" >&2
 	echo "// diff b:" >&2
 	cat "${tdiff}_b" >&2
@@ -19331,9 +19402,9 @@ else
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
-	if [ "$VERBOSE" ]; then echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD2 &"; fi
+	if [ "$VERBOSE" ]; then echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD2 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}2a" >&2; fi
-	if [ "$VERBOSE" ]; then echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"; fi
+	if [ "$VERBOSE" ]; then echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD2"; fi
 	if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
 	numOK=$((numOK+1))
 	listOK="$listOK $N"
@@ -19380,9 +19451,9 @@ else
     $CMD0 >/dev/null 2>"${te}0" &
     pid0=$!
     waittcp4port $PORT 1
-    { sleep 1; echo "$da_a"; sleep 2; } </dev/null |$CMD1 >"${tf}1a" 2>"${te}1a" &
+    { relsleep 10; echo "$da_a"; relsleep 20; } </dev/null |$CMD1 >"${tf}1a" 2>"${te}1a" &
     pid1a=$!
-    { sleep 2; echo "$da_b"; sleep 1; } |$CMD1 >"${tf}1b" 2>"${te}1b"
+    { relsleep 20; echo "$da_b"; relsleep 10; } |$CMD1 >"${tf}1b" 2>"${te}1b"
     rc1b=$?
     kill $(childpids $pid0) $pid0 $pid1a 2>/dev/null
     wait 2>/dev/null
@@ -19391,9 +19462,9 @@ else
 	$PRINTF "$FAILED (rc1b=$rc1b)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
-	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD1"
+	echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD1"
 	cat "${te}1a" >&2
-	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD1"
+	echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD1"
 	cat "${te}1b" >&2
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
@@ -19402,9 +19473,9 @@ else
 	$PRINTF "$FAILED (diff a)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
-	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD1"
+	echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD1"
 	cat "${te}1a" >&2
-	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD1"
+	echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD1"
 	cat "${te}1b" >&2
 	echo "// diff a:" >&2
 	cat "${tdiff}_a" >&2
@@ -19415,9 +19486,9 @@ else
 	$PRINTF "$FAILED (diff b)\n"
 	echo "$CMD0 &"
 	cat "${te}0" >&2
-	echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD1"
+	echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD1"
 	cat "${te}1a" >&2
-	echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD1"
+	echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10; } |$CMD1"
 	cat "${te}1b" >&2
 	echo "// diff b:" >&2
 	cat "${tdiff}_b" >&2
@@ -19428,9 +19499,9 @@ else
 	$PRINTF "$OK\n"
 	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
-	if [ "$VERBOSE" ]; then echo "{ sleep 1; echo \"\$da_a\"; sleep 2; } |$CMD1"; fi
+	if [ "$VERBOSE" ]; then echo "{ relsleep 10; echo \"\$da_a\"; relsleep 20; } |$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1a" >&2; fi
-	if [ "$VERBOSE" ]; then echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD1"; fi
+	if [ "$VERBOSE" ]; then echo "{ relsleep 20; echo \"\$da_b\"; relsleep 10.; } |$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
 	numOK=$((numOK+1))
 	listOK="$listOK $N"
@@ -19482,7 +19553,7 @@ CMD0="$TRACE $SOCAT $opts pty,link=$tl,group-late=$GROUP,escape=0x1a PIPE"
 CMD1="$TRACE $SOCAT $opts - $tl,raw,echo=0"
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
-(echo "$da"; usleep $MICROS; echo -e "\x1a") |$CMD1 >"${tf}1" 2>"${te}1" >"$tf"
+(echo "$da"; relsleep 1; echo -e "\x1a") |$CMD1 >"${tf}1" 2>"${te}1" >"$tf"
 rc1=$?
 kill $pid0 2>/dev/null; wait
 if [ $rc1 -ne 0 ]; then

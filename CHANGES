@@ -6,6 +6,9 @@ Features:
 Testing:
 	test.sh: lots of corrections and improvements
 
+	test.sh: many hardcoded sleep values were replaced by much shorter
+	values tuned to performance of the platform.
+
 ####################### V 1.8.0.0
 
 Security:
