@@ -197,9 +197,11 @@ label(option_t)dit(bf(tt(-t))tt(<timeout>))
    the timeout interval the read part gives EOF, socat terminates without
    awaiting the timeout.
 label(option_T)dit(bf(tt(-T))tt(<timeout>))
-   Total inactivity timeout: when socat is already in the transfer loop and
+   Total inactivity timeout: when socat() is already in the transfer loop and
    nothing has happened for <timeout> [link(timeval)(TYPE_TIMEVAL)] seconds
-   (no data arrived, no interrupt occurred...) then it terminates.
+   (no data arrived, no interrupt occurred...) then it terminates. Up to
+   version 1.8.0.0 "0" meant infinite"; since version 1.8.0.1 "0" means 0
+   and values <0 mean infinite.nl()
    Useful with protocols like UDP that cannot transfer EOF.
 label(option_u)dit(bf(tt(-u)))
    Uses unidirectional mode. The first address is only used for reading, and the

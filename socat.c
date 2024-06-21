@@ -45,7 +45,7 @@ struct socat_opts {
    false,	/* verbhex */
    {1,0},	/* pollintv */
    {0,500000},	/* closwait */
-   {0,0},	/* total_timeout */
+   {0,1000000},	/* total_timeout (this invalid default means no timeout)*/
    0,		/* debug */
    0,		/* strictopts */
    's',		/* logopt */
@@ -274,9 +274,14 @@ int main(int argc, const char *argv[]) {
 	    }
 	 }
 	 rto = Strtod(a, (char **)&a, "-T");
-	 socat_opts.total_timeout.tv_sec = rto;
-	 socat_opts.total_timeout.tv_usec =
-	    (rto-socat_opts.total_timeout.tv_sec) * 1000000;
+	 if (rto < 0) {
+	    socat_opts.total_timeout.tv_sec = 0; 	/* infinite */
+	    socat_opts.total_timeout.tv_usec = 1000000;	/* by invalid */
+	 } else {
+	    socat_opts.total_timeout.tv_sec = rto;
+	    socat_opts.total_timeout.tv_usec =
+	       (rto-socat_opts.total_timeout.tv_sec) * 1000000;
+	 }
 	 break;
       case 'u':  if (arg1[0][2])  { socat_opt_hint(stderr, arg1[0][1], arg1[0][2]); Exit(1); }
 	 socat_opts.lefttoright = true; break;
@@ -992,8 +997,7 @@ int _socat(void) {
       /* for ignoreeof */
       if (polling) {
 	 if (!wasaction) {
-	    if (socat_opts.total_timeout.tv_sec != 0 ||
-		socat_opts.total_timeout.tv_usec != 0) {
+	    if (socat_opts.total_timeout.tv_usec <= 1000000) {
 	       if (total_timeout.tv_usec < socat_opts.pollintv.tv_usec) {
 		  total_timeout.tv_usec += 1000000;
 		  total_timeout.tv_sec  -= 1;
@@ -1017,8 +1021,7 @@ int _socat(void) {
 	 /* there is a ignoreeof poll timeout, use it */
 	 timeout = socat_opts.pollintv;
 	 to = &timeout;
-      } else if (socat_opts.total_timeout.tv_sec != 0 ||
-		 socat_opts.total_timeout.tv_usec != 0) {
+      } else if (socat_opts.total_timeout.tv_usec < 1000000) {
 	 /* there might occur a total inactivity timeout */
 	 timeout = socat_opts.total_timeout;
 	 to = &timeout;
@@ -1134,8 +1137,7 @@ int _socat(void) {
 	 } else if (polling && wasaction) {
 	    wasaction = 0;
 
-	 } else if (socat_opts.total_timeout.tv_sec != 0 ||
-		    socat_opts.total_timeout.tv_usec != 0) {
+	 } else if (socat_opts.total_timeout.tv_usec < 1000000) {
 	    /* there was a total inactivity timeout */
 	    Notice("inactivity timeout triggered");
 		  free(buff);

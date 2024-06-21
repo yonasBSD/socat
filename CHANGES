@@ -1,4 +1,8 @@
 ﻿
+Features:
+	Total inactivity timeout option -T 0 now means 0.0 seconds; up to
+	version 1.8.0.0 it meant no total inactivity timeout.
+
 Testing:
 	test.sh: lots of corrections and improvements
 
