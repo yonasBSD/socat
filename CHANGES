@@ -11,6 +11,15 @@ Porting:
 	When NETDB_INTERNAL is not available it should be set to -1.
 	Thanks to Baruch Siach for sending a patch.
 
+Building:
+	Makefile.in: procan.o build requires srcdir prefix for explicit source
+	file.
+	Thanks to Hongxu Jia and Andrew Schoolman for providing patches.
+
+	Makefile.in: the CC define for procan.o build failed when CC had more
+	than one word.
+	Thanks to Hongxu Jia for providing an inital patch.
+
 Testing:
 	test.sh: lots of corrections and improvements
 
