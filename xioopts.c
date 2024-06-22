@@ -4041,6 +4041,7 @@ int applyopt_spec(
 	return 0;
 }
 
+#if WITH_TERMIOS
 int applyopts_termios_value(
 	int fd,
 	struct opt *opt)
@@ -4057,6 +4058,7 @@ int applyopts_termios_value(
 	 }
 	return 0;
 }
+#endif /* WITH_TERMIOS */
 
 /* Note: not all options can be applied this way (e.g. OFUNC_SPEC with PH_OPEN)
    implemented are: OFUNC_FCNTL, OFUNC_SOCKOPT (probably not all types),
