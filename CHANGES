@@ -15,6 +15,10 @@ Corrections:
 	socat 1.8.0.0 had an FD leak with addresses of type RECVFROM with fork.
 	Test: RECVFROM_FORK_LEAK
 
+	With version 1.8.0.0, options ipv6-join-group and ipv6-join-source-group
+	did not work.
+	Thanks to Linus Luessing for reporting this bug.
+
 Features:
 	Total inactivity timeout option -T 0 now means 0.0 seconds; up to
 	version 1.8.0.0 it meant no total inactivity timeout.
