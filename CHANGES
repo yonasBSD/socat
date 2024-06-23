@@ -4,6 +4,9 @@ Corrections:
 	Thanks to Kush Upadhyay from Amazon Bottlerocket team for providing the
 	patch.
 
+	In some situations xioclose() was called nested what could cause hanging
+	of OpenSSL in pthread_rwlock_wrlock()
+
 Features:
 	Total inactivity timeout option -T 0 now means 0.0 seconds; up to
 	version 1.8.0.0 it meant no total inactivity timeout.

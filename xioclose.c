@@ -23,6 +23,11 @@ int xioclose1(struct single *pipe) {
       return -1;
    }
 
+   if (pipe->tag == XIO_TAG_CLOSED) {
+      return 0;
+   }
+   pipe->tag |= XIO_TAG_CLOSED;
+
 #if WITH_READLINE
    if ((pipe->dtype & XIODATA_MASK) == XIODATA_READLINE) {
       Write_history(pipe->para.readline.history_file);
@@ -112,7 +117,6 @@ int xioclose1(struct single *pipe) {
       free(pipe->unlink_close);
    }
 
-   pipe->tag |= XIO_TAG_CLOSED;
    return 0;	/*! */
 }
 
@@ -126,11 +130,14 @@ int xioclose(xiofile_t *file) {
       errno = EINVAL;
       return -1;
    }
+   if (file->tag == XIO_TAG_CLOSED) {
+      return 0;
+   }
 
    if (file->tag == XIO_TAG_DUAL) {
+      file->tag |= XIO_TAG_CLOSED;
       result  = xioclose1(file->dual.stream[0]);
       result |= xioclose1(file->dual.stream[1]);
-      file->tag |= XIO_TAG_CLOSED;
    } else {
       result = xioclose1(&file->stream);
    }
