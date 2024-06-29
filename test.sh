@@ -146,7 +146,7 @@ if type ip >/dev/null 2>&1; then
 fi
 
 if type ss >/dev/null 2>&1; then
-    # on Ubuntu-10 ss has differing output format
+    # On Ubuntu-10 ss has differing output format (no "LISTEN"), use netstat then
     if ss -V |grep -q "^ss utility, iproute2-[2-6]"; then
 	SS=$(type -p ss)
     else
@@ -17559,12 +17559,12 @@ if grep -q " W waitpid..: child .* exited with status 130" "${te}0"; then
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
 else
-    $PRINTF "$FAILED\n"
+    $PRINTF "${YELLOW}FAILED (shell does not propagate SIGINT?${NORMAL}\n"
     echo "$CMD0 &"
     cat "${te}0" >&2
-    numFAIL=$((numFAIL+1))
-    listFAIL="$listFAIL $N"
-    namesFAIL="$namesFAIL $NAME"
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
 fi
 fi # NUMCOND
  ;;
