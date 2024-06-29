@@ -650,6 +650,7 @@ N=1
 numOK=0
 numFAIL=0
 numCANT=0
+listOK=
 listFAIL=
 listCANT=
 namesFAIL=
@@ -690,6 +691,7 @@ testecho () {
 	if [ "$VERBOSE" ]; then echo "$SOCAT $opts $arg1 $arg2" >&2; fi
 	if [ -n "$debug" ]; then cat $te >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     else
 	$PRINTF "$FAILED:\n"
 	echo "$TRACE $SOCAT $opts $arg1 $arg2" >&2
@@ -732,6 +734,7 @@ testod () {
 	$PRINTF "$OK\n"
 	if [ -n "$debug" ]; then cat $te; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     else
 	$PRINTF "$FAILED: diff:\n"
 	echo "$TRACE $SOCAT $opts $arg1 $arg2"
@@ -2252,6 +2255,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $bg 2>/dev/null
 esac
@@ -2313,6 +2317,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
 fi
 kill $pid1 2>/dev/null
 wait
@@ -2381,7 +2386,8 @@ else
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 fi
@@ -2452,6 +2458,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 fi
@@ -2521,6 +2528,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 fi
@@ -2578,6 +2586,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 fi
@@ -2631,6 +2640,7 @@ elif echo "$da" |diff - "$tf" >"$tdiff"; then
 else
    $PRINTF "$OK\n"
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid; wait
 wait
@@ -2686,6 +2696,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi
@@ -2744,6 +2755,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi
@@ -2797,6 +2809,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi
@@ -2846,6 +2859,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 wait
@@ -2900,6 +2914,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi
@@ -2949,6 +2964,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
@@ -2996,6 +3012,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3043,6 +3060,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # ! testfeats
 esac
@@ -3078,6 +3096,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi # NUMCOND
 esac
@@ -3129,6 +3148,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi
 wait
@@ -3179,6 +3199,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi # !(rc -ne 0)
 wait
 fi # NUMCOND
@@ -3227,6 +3248,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi # !(rc -ne 0)
 wait
 fi # NUMCOND
@@ -3275,6 +3297,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi # !(rc -ne 0)
 kill "$pids" 2>/dev/null; wait
 fi ;; # NUMCOND
@@ -3310,6 +3333,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3343,6 +3367,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 wait
 fi ;; # NUMCOND
@@ -3371,6 +3396,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3417,6 +3443,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
@@ -3451,6 +3478,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3482,6 +3510,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3536,6 +3565,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3569,6 +3599,7 @@ then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3602,6 +3633,7 @@ then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -3656,6 +3688,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
@@ -3703,6 +3736,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -3750,6 +3784,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -3785,7 +3820,7 @@ elif [ "$FEAT" != ',' ] && ! testfeats "$FEAT" >/dev/null; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! runs$RUNS >/dev/null; then
-    $PRINTF "test $F_n $TEST... ${YELLOW}$RUNS not available$ on host${NORMAL}\n" $N
+    $PRINTF "test $F_n $TEST... ${YELLOW}$RUNS not available on host${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -3820,6 +3855,7 @@ else
     fi
    if [ -n "$debug" ]; then cat "${te}2" "${te}"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 wait
 fi ;; # NUMCOND, feats
@@ -3883,6 +3919,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -3931,6 +3968,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -3983,6 +4021,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4045,6 +4084,7 @@ else
         $PRINTF "$OK\n"
         if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
         numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi ;; # NUMCOND, feats
 esac
@@ -4091,6 +4131,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4142,6 +4183,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4190,6 +4232,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4237,6 +4280,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4286,6 +4330,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4334,6 +4379,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4378,6 +4424,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -4423,6 +4470,7 @@ N=$((N+1))
 #if [ $? -eq 0 ] && echo "$da" |diff "$tf" -; then
 #   $ECHO "... test $N succeeded"
 #   numOK=$((numOK+1))
+#   listOK="$listOK $N"
 #else
 #   $ECHO "*** test $N $FAILED"
 #    numFAIL=$((numFAIL+1))
@@ -4442,6 +4490,7 @@ N=$((N+1))
 #if [ $? -eq 0 ] && echo "$da" |diff "$tf" -; then
 #   $ECHO "... test $N succeeded"
 #   numOK=$((numOK+1))
+#   listOK="$listOK $N"
 #else
 #   $ECHO "*** test $N $FAILED"
 #   numFAIL=$((numFAIL+1))
@@ -4482,6 +4531,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4524,6 +4574,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 wait
 fi ;; # NUMCOND, feats
@@ -4572,6 +4623,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$debug" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -4595,7 +4647,8 @@ CMD="$TRACE $SOCAT $opts -u /dev/null -,setlk"
 $CMD <"$ff"  2>"$te"
 if [ "$?" -eq 0 ]; then
     $PRINTF "$OK\n"
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     if [ "$UNAME" = "Linux" ]; then
 	$PRINTF "$FAILED\n"
@@ -4779,7 +4832,8 @@ else
    $PRINTF "$OK\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null	# necc on OpenBSD
 wait
@@ -4848,6 +4902,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD4"; fi
     if [ "$DEBUG" ];   then cat "${te}4" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -4927,7 +4982,8 @@ if ! (echo "$da"; sleep 2) |diff - "$tf" >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}1" "${te}2" "${te}3" "${te}4" "${te}5" "${te}6"; fi
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid1 $pid2 $pid3 $pid4 $pid5 2>/dev/null
 wait
@@ -5042,11 +5098,13 @@ if test -s "${tdiff}1" -o -s "${tdiff}2" -o -s "${tdiff}3"; then
     $PRINTF "$OK ${YELLOW}(partial failure)${NORMAL}\n"
     if [ -n "$debug" ]; then cat "${te}1" "${te}2" "${te}3" "${te}4" "${te}5" ${te}6*; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
   fi
 else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}1" "${te}2" "${te}3" "${te}4" "${te}5" ${te}6*; fi
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid1 $pid2 $pid3 $pid4 $pid5 2>/dev/null
 wait
@@ -5222,6 +5280,7 @@ testserversec () {
 	[ "$VERBOSE" ] && echo "  $TRACE $SOCAT $opts - $arg2"
 	[ "$debug" ] && cat ${te}4
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
     wait
 #set +vx
@@ -5833,7 +5892,8 @@ printf "test $F_n $TEST... " $N
 type=$($FILAN -f . 2>$te |tail -n 1 |awk '{print($2);}')
 if [ "$type" = "dir" ]; then
     $PRINTF "$OK\n"
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     cat "$te"
@@ -5868,6 +5928,7 @@ if [ "$type" = "socket" ]; then
 	echo "$FILAN -f "$ts" 2>$te2 |tail -n 1 |awk '{print(\$2);}'"
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$SOCAT $opts UNIX-LISTEN:\"$ts\" /dev/null </dev/null 2>\"$te1\"" >&2
@@ -5924,6 +5985,7 @@ if echo "$da" |diff - "$tf"> "$tdiff"; then
 	echo "  $TRACE $SOCAT -lpsocat3 $opts - file:\"$tp\",$PTYOPTS2" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "${YELLOW}FAILED${NORMAL}\n"
     cat "$te1"
@@ -6033,6 +6095,7 @@ else
 	echo "$CMD" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi
 wait
@@ -6081,6 +6144,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid1 2>/dev/null
 wait ;;
@@ -6126,6 +6190,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat ${te}1 ${te}2; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -6187,7 +6252,8 @@ sleep 1; kill -INT $(cat $tp)
 wait
 if [ "$stat" -eq $((128+$SIG)) ]; then
     $PRINTF "$OK\n"
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -6241,6 +6307,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -6333,6 +6400,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi # !( $? -ne 0)
 fi # !(rc -ne 0)
 wait
@@ -6426,6 +6494,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi # !(rc -ne 0)
 wait
 fi ;; # NUMCOND, feats
@@ -6478,6 +6547,7 @@ elif ! echo "$da1" |diff - "${tf}1" >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi # !(rc -ne 0)
 wait
 fi ;; # NUMCOND
@@ -6531,6 +6601,7 @@ elif ! echo "$da1" |diff - "${tf}1" >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi # !(rc -ne 0)
 fi ;; # NUMCOND
 esac
@@ -6610,6 +6681,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -6676,6 +6748,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null; wait
 fi ;; # NUMCOND, feats
@@ -6730,6 +6803,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -6779,6 +6853,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat ${te}1 ${te}2; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -6830,6 +6905,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # root, NUMCOND
 esac
@@ -6882,6 +6958,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # root, NUMCOND
 esac
@@ -6934,6 +7011,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -6985,6 +7063,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -7037,6 +7116,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -7088,6 +7168,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, root
 esac
@@ -7142,6 +7223,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, root
 esac
@@ -7186,6 +7268,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -7747,6 +7830,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi # wrong time stamps
 fi # command ok
 fi ;; # NUMCOND, feats
@@ -7803,6 +7887,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi # wrong time stamps
 fi # command ok
 fi ;; # NUMCOND, feats
@@ -7867,6 +7952,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi # not impotent
 fi # can test
@@ -7911,6 +7997,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -7963,6 +8050,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8035,6 +8123,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -8081,6 +8170,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1a" "${te}1b" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -8115,6 +8205,7 @@ rc=$(cat "$td/test$N.rc0")
 if [ "$rc" = 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -8175,6 +8266,7 @@ elif echo "$da" |diff - "${tf}" >"$tdiff"; then
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED (diff)\n"
     echo "$CMD0 &"
@@ -8237,6 +8329,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8288,6 +8381,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8341,6 +8435,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8397,6 +8492,7 @@ else
     fi
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8462,6 +8558,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8542,7 +8639,8 @@ else
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
-   numOK=$((numOK+1))
+    numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8598,6 +8696,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8682,6 +8781,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8737,6 +8837,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -8795,6 +8896,7 @@ else
     fi
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8856,6 +8958,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}" "${te}1"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8924,6 +9027,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -8979,6 +9083,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi # !(rc -ne 0)
 wait
 fi ;; # NUMCOND, feats
@@ -9037,6 +9142,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -9095,6 +9201,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -9137,6 +9244,7 @@ elif echo "$da" |diff -q - $tf; then
     if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD1" >&2
@@ -9202,6 +9310,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 wait
 fi # NUMCOND, featsesac
@@ -9246,6 +9355,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -9300,6 +9410,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9350,6 +9461,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid1 2>/dev/null
 wait
@@ -9462,6 +9574,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9530,6 +9643,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9587,6 +9701,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, root
 esac
@@ -9640,6 +9755,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}1" "${te}2" "${te}3"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9679,6 +9795,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9737,6 +9854,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9772,6 +9890,7 @@ if [ $rc0 != 0 ]; then
 elif echo "$da" |diff - "$tf" >/dev/null; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -9815,6 +9934,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9849,6 +9969,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat $te; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -9969,6 +10090,7 @@ else
     if [ "$VERBOSE" ]; then echo "echo XYZ |$CMD1"; fi
     if [ "$DEBUG" ];   then grep " $LEVELS " "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 else # option is not supported
     $PRINTF "${YELLOW}$SCM_RECV not available${NORMAL}\n"
@@ -10090,6 +10212,7 @@ elif [ "$(grep SOCAT_SOCKADDR "${tf}" |sed -e 's/^[^=]*=//' |sed -e "s/[\"']//g"
 	cat "${te}1"
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -10214,6 +10337,7 @@ else
     if [ "$VERBOSE" ]; then echo "{ echo XYZ; sleep 0.1; } |$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 else # option is not supported
     $PRINTF "${YELLOW}$SCM_RECV not available${NORMAL}\n"
@@ -10301,6 +10425,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -10361,6 +10486,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10410,6 +10536,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10465,6 +10592,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10518,6 +10646,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10572,6 +10701,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10628,6 +10758,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10683,6 +10814,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat $te; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND
 esac
@@ -10761,6 +10893,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND, TIOCEXCL
 ;;
@@ -10835,6 +10968,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -10926,6 +11060,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2" "${te}3"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND, SO_REUSEADDR
  ;;
@@ -10981,6 +11116,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid1 2>/dev/null
 wait
@@ -11034,6 +11170,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 fi # NUMCOND, feats
@@ -11095,6 +11232,7 @@ if echo "$da" |diff - ${tf}1 >"$tdiff"; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif grep -i "Connection refused" "${te}1" >/dev/null; then
     $PRINTF "$CANT (conn failed)\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -11169,6 +11307,7 @@ if echo "$da" |diff - ${tf}1 >"$tdiff"; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif grep -i "Connection refused" "${te}1" >/dev/null; then
     $PRINTF "$CANT (conn failed)\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -11218,6 +11357,7 @@ rc0=$?
 if [ $rc0 -lt 128 ] || [ $rc0 -eq 255 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -11252,6 +11392,7 @@ rc0=$?
 if [ $rc0 -lt 128 ] || [ $rc0 -eq 255 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -11287,6 +11428,7 @@ rc0=$?
 if [ $rc0 -lt 128 ] || [ $rc0 -eq 255 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -11354,6 +11496,7 @@ elif  ! echo "$da" |diff - ${tf}1 >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -11380,6 +11523,7 @@ rc0=$?
 if [ $rc0 -ne 0 -a -f "$tf" ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -11411,6 +11555,7 @@ rc0=$?
 if [ $rc0 -ne 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -11527,10 +11672,12 @@ if ! echo "$da" |diff - "$tf" >"$tdiff"; then
     #cat "${te}2"
     #cat "$tdiff"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -11595,6 +11742,7 @@ kill $pid1 $pid2 $pid0 2>/dev/null; wait
 if echo -e "$da 1\n$da 2" |diff - $tf >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -11684,6 +11832,7 @@ kill $pid1 $pid2 $pid0 $cpids 2>/dev/null; wait
 if echo -e "$da 1" |diff - $tf >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -11744,6 +11893,7 @@ if [ $rc -ne 0 ]; then
 elif [ $rc0 -eq 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -11822,6 +11972,7 @@ elif [ -f "$tdiff" -a ! -s "$tdiff" ]; then
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -11872,6 +12023,7 @@ if [ $rc1 -lt 128 ]; then
     if [ "$EF" ]; then
 	$PRINTF "$OK\n"
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     else
 	$PRINTF "$UNKNOWN $RED(install ElectricFEnce!)$NORMAL\n"
 	numCANT=$((num+1))
@@ -11933,6 +12085,7 @@ elif [ "$KEEPALIVE" = "1" ]; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED (KEEPALIVE=$KEEPALIVE)\n"
     echo "$CMD0 &"
@@ -12001,6 +12154,7 @@ elif ! echo "$da" |diff - $tf1 >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -12056,6 +12210,7 @@ elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 
 fi ;; # $SECONDADDR, NUMCOND
@@ -12133,6 +12288,7 @@ elif effval="$(grep SOCAT_${SSLDIST}_${MODULE}_${FIELD} "${tf}" |sed -e 's/^[^=]
 	cat "${te}1"
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "expected \"$VALUE\", got \"$effval\"" >&2
@@ -12214,6 +12370,7 @@ elif [ "$perms" != "600" ]; then
 else
     $PRINTF "$OK\n"
     let numOK=numOK+1
+    listOK="$listOK $N"
 fi
                                set +xv
 fi # NUMCOND
@@ -12289,6 +12446,7 @@ elif [ "$perms" != "511" ]; then
 else
     $PRINTF "$OK\n"
     let numOK=numOK+1
+    listOK="$listOK $N"
 fi
                                       set +vx
 fi # NUMCOND
@@ -12366,6 +12524,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
 fi
                                       set +vx
 fi # NUMCOND
@@ -12430,6 +12589,7 @@ if [ $rc1 != 0 ]; then
 elif ! [ $crit $tsock ]; then
     $PRINTF "$OK\n"
     let numOK=numOK+1
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -12498,6 +12658,7 @@ if [ $rc1 != 0 ]; then
 elif ! [ $crit $tsock ]; then
     $PRINTF "$OK\n"
     let numOK=numOK+1
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -12572,6 +12733,7 @@ elif ! echo "$da" |diff - "${tf}1" >"$tdiff" 2>&1; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -12615,6 +12777,7 @@ elif ! echo 1 |diff - "$t0rc" >"$tdiff"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -12679,10 +12842,12 @@ echo "$da" |diff - "${tf}1" >"$tdiff" 2>/dev/null
 if [ $w0 -eq 0 ] && [ -f "${tf}1" ] && ! [ -s "$tdiff" ]; then
     $PRINTF "${YELLOW}WARN${NORMAL} (obsolete method succeeds)\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$OK (obsolete method fails)\n"
     cat "$tdiff"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
     if [ "$VERBOSE" ]; then
 	echo "  $CMD0"
@@ -12750,6 +12915,7 @@ kill $pid0 2>/dev/null; wait
 if echo "$da" |diff - "${tf}1" >"$tdiff"; then 
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
     if [ "$VERBOSE" ]; then
 	echo "  $CMD0"
 	echo "  echo \"$da\" |$CMD1"
@@ -12823,6 +12989,7 @@ rc=$?
 if [ $rc -eq 1 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -12863,6 +13030,7 @@ if [ $rc0 -eq 0 ]; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -12896,6 +13064,7 @@ if [ $rc0 -eq 0 ]; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -12970,6 +13139,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2" "${te}3"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND, SO_REUSEADDR
  ;;
@@ -13066,6 +13236,7 @@ else
     $PRINTF "$OK\n"
     if [ -n "$debug" ]; then cat "${te}0" "${te}1" "${te}2" "${te}3"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND, SO_REUSEPORT
  ;;
@@ -13092,6 +13263,7 @@ rc1=$?
 if echo "$da" |diff - "${tf}0" >"$tdiff"; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13155,6 +13327,7 @@ if [ $rc1 -ne 0 ]; then
 elif echo "$da" |diff - "${tf}1" >"$tdiff"; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "server and stderr:" >&2
@@ -13195,6 +13368,7 @@ rc0=$?
 if [ $rc0 -eq 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13234,6 +13408,7 @@ if [ $rc0 -ne 0 ]; then
 elif echo "$da" |diff - ${tf}0 >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13261,6 +13436,7 @@ rc0=$?
 if [ "$rc0" = "1" ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0" >&2
@@ -13297,6 +13473,7 @@ rc0=$?
 if [ $rc0 -eq 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13332,6 +13509,7 @@ $CMD0 >/dev/null 2>"${te}0"
 if ! grep -q "ai_socktype not supported" ${te}0; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13369,6 +13547,7 @@ kill $pid0 2>/dev/null; wait
 if [ $(grep "socket 2 (fd .*) is at EOF" ${te}0 |wc -l) -eq 1 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -13418,6 +13597,7 @@ elif [ $rc0 -eq 1 ]; then
     if grep -q "buffer size option (-b) to big" "${te}0"; then
 	$PRINTF "$OK\n"
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     else
 	$PRINTF "$FAILED (rc=$rc0)\n"
 	echo "$CMD0"
@@ -13451,6 +13631,7 @@ if grep -q -i -e "syntax error" -e "unexpected end" "${te}0"; then
     if [ "$VERBOSE" ]; then echo "$CMD0" >&2; fi
     if [ "$debug" ]; then cat ${te} >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13490,9 +13671,11 @@ $CMD0 >/dev/null 2>"${te}0"
 if [ $? -eq 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif grep -q "Connection refused" ${te}0; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -13557,6 +13740,7 @@ elif ! echo "$da" |diff - "$to" >$tdiff; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi # command ok
 fi ;; # NUMCOND, feats
 esac
@@ -13591,6 +13775,7 @@ kill $pid0 2>/dev/null; wait
 if test -S $uns && ! test -S $unc; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -13634,6 +13819,7 @@ kill $pid0 2>/dev/null; wait
 if test -S $uns && ! test -S $unc; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -13704,6 +13890,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "$te"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -13757,6 +13944,7 @@ kill $pid1 2>/dev/null; wait
 if echo "$da" |diff - $tf >"$tdiff"; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD1 &"
@@ -13813,6 +14001,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -13860,6 +14049,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -13907,6 +14097,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -13962,6 +14153,7 @@ if ! echo "$da1" |diff - $tr1 >$tdiff1 || ! echo "$da2" |diff - $tr2 >$tdiff2; t
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -14003,6 +14195,7 @@ rc0=$?
 if [ $rc0 -eq 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0" >&2
@@ -14051,6 +14244,7 @@ rc0=$?
 if [ $rc0 -ne 0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0" >&2
@@ -14115,6 +14309,7 @@ if kill $pid2 2>"$tk2"; then
 else
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi
 wait
@@ -14157,6 +14352,7 @@ kill $pid0 2>/dev/null; wait
 if [ -f ${tf}0 ] && echo "$da" |diff - ${tf}0 >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14232,6 +14428,7 @@ else
    $PRINTF "$OK\n"
    if [ -n "$debug" ]; then cat "${te}1" "${te}2"; fi
    numOK=$((numOK+1))
+   listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -14290,6 +14487,7 @@ elif [ $rc1 -ne 0 ]; then
 elif echo "$da" |diff - ${tf}1 >${tdiff}$N; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14359,6 +14557,7 @@ if [ $rc1 -ne 0 ]; then
 elif diff $ti $to >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14430,6 +14629,7 @@ if [ $rc1 -ne 0 ]; then
 elif diff $ti $to >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14504,6 +14704,7 @@ if [ $rc1 -ne 0 ]; then
 elif diff $ti $to >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14578,6 +14779,7 @@ if [ $rc1 -ne 0 ]; then
 elif diff $ti $to >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14641,6 +14843,7 @@ if [ $rc1 -ne 0 ]; then
 elif [ ! -e $trc0 ]; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14693,6 +14896,7 @@ kill $pid0 2>/dev/null; wait
 if [ $rc1 -eq 0 ] && echo "$da" |diff - "${tf}0" >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -14732,6 +14936,7 @@ if [ $rc -ne 0 ]; then
 	echo "$CMD &" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD &" >&2
@@ -14774,6 +14979,7 @@ if [ $rc -eq 0 ]; then
 	echo "$CMD" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD" >&2
@@ -14817,6 +15023,7 @@ elif [ ! -s "$ts" ]; then
 	echo "$CMD" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD &" >&2
@@ -14914,6 +15121,7 @@ else
 	echo "$CMD1" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 set +vx
 fi # NUMCOND
@@ -14998,6 +15206,7 @@ elif echo "$da" |diff - "${tf}1" >$tdiff; then
 	echo "$CMD1" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &" >&2
@@ -15036,6 +15245,7 @@ if [ $rc0 -eq 0 ]; then
 	echo "$CMD0" >&2
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0" >&2
@@ -15080,6 +15290,7 @@ if  [[ $LOWPORT =~ [0-9][0-9]* ]] && [ "$LOWPORT" -ge 640 -a "$LOWPORT" -le 1023
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif $SOCAT -V |grep -q "undef WITH_SYCLS"; then
     $PRINTF "$CANT (no SYCLS)\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -15117,6 +15328,7 @@ $CMD0 </dev/null >/dev/null 2>"${te}0"
 if grep -q "missing numerical value" "${te}0"; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -15149,6 +15361,7 @@ if grep -q "trailing garbage" "${te}0"; then
     if [ "$VERBOSE" ]; then echo "$CMD0" >&2; fi
     if [ "$debug" ]; then cat ${te} >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -15185,6 +15398,7 @@ if [ "$target" = "$tf" ]; then
 	echo "$FILAN -f "$tl" 2>$te |tail -n 1 |sed 's/.*LINKTARGET=\([^ ]*\)/\1/'"
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "touch \"$tf\"" >&2
@@ -15263,6 +15477,7 @@ for addr in exec system; do
 		    echo "{ echo -n "${da:0:20}"; sleep 1; echo "${da:20}"; } |$CMD1" >&2
 		fi
 		numOK=$((numOK+1))
+		listOK="$listOK $N"
 	    fi
 	fi # NUMCOND
 	;;
@@ -15302,6 +15517,7 @@ if [ $rc1 -eq 1 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif [ $rc1 -eq 139 ]; then
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -15370,6 +15586,7 @@ if [ $rc1 -eq 0 -a "$result" = tcp ]; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     if [ $rc1 -ne 0 ]; then
@@ -15435,6 +15652,7 @@ if diff $tx0 $tx1 >$tdiff 2>&1; then
     if [ "$VERBOSE" ]; then echo "$CMD &"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -15482,6 +15700,7 @@ if [ "$(cat  "${tf}" |grep -v ' door ' |wc -l)" -eq 3 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD" >&2
@@ -15528,6 +15747,7 @@ if [ "$(cat  "${tf}" |grep -v ' door ' |wc -l)" -eq 3 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD" >&2
@@ -15614,6 +15834,7 @@ if $ECHO "$da 2\n$da 1" |diff - $tf >$tdiff; then
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -15676,6 +15897,7 @@ if ! grep "exiting on signal" ${te}0 >/dev/null; then
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     if [ "$DEBUG" ];   then echo "kill -TERM <pid>" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -15728,6 +15950,7 @@ if grep "exiting on signal" ${te}0 >/dev/null; then
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     if [ "$DEBUG" ];   then echo "kill -31 <pid>" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -15799,6 +16022,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$debug" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 kill $pid 2>/dev/null
 wait
@@ -15871,6 +16095,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2 &"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi
 wait
@@ -15948,6 +16173,7 @@ elif test $(ls -l $td/test$N.*.log |wc -l) -eq 4 &&
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif test -f $td/test$N.\$PROGNAME-\$TIMESTAMP.\$MICROS-\$SERVER0_PEERADDR-\$\$.in.log; then
     $PRINTF "$FAILED (vars not resolved)\n"
     echo "$CMD0 &"
@@ -16022,6 +16248,7 @@ elif [ $(grep STATISTICS "${te}0" |wc -l) -eq 2 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD0"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -16084,6 +16311,7 @@ if [ "$(grep STATISTICS "${te}0" |wc -l)" -eq 2 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD0"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -16143,6 +16371,7 @@ if grep -q " W connect" ${te}0; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -16246,6 +16475,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi ;; # NUMCOND, feats
 esac
@@ -16306,6 +16536,7 @@ if [ $rc0b -eq 0 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD0b"; fi
     if [ "$DEBUG" ];   then cat "${te}0b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0a &"
@@ -16380,6 +16611,7 @@ if [ $rc0b -eq 0 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD0b"; fi
     if [ "$DEBUG" ];   then cat "${te}0b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0a &"
@@ -16450,6 +16682,7 @@ if [ $rc0b -eq 1 ] && grep -q -e "Address already in use" -e "Address in use" "$
     if [ "$VERBOSE" ]; then echo "$CMD0b"; fi
     if [ "$DEBUG" ];   then cat "${te}0b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 #elif grep -q "accept: \(Connection\|Operation\) timed out" "${te}0b"; then
 elif grep -q "accept: .* timed out" "${te}0b"; then
     # FreeBSD, Solaris do not seem to need SO_REUSEADDR with TCP at all
@@ -16551,6 +16784,7 @@ if [ $(grep " N opening connection to .*AF=2 " ${te} |wc -l) -eq 2 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -16648,6 +16882,7 @@ if [ $(grep " N opening connection to .*AF=[0-9]" ${te} |wc -l) -eq 2 ]; then
     if [ "$VERBOSE" ]; then echo "$CMD"; fi
     if [ "$DEBUG" ];   then cat "${te}" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD"
@@ -16748,6 +16983,7 @@ elif echo "$da" |od -c |diff - ${tf}1 >"$tdiff"; then
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     if [ "$VERBOSE" ]; then echo "ip netns del $ns"; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED (bad output)\n"
     echo "$CMD0 &"
@@ -16850,6 +17086,7 @@ elif echo "$da" |diff - ${tf}0 >"$tdiff" 2>/dev/null; then
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED (bad output)\n"
     echo "$CMD0 &"
@@ -16964,6 +17201,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2 &"; fi
     if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -17019,6 +17257,7 @@ if echo "$da" |diff "${tf}1" - >$tdiff; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -17101,6 +17340,7 @@ elif $ECHO "$da 1\n$da 0" |diff - ${tf}1 >${tdiff}1; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0a"
@@ -17185,6 +17425,7 @@ elif $ECHO "$da 0\n$da 1" |diff - ${tf}0 >${tdiff}0; then
     if [ "$VERBOSE" ]; then echo "$CMD1b"; fi
     if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -17274,6 +17515,7 @@ elif $ECHO "$da 1\n$da 2\n$da 3" |diff - ${tf}0 >${tdiff}0; then
     if [ "$VERBOSE" ]; then echo "$CMD1b"; fi
     if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -17357,6 +17599,7 @@ if $ECHO "$da 1\n$da 2\n$da 3" |diff - ${tf}0 >${tdiff}0; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0"
@@ -17418,6 +17661,7 @@ if grep -q " W waitpid..: child .* exited with status 130" "${te}0" ||
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -17580,6 +17824,7 @@ if grep -q " W waitpid..: child .* exited with status 130" "${te}0"; then
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "${YELLOW}FAILED (shell does not propagate SIGINT?${NORMAL}\n"
     echo "$CMD0 &"
@@ -17643,6 +17888,7 @@ if grep "$da" "${tf}0" >/dev/null; then
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 elif pgrep -u root nscd >/dev/null 2>&1; then
     $PRINTF "${YELLOW}FAILED (due to nscd?)${NORMAL}\n"
     if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
@@ -17745,6 +17991,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -17823,6 +18070,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -17905,6 +18153,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -17986,6 +18235,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -18101,6 +18351,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD2"; fi
     if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -18179,6 +18430,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD1"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -18247,6 +18499,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD0"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -18307,6 +18560,7 @@ else
     if [ "$VERBOSE" ]; then echo "$CMD0"; fi
     if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 fi
 fi # NUMCOND
  ;;
@@ -18368,6 +18622,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
 fi
 kill $pid1 2>/dev/null
 wait
@@ -18436,6 +18691,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
 	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi ;; # NUMCOND
 esac
@@ -18503,6 +18759,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
 	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi ;; # NUMCOND
 esac
@@ -18570,6 +18827,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
 	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi ;; # NUMCOND
 esac
@@ -18658,6 +18916,7 @@ elif [ "$(grep SOCAT_SOCKADDR "${tf}" |sed -e 's/^[^=]*=//' |sed -e "s/[\"']//g"
 	cat "${te}1"
     fi
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -18744,6 +19003,7 @@ kill $pid1 $pid2 $cpids $pid0 2>/dev/null; wait
 if echo -e "$da 1" |diff - $tf >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     echo "$CMD0 &"
@@ -18813,6 +19073,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD0"; fi
 	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -18884,6 +19145,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -18961,6 +19223,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -19073,6 +19336,7 @@ else
 	if [ "$VERBOSE" ]; then echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD2"; fi
 	if [ "$DEBUG" ];   then cat "${te}2b" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -19169,6 +19433,7 @@ else
 	if [ "$VERBOSE" ]; then echo "{ sleep 2; echo \"\$da_b\"; sleep 1; } |$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1b" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
@@ -19231,6 +19496,7 @@ if [ $rc1 -ne 0 ]; then
 elif echo "$da" |diff - "$tf" >$tdiff; then
     $PRINTF "$OK\n"
     numOK=$((numOK+1))
+    listOK="$listOK $N"
 else
     $PRINTF "$FAILED\n"
     cat "$tdiff"
@@ -19252,9 +19518,11 @@ echo "Summary: $((N-1)) tests, $((numOK+numFAIL+numCANT)) selected; $numOK ok, $
 
 set -- $listCANT; while [ "$1" ]; do echo "$1"; shift; done >"$td/cannot.lst"
 ln -sf "$td/cannot.lst" .
+set -- $listOK;   while [ "$1" ]; do echo "$1"; shift; done >"$td/success.lst"
+ln -sf "$td/success.lst" .
 set -- $listFAIL; while [ "$1" ]; do echo "$1"; shift; done >"$td/failed.lst"
 ln -sf "$td/failed.lst" .
-sort -n <(cat "$td/cannot.lst" |while read x; do echo "$x CANT"; done) <(cat "$td/failed.lst" |while read x; do echo "$x FAILED"; done) >"$td/result.txt"
+sort -n <(cat "$td/success.lst" |while read x; do echo "$x OK"; done) <(cat "$td/cannot.lst" |while read x; do echo "$x CANT"; done) <(cat "$td/failed.lst" |while read x; do echo "$x FAILED"; done) >"$td/result.txt"
 ln -sf "$td/result.txt" .
 if [ "$numCANT" -gt 0 ]; then
     echo "CANT: $listCANT"
@@ -19380,6 +19648,7 @@ else
 	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
 	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
 	numOK=$((numOK+1))
+	listOK="$listOK $N"
     fi
 fi # NUMCOND
  ;;
