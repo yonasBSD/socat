@@ -596,7 +596,7 @@ SunOS)
     #BROADCASTIF=hme0
     #BROADCASTIF=eri0
     #SECONDADDR=$($IFCONFIG $BROADCASTIF |grep 'inet ' |awk '{print($2);}')
-    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
+    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |$GREP_F -v ' 127.0.0.1 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
     #BCIFADDR="$SECONDADDR"
     #BCADDR=$($IFCONFIG $BROADCASTIF |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}')
     ;;
@@ -608,7 +608,7 @@ DragonFly)
     BCADDR=$($IFCONFIG "$BROADCASTIF" |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
 #AIX|FreeBSD|Solaris)
 *)
-    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |fgrep -v ' 127.0.0.1 ' |head -n 1)" : '.*inet \([0-9.]*\) .*')
+    SECONDADDR=$(expr "$($IFCONFIG -a |grep 'inet ' |$GREP_F -v ' 127.0.0.1 ' |head -n 1)" : '.*inet \([0-9.]*\) .*')
     ;;
 esac
 # for generic sockets we need this address in hex form
@@ -619,12 +619,12 @@ fi
 # for some tests we need a second local IPv6 address
 case "$UNAME" in
 Linux) if [ "$IP" ]; then
-	   SECONDIP6ADDR=$(expr "$($IP address |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet6 \([0-9a-f:][0-9a-f:]*\)/.*')
+	   SECONDIP6ADDR=$(expr "$($IP address |grep 'inet6 ' |$GREP_F -v ' ::1/128 '| head -n 1)" : '.*inet6 \([0-9a-f:][0-9a-f:]*\)/.*')
        else
-	   SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
+	   SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |$GREP_F -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
        fi ;;
 *)
-    SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |fgrep -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
+    SECONDIP6ADDR=$(expr "$($IFCONFIG -a |grep 'inet6 ' |$GREP_F -v ' ::1/128 '| head -n 1)" : '.*inet \([0-9.]*\) .*')
     ;;
 esac
 if [ -z "$SECONDIP6ADDR" ]; then

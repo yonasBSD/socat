@@ -10,7 +10,7 @@ AC_CONFIG_HEADER(config.h)
 if test -f /usr/xpg4/bin/fgrep; then
    FGREP=/usr/xpg4/bin/fgrep   # Solaris
 else
-   FGREP=fgrep
+   FGREP="grep -F"
 fi
 
 # find out which defines gcc passes to cpp, so makedepend does not run into

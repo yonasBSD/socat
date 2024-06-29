@@ -6,6 +6,8 @@ Features:
 Porting:
 	Changes for building and testing on NetBSD
 
+	New Linux distributions dislike egrep, fgrep
+
 Testing:
 	test.sh: lots of corrections and improvements
 
