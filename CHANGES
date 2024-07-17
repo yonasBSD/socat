@@ -39,6 +39,10 @@ Porting:
 	When NETDB_INTERNAL is not available it should be set to -1.
 	Thanks to Baruch Siach for sending a patch.
 
+	On OpenSolaris/Illumos, isastream() is declared only in stropts.h, not
+	in sys/stropts.h
+	Thanks to Andy Fiddaman for sending a patch.
+
 Building:
 	Makefile.in: procan.o build requires srcdir prefix for explicit source
 	file.
@@ -579,12 +583,12 @@ Porting:
 	Fixed ancillary messages on Solaris.
 
 	Filan: Solaris has the open file path infos in /proc/<pid>/path/
-	Thanks to Andy Fiddaman to directing me to the patch.
+	Thanks to Andy Fiddaman for directing me to the patch.
 
 	Filan now recognizes and prints Solaris doors and event ports.
 
 	Solaris derivatives no longer need librt for clock_gettime()
-	Thanks to Andy Fiddaman to directing me to the patch.
+	Thanks to Andy Fiddaman for directing me to the patch.
 
 	LibreSSL does not have OPENSSL_INIT_new(). This function is now
 	guarded. Socat might build with LibreSSL.

@@ -86,7 +86,7 @@ AC_CHECK_HEADERS(linux/types.h)
 AC_CHECK_HEADER(linux/errqueue.h, AC_DEFINE(HAVE_LINUX_ERRQUEUE_H), [], [#include <sys/time.h>
 #include <linux/types.h>])
 AC_CHECK_HEADERS(sys/utsname.h sys/select.h sys/file.h)
-AC_CHECK_HEADERS(util.h bsd/libutil.h libutil.h sys/stropts.h regex.h)
+AC_CHECK_HEADERS(util.h bsd/libutil.h libutil.h stropts.h regex.h)
 AC_CHECK_HEADERS(linux/fs.h linux/ext2_fs.h)
 
 dnl Checks for setgrent, getgrent and endgrent.
