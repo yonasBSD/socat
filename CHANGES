@@ -97,6 +97,10 @@ Testing:
 
 	test.sh: fixed ss determination; more DEFS
 	
+Documentation:
+	Fixed a lot of typos.
+	Thanks to Solomon Victorino for sending the patch.
+
 ####################### V 1.8.0.0
 
 Security:

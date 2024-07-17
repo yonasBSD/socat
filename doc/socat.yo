@@ -104,7 +104,7 @@ dit(bf(tt(-h | -?)))
    types, and exit.
 dit(bf(tt(-hh | -??)))
    Like -h, plus a list of the short names of all available address options. Some options are
-   platform dependend, so this output is helpful for checking the particular
+   platform dependent, so this output is helpful for checking the particular
    implementation. 
 dit(bf(tt(-hhh | -???)))
    Like -hh, plus a list of all available address option names.
@@ -123,7 +123,7 @@ dit(bf(tt(-D)))
    Logs information about file descriptors before starting the transfer phase.
 label(option_experimental)dit(bf(tt(--experimental)))
    New features that are not well tested or are subject to change in the future
-   must me explicitely enabled using this option.
+   must be explicitly enabled using this option.
 dit(bf(tt(-ly[<facility>])))
    Writes messages to syslog instead of stderr; severity as defined with -d
    option. With optional link(<facility>)(TYPE_FACILITY), the syslog type can
@@ -755,7 +755,7 @@ label(ADDRESS_NAMED_PIPE)dit(bf(tt(PIPE:<filename>)))
    See also: link(unnamed pipe)(ADDRESS_UNNAMED_PIPE)
 label(ADDRESS_UNNAMED_PIPE)dit(bf(tt(PIPE)))
    Creates an unnamed pipe and uses it for reading and writing. It works as an
-   echo, because everything written to it appeares immediately as read
+   echo, because everything written to it appears immediately as read
    data.nl()
    Note: When socat tries to write more bytes than the pipe can queue (Linux
    2.4: 2048 bytes), socat might block. Consider, e.g., using
@@ -764,7 +764,7 @@ label(ADDRESS_UNNAMED_PIPE)dit(bf(tt(PIPE)))
    See also: link(named pipe)(ADDRESS_NAMED_PIPE), link(SOCKETPAIR)(ADDRESS_SOCKETPAIR)
 label(ADDRESS_SOCKETPAIR)dit(bf(tt(SOCKETPAIR)))
    Creates a socketpair and uses it for reading and writing. It works as an
-   echo, because everything written to it appeares immediately as read
+   echo, because everything written to it appears immediately as read
    data. The default socket type is datagram, so it keeps packet boundaries.
    nl()
    Option groups: link(FD)(GROUP_FD) nl()
@@ -2834,7 +2834,7 @@ label(OPTION_PROXYPORT)dit(bf(tt(proxyport=<TCP service>)))
 label(OPTION_IGNORECR)dit(bf(tt(ignorecr)))
    The HTTP protocol requires the use of CR+NL as line terminator. When a proxy
    server violates this standard, socat might not understand its answer. 
-   This option directs socat to interprete NL as line terminator and
+   This option directs socat to interpret NL as line terminator and
    to ignore CR in the answer. Nevertheless, socat sends CR+NL to the proxy.
 label(OPTION_PROXY_AUTHORIZATION)dit(bf(tt(proxy-authorization=<username>:<password>)))
    Provide "basic" authentication to the proxy server. The argument to the
@@ -3063,7 +3063,7 @@ label(OPTION_TERMIOS_RAWER)dit(bf(tt(rawer)))
 label(OPTION_TERMIOS_CFMAKERAW)dit(bf(tt(cfmakeraw)))
    Sets raw mode by invoking tt(cfmakeraw()) or by simulating this call. This option implicitly turns off echo.
 label(OPTION_IGNBRK)dit(bf(tt(ignbrk[=<bool>])))
-   Ignores or interpretes the BREAK character (e.g., ^C)
+   Ignores or interprets the BREAK character (e.g., ^C)
 label(OPTION_BRKINT)dit(bf(tt(brkint[=<bool>])))
 label(OPTION_BS0)dit(bf(tt(bs0)))
 label(OPTION_BS1)dit(bf(tt(bs1)))
