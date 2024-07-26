@@ -19,6 +19,11 @@ Corrections:
 	did not work.
 	Thanks to Linus Luessing for reporting this bug.
 
+	Up to version 1.8.0.0 IP-SENDTO and option pf (protocol-family) with
+	protocol name (vs.numeric argument) failed with message:
+	E retropts_int(): trailing garbage in numerical arg of option "protocol-family"
+	Test: IP_SENDTO_PF
+
 Features:
 	Total inactivity timeout option -T 0 now means 0.0 seconds; up to
 	version 1.8.0.0 it meant no total inactivity timeout.

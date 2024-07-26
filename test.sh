@@ -19862,6 +19862,59 @@ esac
 N=$((N+1))
 
 
+# Test for a bug (up to 1.8.0.0) with IP-SENDTO and option pf (protocol-family)
+# with protocol name (vs.numeric)
+NAME=IP_SENDTO_PF
+case "$TESTS" in
+*%$N%*|*%functions%*|*%root%*|*%bugs%*|*%socket%*|*%ip4%*|*%rawip%*|*%gopen%*|*%$NAME%*)
+TEST="$NAME: test IP-SENDTO with option pf with protocol name"
+# Invoke Socat with address IP-SENDTO with option pf=ip4
+# When this works the test succeeded; when an error (in particular:
+# E retropts_int(): trailing garbage in numerical arg of option "protocol-family")
+# occurs, the test fails
+if ! eval $NUMCOND; then :
+# Remove unneeded checks, adapt lists of the remaining ones
+elif ! cond=$(checkconds \
+		  "" \
+		  "root" \
+		  "" \
+		  "IP4 RAWIP GOPEN" \
+		  "GOPEN IP-SENDTO" \
+		  "pf" \
+		  "ip4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    CMD0="$TRACE $SOCAT $opts -u /dev/null IP-SENDTO:127.0.0.1:254,pf=ip4"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0"
+    rc0=$?
+    if [ "$rc0" -ne 0 ]; then
+	$PRINTF "$FAILED (rc0=$rc0)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
 # end of common tests
 
 ##################################################################################

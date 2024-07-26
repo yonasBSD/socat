@@ -108,7 +108,7 @@ int _xioopen_rawip_sendto(const char *hostname, const char *protname,
 
    if (sfd->howtoend == END_UNSPEC)
       sfd->howtoend = END_SHUTDOWN;
-   retropt_int(opts, OPT_PROTOCOL_FAMILY, pf);
+   retropt_socket_pf(opts, pf);
 
    if (applyopts_single(sfd, opts, PH_INIT) < 0)  return -1;
    applyopts(sfd, -1, opts, PH_INIT);

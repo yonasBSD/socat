@@ -132,15 +132,17 @@ int xioinit_ip(
 	char ipv)
 {
 	if (*pf == PF_UNSPEC) {
+#if WITH_IP4 && WITH_IP6
 		switch (ipv) {
-		case '0': *pf = PF_UNSPEC; break;
-#if WITH_IP4
 		case '4': *pf = PF_INET; break;
-#endif
-#if WITH_IP6
 		case '6': *pf = PF_INET6; break;
-#endif
+		default: break;		/* includes \0 */
 		}
+#elif WITH_IP6
+		*pf = PF_INET6;
+#else
+		*pf = PF_INET;
+#endif
 	}
 	return 0;
 }
