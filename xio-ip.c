@@ -393,16 +393,18 @@ int xiogetaddrinfo(const char *node, const char *service,
 	  ai_flags?ai_flags[0]:0, ai_flags?ai_flags[1]:0, res);
    if (service && service[0]=='\0') {
       Error("xiogetaddrinfo(): empty port and service");
+      return EAI_NONAME;
    }
 
 #if LATER
 #ifdef WITH_VSOCK
    if (family == AF_VSOCK) {
       error_num = sockaddr_vm_parse(&sau->vm, node, service);
-      if (error_num < 0)
-         return STAT_NORETRY;
-
-      return STAT_OK;
+      if (error_num < 0) {
+	 errno = EINVAL;
+         return EAI_SYSTEM;
+      }
+      return 0;
    }
 #endif /* WITH_VSOCK */
 #endif /* LATER */
@@ -457,7 +459,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 #if WITH_IP6
    } else if (node && node[0] == '[' && node[(nodelen=strlen(node))-1]==']') {
       if ((numnode = Malloc(nodelen-1)) == NULL)
-	 return STAT_NORETRY;
+	 return EAI_MEMORY;
 
       strncpy(numnode, node+1, nodelen-2);	/* ok */
       numnode[nodelen-2] = '\0';
@@ -507,25 +509,19 @@ int xiogetaddrinfo(const char *node, const char *service,
 		 freeaddrinfo(*res);
 	      if (numnode)
 		 free(numnode);
-	      return STAT_NORETRY;
+	      return EAI_SERVICE;
 	   }
 	   /* Probably unsupported protocol (e.g. UDP-Lite), fallback to 0 */
 	   hints.ai_protocol = 0;
 	   continue;
 	}
       if ((error_num = Getaddrinfo(node, service, &hints, res)) != 0) {
-	 Error7("getaddrinfo(\"%s\", \"%s\", {0x%02x,%d,%d,%d}, {}): %s",
-		node?node:"NULL", service?service:"NULL",
-		hints.ai_flags, hints.ai_family,
-		hints.ai_socktype, hints.ai_protocol,
-		(error_num == EAI_SYSTEM)?
-		strerror(errno):gai_strerror(error_num));
 	 if (*res != NULL)
 	    freeaddrinfo(*res);
 	 if (numnode)
 	    free(numnode);
 
-	 return STAT_RETRYLATER;
+	 return error_num;
 	}
       } while (1);
       service = NULL;	/* do not resolve later again */
@@ -645,12 +641,13 @@ int xiogetaddrinfo(const char *node, const char *service,
 
 #else
    Error("no resolver function available");
-   return STAT_NORETRY;
+   errno = ENOSYS;
+   return EAI_SYSTEM;
 #endif
 
    if (numnode)  free(numnode);
 
-   return STAT_OK;
+   return 0;
 }
 
 void xiofreeaddrinfo(struct addrinfo *res) {
@@ -668,11 +665,12 @@ void xiofreeaddrinfo(struct addrinfo *res) {
 
 /* A simple resolver interface that just returns one address,
    the first found by calling xiogetaddrinfo().
-   family may be AF_INET, AF_INET6, or AF_UNSPEC;
-   Returns -1 when an error occurred or when no result found.
+   pf may be AF_INET, AF_INET6, or AF_UNSPEC;
+   on failure logs error message;
+   returns STAT_OK, STAT_RETRYLATER, STAT_NORETRY
 */
 int xioresolve(const char *node, const char *service,
-	       int family, int socktype, int protocol,
+	       int pf, int socktype, int protocol,
 	       union sockaddr_union *addr, socklen_t *addrlen,
 	       const int ai_flags[2])
 {
@@ -680,32 +678,52 @@ int xioresolve(const char *node, const char *service,
    struct addrinfo *aip;
    int rc;
 
-   rc = xiogetaddrinfo(node, service, family, socktype, protocol,
+   rc = xiogetaddrinfo(node, service, pf, socktype, protocol,
 		       &res, ai_flags);
-   if (rc != 0) {
+   if (rc == EAI_AGAIN) {
+      Warn3("xioresolve(node=\"%s\", pf=%d, ...): %s",
+	     node?node:"NULL", pf, gai_strerror(rc));
       xiofreeaddrinfo(res);
-      return -1;
+      return STAT_RETRYLATER;
+   } else if (rc != 0) {
+      Error3("xioresolve(node=\"%s\", pf=%d, ...): %s",
+	     node?node:"NULL", pf,
+	     (rc == EAI_SYSTEM)?strerror(errno):gai_strerror(rc));
+      xiofreeaddrinfo(res);
+      return STAT_NORETRY;
    }
    if (res == NULL) {
-      Warn1("xioresolve(node=\"%s\", ...): No result", node);
+      Error3("xioresolve(node=\"%s\", pf=%d, ...): %s",
+	     node?node:"NULL", pf, gai_strerror(EAI_NODATA));
       xiofreeaddrinfo(res);
-      return -1;
+      return STAT_NORETRY;
    }
    if (res->ai_addrlen > *addrlen) {
-      Warn3("xioresolve(node=\"%s\", addrlen="F_socklen", ...): "F_socklen" bytes required", node, *addrlen, res->ai_addrlen);
+      Error3("xioresolve(node=\"%s\", addrlen="F_socklen", ...): "F_socklen" bytes required",
+	    node, *addrlen, res->ai_addrlen);
       xiofreeaddrinfo(res);
-      return -1;
+      return STAT_NORETRY;
    }
    if (res->ai_next != NULL) {
       Info4("xioresolve(node=\"%s\", service=%s%s%s, ...): More than one address found", node?node:"NULL", service?"\"":"", service?service:"NULL", service?"\"":"");
    }
 
    aip = res;
-   if (ai_flags != NULL && ai_flags[0] & AI_PASSIVE && family == PF_UNSPEC) {
+   if (ai_flags != NULL && ai_flags[0] & AI_PASSIVE && pf == PF_UNSPEC) {
       /* We select the first IPv6 address, if available,
 	 because this might accept IPv4 connections too */
       while (aip != NULL) {
 	 if (aip->ai_family == PF_INET6)
+	    break;
+	 aip = aip->ai_next;
+      }
+      if (aip == NULL)
+	 aip = res;
+   } else if (pf == PF_UNSPEC && xioparms.preferred_ip != '0') {
+      int prefip = PF_UNSPEC;
+      xioinit_ip(&prefip, xioparms.preferred_ip);
+      while (aip != NULL) {
+	 if (aip->ai_family == prefip)
 	    break;
 	 aip = aip->ai_next;
       }
@@ -716,7 +734,7 @@ int xioresolve(const char *node, const char *service,
    memcpy(addr, aip->ai_addr, aip->ai_addrlen);
    *addrlen = aip->ai_addrlen;
    xiofreeaddrinfo(res);
-   return 0;
+   return STAT_OK;
 }
 
 #if defined(HAVE_STRUCT_CMSGHDR) && defined(CMSG_DATA)
