@@ -56,6 +56,8 @@ Testing:
 
 	test.sh -D for output of platform/system specific defines (variables)
 
+	test.sh: fixed ss determination; more DEFS
+	
 ####################### V 1.8.0.0
 
 Security:

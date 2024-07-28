@@ -90,6 +90,8 @@ while [ "$1" ]; do
 done
 debug=$DEBUG
 
+[ "$DEFS" ] && echo "BASH_VERSION=\"$BASH_VERSION\"" >&2
+
 [ "$DEFS" ] && echo "ECHO_E=\"$ECHO_E\"" >&2
 
 UNAME=`uname`
@@ -205,7 +207,9 @@ fi
 [ "$DEFS" ] && echo "SOCAT_VERSION=\"$SOCAT_VERSION\"" >&2
 
 if type ip >/dev/null 2>&1; then
-    if ip -V |grep -q -i -e "^ip utility, iproute2-" -e BusyBox; then
+    IP_V="$(ip -V)"
+    [ "$DEFS" ] && echo "IP_V=\"$IP_V\""
+    if echo "$IP_V" |grep -q -i -e "^ip utility, iproute2-" -e BusyBox; then
 	IP=$(type -p ip)
     else
 	unset IP
@@ -213,13 +217,16 @@ if type ip >/dev/null 2>&1; then
 fi
 
 if type ss >/dev/null 2>&1; then
+    SS_V="$(ss -V)"
+    [ "$DEFS" ] && echo "SS_V=\"$SS_V\""
     # On Ubuntu-10 ss has differing output format (no "LISTEN"), use netstat then
-    if ss -V |grep -q "^ss utility, iproute2-[2-6]"; then
+    if echo "$SS_V" |grep -q -e "^ss utility, iproute2-[2-6]" -e "^ss utility, iproute2-ss[^0]"; then
 	SS=$(type -p ss)
     else
 	unset SS
     fi
 fi
+[ "$DEFS" ] && echo " NETSTAT=\"$(type netstat)\""
 
 # for some tests we need a network interface
 if type ip >/dev/null 2>&1; then
@@ -8892,7 +8899,7 @@ elif ! runsip6 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 does not work on $HOSTNAME${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! echo |$SOCAT -u -t 0.1 - UDP6-SENDTO:[ff02::2]:12002 >/dev/null 2>&1; then
+elif ! echo |$SOCAT -u -t 0.1 - UDP6-SENDTO:[ff02::1]:12002 >/dev/null 2>&1; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv6 multicasting does not work${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
