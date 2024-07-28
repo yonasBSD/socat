@@ -40,7 +40,8 @@ usage() {
     $ECHO "\t-N <num> \tOnly perform tests starting with given number"
     $ECHO "\t-C \t\tClear/remove left over certificates from previous runs"
     $ECHO "\t-x \t\tShow commands executed, even when test succeeded"
-    #$ECHO "\t-d \t\tShow log output of commands, even when they did not fail"
+    $ECHO "\t-d \t\tShow log output of commands, even when they did not fail (not yet completed)"
+    $ECHO "\t-D \t\tOutput some platform/system specific defines (variables)"
     $ECHO "\t--internet \tAllow tests that send packets to Internet"
     $ECHO "\t--expect-fail N1,N2,... \tIgnore failure of these tests"
     $ECHO "\ttest-spec \Number of test or name of test"
@@ -57,12 +58,14 @@ NUMCOND=true
 #NUMCOND="test \$N -gt 70"
 VERBOSE=
 DEBUG=
+DEFS=
 INTERNET=
 OPT_EXPECT_FAIL= EXPECT_FAIL=
 while [ "$1" ]; do
     case "X$1" in
 	X-h)   usage; exit 0 ;;
 	X-d)   DEBUG="1" ;;
+	X-D)   DEFS="1" ;;
 	X-t?*) val_t="${1#-t}" ;;
 	X-t)   shift; val_t="$1" ;;
 	X-v)   VERBOSE=1 ;; 	# show commands
@@ -82,10 +85,28 @@ while [ "$1" ]; do
 done
 debug=$DEBUG
 
-UNAME=`uname`
-UNAME_R=`uname -r`
+[ "$DEFS" ] && echo "ECHO_E=\"$ECHO_E\"" >&2
 
-withroot=0	# perform privileged tests even if not run by root
+UNAME=`uname`
+[ "$DEFS" ] && echo "UNAME=\"$UNAME\"" >&2
+UNAME_R=`uname -r`
+[ "$DEFS" ] && echo "UNAME_R=\"$UNAME_R\"" >&2
+
+#MICROS=100000
+case "X$val_t" in
+    X*.???????*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS:0:6}" ;;
+    X*.*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS}000000"; uS="${uS:0:6}" ;;
+    X*) S="${val_t}"; uS="000000" ;;
+esac
+MICROS=${S}${uS}
+MICROS=${MICROS##0000}; MICROS=${MICROS##00}; MICROS=${MICROS##0}
+# changed below
+
+_MICROS=$((MICROS+999999)); SECONDs="${_MICROS%??????}"
+[ -z "$SECONDs" ] && SECONDs=0
+[ "$DEFS" ] && echo "SECONDs=\"$SECONDs\"" >&2
+
+withroot=0	# 1: perform privileged tests even if not run by root
 
 [ -z "$SOCAT" ] && SOCAT="./socat"
 if ! [ -x "$SOCAT" ] && ! type $SOCAT >/dev/null 2>&1; then
@@ -94,30 +115,60 @@ fi
 if [ "$SOCAT" = socat ]; then
     SOCAT=$(type -p socat) || SOCAT=$(which socat)
 fi
-#echo $SOCAT
+[ "$DEFS" ] && echo "SOCAT=\"$SOCAT\"" >&2
+
 if [ -z "$PROCAN" ]; then if test -x ./procan; then PROCAN="./procan"; elif type procan >/dev/null 2>&1; then PROCAN=procan; elif test -x ${SOCAT%/*}/procan; then PROCAN=${SOCAT%/*}/procan; else PROCAN=false; fi; fi
+[ "$DEFS" ] && echo "PROCAN=\"$PROCAN\"" >&2
 if [ -z "$FILAN" ]; then if test -x ./filan; then FILAN="./filan"; elif ! type filan >/dev/null 2>&1; then FILAN=filan; elif test -x ${SOCAT%/*}/filan; then FILAN=${SOCAT%/*}/filan; else FILAN=false; fi; fi
+[ "$DEFS" ] && echo "FILAN=\"$FILAN\"" >&2
 
-# Determine the time Socat needs for an empty run
-$SOCAT /dev/null /dev/null 	# populate kernel caches
-V=$(bash -c 'time socat /dev/null /dev/null' 2>&1 |grep ^real |sed 's/.*m\(.*\)s.*/\1/' |tr , .)
-[ -z "$val_t" ] && val_t=$V
+if [ -z "$val_t" ]; then
+    # Determine the time Socat needs for an empty run
+    $SOCAT /dev/null /dev/null 	# populate caches
+    MILLIs=$(bash -c 'time socat /dev/null /dev/null' 2>&1 |grep ^real |sed 's/.*m\(.*\)s.*/\1/' |tr -d ,.)
+    while [ "${MILLIs:0:1}" = '0' ]; do MILLIs=${MILLIs##0}; done 	# strip leading '0' to avoid octal
+    [ -z "$MILLIs" ] && MILLIs=1
+    [ "$DEFS" ] && echo "MILLIs=\"$MILLIs\" (1)" >&2
 
-opt_t="-t $val_t"
-#echo "val_t=\"$val_t\""
+    # On my idle development computer this value flaps from 0.001 to 0.004
+    # 0.001 lets many tests fail, so we triple the result
+    MILLIs=$((3*MILLIs))
+    [ "$DEFS" ] && echo "MILLIs=\"$MILLIs\" (2)" >&2
+    MICROS=${MILLIs}000
 
-case "X$val_t" in
-    X*.???????*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS:0:6}" ;;
-    X*.*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS}000000"; uS="${uS:0:6}" ;;
-    X*) S="${val_t}"; uS="000000" ;;
-esac
-MICROS=${S}${uS}
-MICROS=${MICROS##0000}; MICROS=${MICROS##00}; MICROS=${MICROS##0}
+    #set -vx
+    case $MICROS in
+	???????*) val_t=${MICROS%??????}.${MICROS: -6} ;;
+	*)        x=000000$MICROS; val_t=0.${x: -6} ;;
+    esac
+else
+    # Calculate MICROS from val_t
+    case "X$val_t" in
+        X*.???????*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS:0:6}" ;;
+        X*.*) S="${val_t%.*}"; uS="${val_t#*.}"; uS="${uS}000000"; uS="${uS:0:6}" ;;
+        X*) S="${val_t}"; uS="000000" ;;
+    esac
+    MICROS=${S}${uS}
+    MICROS=${MICROS##0000}; MICROS=${MICROS##00}; MICROS=${MICROS##0}
+fi
 export MICROS
-#echo MICROS=$MICROS >&2
-#
+[ "$DEFS" ] && echo "MICROS=\"$MICROS\"" >&2
+[ "$DEFS" ] && echo "val_t=\"$val_t\"" >&2
+opt_t="-t $val_t"
+M2=$((2*MICROS))
+M4=$((4*MICROS))
+M8=$((8*MICROS))
+case $M2 in ???????*) T2=${M2%??????}.${M2: -6};; *) x=00000$M2; T2=0.${x: -6};; esac
+case $M4 in ???????*) T4=${M4%??????}.${M4: -6};; *) x=00000$M4; T4=0.${x: -6};; esac
+case $M8 in ???????*) T8=${M8%??????}.${M8: -6};; *) x=00000$M8; T8=0.${x: -6};; esac
+[ "$DEFS" ] && echo "M2=\"$M2\"" >&2
+[ "$DEFS" ] && echo "T2=\"$T2\"" >&2
+[ "$DEFS" ] && echo "T4=\"$T4\"" >&2
+[ "$DEFS" ] && echo "T8=\"$T8\"" >&2
+
 _MICROS=$((MICROS+999999)); SECONDs="${_MICROS%??????}"
 [ -z "$SECONDs" ] && SECONDs=0
+
 
 #PATH=$PATH:/opt/freeware/bin
 #PATH=$PATH:/usr/local/ssl/bin
@@ -126,6 +177,7 @@ case "$0" in
     */*) PATH="${0%/*}:$PATH"
 esac
 PATH=.:$PATH 	# for usleep,relsleep
+[ "$DEFS" ] && echo "PATH=\"$PATH\"" >&2
 
 #OPENSSL_RAND="-rand /dev/egd-pool"
 #SOCAT_EGD="egd=/dev/egd-pool"
@@ -133,6 +185,7 @@ MISCDELAY=1
 
 OPTS="$opt_t $OPTS"
 opts="$OPTS"
+[ "$DEFS" ] && echo "opts=\"$opts\"" >&2
 
 TESTS="$*"; export TESTS
 if ! SOCAT_MAIN_WAIT= $SOCAT -V >/dev/null 2>&1; then
@@ -144,6 +197,7 @@ SOCAT_VERSION=$(SOCAT_MAIN_WAIT= $SOCAT -V |head -n 2 |tail -n 1 |sed 's/.* \([0
 if [ -z "$SOCAT_VERSION" ]; then
     echo "Warning: failed to retrieve Socat version" >&2
 fi
+[ "$DEFS" ] && echo "SOCAT_VERSION=\"$SOCAT_VERSION\"" >&2
 
 if type ip >/dev/null 2>&1; then
     if ip -V |grep -q -i -e "^ip utility, iproute2-" -e BusyBox; then
@@ -177,8 +231,11 @@ else
 	*)       INTERFACE="$(netstat -rn |grep -e "^default" -e "^0\.0\.0\.0" |awk '{print($4);}')" ;;
     esac
 fi
+[ "$DEFS" ] && echo "INTERFACE=\"$INTERFACE\"" >&2
 MCINTERFACE=$INTERFACE
 [ -z "$MCINTERFACE" ] && MCINTERFACE=lo	# !!! Linux only - and not always
+[ "$DEFS" ] && echo "MCINTERFACE=\"$MCINTERFACE\"" >&2
+
 #LOCALHOST=192.168.58.1
 LOCALHOST=localhost 	# attention: on FreeBSD-10 localhost resolves primarily to IPv6
 LOCALHOST4=127.0.0.1
@@ -192,14 +249,23 @@ REUSEADDR=reuseaddr 	# use this with LISTEN addresses and bind options
 
 # get some system constants for use in tests
 SOCK_DGRAM="$($PROCAN -c |grep "^#define[[:space:]]*SOCK_DGRAM[[:space:]]" |cut -d' ' -f3)"
+[ "$DEFS" ] && echo "SOCK_DGRAM=\"$SOCK_DGRAM\"" >&2
 FOPEN_MAX=$($PROCAN -c 2>/dev/null |grep '^#define[ ][ ]*FOPEN_MAX' |awk '{print($3);}')
+[ "$DEFS" ] && echo "FOPEN_MAX=\"$FOPEN_MAX\"" >&2
 PF_INET6="$($PROCAN -c |grep "^#define[[:space:]]*PF_INET6[[:space:]]" |cut -d' ' -f3)"
+[ "$DEFS" ] && echo "PF_INET6=\"$PF_INET6\"" >&2
 TIOCEXCL="$($PROCAN -c |grep "^#define[[:space:]]*TIOCEXCL[[:space:]]" |cut -d' ' -f3)"
+[ "$DEFS" ] && echo "TIOCEXCL=\"$TIOCEXCL\"" >&2
 SOL_SOCKET="$($PROCAN -c |grep "^#define[[:space:]]*SOL_SOCKET[[:space:]]" |cut -d' ' -f3)"
+[ "$DEFS" ] && echo "SOL_SOCKET=\"$SOL_SOCKET\"" >&2
 SO_REUSEADDR="$($PROCAN -c |grep "^#define[[:space:]]*SO_REUSEADDR[[:space:]]" |cut -d' ' -f3)"
+[ "$DEFS" ] && echo "SO_REUSEADDR=\"$SO_REUSEADDR\"" >&2
 TCP_MAXSEG="$($PROCAN -c |grep "^#define[[:space:]]*TCP_MAXSEG[[:space:]]" |cut -d' ' -f3)"
+[ "$DEFS" ] && echo "TCP_MAXSEG=\"$TCP_MAXSEG\"" >&2
 SIZE_T=$($PROCAN |grep "^[^[:space:]]*size_t" |awk '{print($3);}')
+[ "$DEFS" ] && echo "SIZE_T=\"$SIZE_T\"" >&2
 #AI_ADDRCONFIG=; if [ "$($SOCAT -hhh |grep ai-addrconfig)" ]; then AI_ADDRCONFIG="ai-addrconfig=0"; fi
+#[ "$DEFS" ] && echo "AI_ADDRCONFIG=\"$AI_ADDRCONFIG\"" >&2
 
 # SSL certificate contents
 TESTCERT_CONF=testcert.conf
@@ -303,7 +369,7 @@ tolower () {
 
 if ! which usleep >/dev/null 2>&1; then
 cat >usleep <<EOF
-#! /bin/bash
+#! /usr/bin/env bash
 # temporary script from Socat test.sh:
 # sleep for a number of µs
 u=\$1
@@ -336,7 +402,7 @@ if ! type usleep >/dev/null 2>&1 ||
 	*) S=0; uS="00000$n"; uS="${uS:${#uS}-6}" ;;
 	esac
 	#$SOCAT -T "$S.$uS" PIPE PIPE 2>/dev/null
-	usleep "$S.$uS"
+	sleep "$S.$uS"
     }
 fi
 #USLEEP=usleep
@@ -362,7 +428,7 @@ relsleep () {
 }
 
 cat >relsleep <<-'EOF'
-#! /bin/bash
+#! /usr/bin/env bash
     n="$1"
     N=$((n*MICROS))
     case "$N" in
@@ -398,6 +464,21 @@ SunOS)
     CAT="cat"
     ;;
 esac
+[ "$DEFS" ] && echo "CAT=\"$CAT\"" >&2
+
+TRUE=$(type -p true)
+#E=-e	# Linux
+if   [ $(echo "x\c") = "x" ]; then E=""
+elif [ $(echo -e "x\c") = "x" ]; then E="-e"
+else
+    echo "cannot suppress trailing newline on echo" >&2
+    exit 1
+fi
+ECHO="echo $E"
+PRINTF="printf"
+
+GREP_E="grep -E"
+GREP_F="grep -F"
 
 # some OSes need special options
 case "$UNAME" in
@@ -417,6 +498,8 @@ SunOS)
     #PTYOPTS2="rawer"
     ;;
 esac
+[ "$DEFS" ] && echo "PTYOPTS=\"$PTYOPTS\"" >&2
+[ "$DEFS" ] && echo "PTYOPTS2=\"$PTYOPTS2\"" >&2
 
 # for some tests we need an unprivileged user id to su to
 if [ "$SUDO_USER" ]; then
@@ -424,6 +507,7 @@ if [ "$SUDO_USER" ]; then
 else
     SUBSTUSER="$(grep -v '^[^:]*:^[^:]*:0:' /etc/passwd |tail -n 1 |cut -d: -f1)"
 fi
+[ "$DEFS" ] && echo "SUBSTUSER=\"$SECONDs\"" >&2
 
 if [ -z "$SS" ]; then
 # non-root users might miss ifconfig in their path
@@ -441,6 +525,8 @@ DragonFly) IFCONFIG=/sbin/ifconfig ;;
 *)     IFCONFIG=/sbin/ifconfig ;;
 esac
 fi
+[ "$DEFS" ] && echo "SS=\"$SS\"" >&2
+[ "$DEFS" ] && echo "IFCONFIG=\"$IFCONFIG\"" >&2
 
 # need output like "644"
 case "$UNAME" in
@@ -496,7 +582,7 @@ Linux)
 FreeBSD|NetBSD|OpenBSD)
     MAINIF=$($IFCONFIG -a |grep '^[a-z]' |grep -v '^lo0: ' |head -1 |cut -d: -f1)
     BROADCASTIF="$MAINIF"
-    SECONDADDR=$($IFCONFIG "$BROADCASTIF" |grep 'inet ' |awk '{print($2);}')
+    SECONDADDR=$($IFCONFIG "$BROADCASTIF" |grep 'inet ' |sed 's|/.*||' |awk '{print($2);}')
     BCIFADDR="$SECONDADDR"
     BCADDR=$($IFCONFIG "$BROADCASTIF" |grep 'broadcast ' |sed 's/.*broadcast/broadcast/' |awk '{print($2);}') ;;
 HP-UX)
@@ -549,17 +635,6 @@ if [ -z "$SECONDIP6ADDR" ]; then
 else
     SECONDIP6ADDR="[$SECONDIP6ADDR]"
 fi
-
-TRUE=$(which true)
-#E=-e	# Linux
-if   [ $(echo "x\c") = "x" ]; then E=""
-elif [ $(echo -e "x\c") = "x" ]; then E="-e"
-else
-    echo "cannot suppress trailing newline on echo" >&2
-    exit 1
-fi
-ECHO="echo $E"
-PRINTF="printf"
 
 case "$TERM" in
 vt100|vt320|linux|xterm|cons25|dtterm|aixterm|sun-color|xterm-color|xterm-256color|screen)
@@ -805,6 +880,16 @@ testfeats () {
     local a A;
     for a in $@; do
 	A=$(echo "$a" |tr 'a-z-' 'A-Z_')
+	if [ "$A" = "IP" ]; then
+	    if SOCAT_MAIN_WAIT= $SOCAT -V |grep "#define WITH_IP4 1\$" >/dev/null ||
+		    SOCAT_MAIN_WAIT= $SOCAT -V |grep "#define WITH_IP6 1\$" >/dev/null; then
+		shift
+		continue
+	    else
+		echo "$a"
+		return 1
+	    fi
+	fi
 	if SOCAT_MAIN_WAIT= $SOCAT -V |grep "#define WITH_$A 1\$" >/dev/null; then
 	    if [[ "$A" =~ OPENSSL.* ]]; then
 		gentestcert testsrv
@@ -931,20 +1016,20 @@ runsip4 () {
     [ -n "$HAVENOT_IP4" ] && return $HAVENOT_IP4
     local l
     case "$UNAME" in
-    AIX)   l=$($IFCONFIG lo0 |fgrep 'inet 127.0.0.1 ') ;;
-    FreeBSD) l=$($IFCONFIG lo0 |fgrep 'inet 127.0.0.1 ') ;;
-    HP-UX) l=$($IFCONFIG lo0 |fgrep 'inet 127.0.0.1 ') ;;
+    AIX)   l=$($IFCONFIG lo0 |$GREP_F 'inet 127.0.0.1 ') ;;
+    FreeBSD) l=$($IFCONFIG lo0 |$GREP_F 'inet 127.0.0.1 ') ;;
+    HP-UX) l=$($IFCONFIG lo0 |$GREP_F 'inet 127.0.0.1 ') ;;
     Linux) if [ "$IP" ]; then
-	       l=$($IP address |egrep ' inet 127.0.0.1/')
+	       l=$($IP address |$GREP_E ' inet 127.0.0.1/')
 	   else
-	       l=$($IFCONFIG |egrep 'inet (addr:)?127\.0\.0\.1 ')
+	       l=$($IFCONFIG |$GREP_E 'inet (addr:)?127\.0\.0\.1 ')
 	   fi ;;
-    NetBSD)l=$($IFCONFIG -a |fgrep 'inet 127.0.0.1 ');;
-    OpenBSD)l=$($IFCONFIG -a |fgrep 'inet 127.0.0.1 ');;
+    NetBSD)l=$($IFCONFIG -a |grep 'inet 127\.0\.0\.1\>');;
+    OpenBSD)l=$($IFCONFIG -a |$GREP_F 'inet 127.0.0.1 ');;
     OSF1)  l=$($IFCONFIG -a |grep ' inet ') ;;
     SunOS) l=$($IFCONFIG -a |grep 'inet ') ;;
-    Darwin)l=$($IFCONFIG lo0 |fgrep 'inet 127.0.0.1 ') ;;
-    DragonFly)l=$($IFCONFIG -a |fgrep 'inet 127.0.0.1 ');;
+    Darwin)l=$($IFCONFIG lo0 |$GREP_F 'inet 127.0.0.1 ') ;;
+    DragonFly)l=$($IFCONFIG -a |$GREP_F 'inet 127.0.0.1 ');;
     CYGWIN*) l=$(ipconfig |grep IPv4);;
     *)     l=$($IFCONFIG -a |grep ' ::1[^:0-9A-Fa-f]') ;;
     esac
@@ -971,11 +1056,11 @@ runsip6 () {
     AIX)   l=$($IFCONFIG lo0 |grep 'inet6 ::1[/%]') ;;
     HP-UX) l=$($IFCONFIG lo0 |grep ' inet6 ') ;;
     Linux) if [ "$IP" ]; then
-	       l=$($IP address |egrep 'inet6 ::1/128')
+	       l=$($IP address |$GREP_E 'inet6 ::1/128')
 	   else
-	       l=$($IFCONFIG |egrep 'inet6 (addr: )?::1/?')
+	       l=$($IFCONFIG |$GREP_E 'inet6 (addr: )?::1/?')
 	   fi ;;
-    NetBSD)l=$($IFCONFIG -a |grep 'inet6 ::1 ');;
+    NetBSD)l=$($IFCONFIG -a |grep 'inet6 ::1\>');;
     OSF1)  l=$($IFCONFIG -a |grep ' inet6 ') ;;
     SunOS) l=$($IFCONFIG -a |grep 'inet6 ') ;;
     Darwin)l=$($IFCONFIG lo0 |grep 'inet6 ::1 ') ;;
@@ -1181,7 +1266,7 @@ waitip4proto () {
 	       else
 		   l=$(netstat -n -w -l |grep '^raw .* .*[0-9*]:'$proto' [ ]*0\.0\.0\.0:\*')
 	       fi ;;
-#	FreeBSD) l=$(netstat -an |egrep '^raw46? .*[0-9*]\.'$proto' .* \*\.\*') ;;
+#	FreeBSD) l=$(netstat -an |$GREP_E '^raw46? .*[0-9*]\.'$proto' .* \*\.\*') ;;
 #	NetBSD)  l=$(netstat -an |grep '^raw .*[0-9*]\.'$proto' [ ]* \*\.\*') ;;
 #	OpenBSD) l=$(netstat -an |grep '^raw .*[0-9*]\.'$proto' [ ]* \*\.\*') ;;
 #	Darwin) case "$(uname -r)" in
@@ -1227,7 +1312,7 @@ waitip6proto () {
 		else
 		    l=$(netstat -n -w -l |grep '^raw[6 ] .* .*:[0-9*]*:'$proto' [ ]*:::\*')
 		fi ;;
-#	FreeBSD) l=$(netstat -an |egrep '^raw46? .*[0-9*]\.'$proto' .* \*\.\*') ;;
+#	FreeBSD) l=$(netstat -an |$GREP_E '^raw46? .*[0-9*]\.'$proto' .* \*\.\*') ;;
 #	NetBSD)  l=$(netstat -an |grep '^raw .*[0-9*]\.'$proto' [ ]* \*\.\*') ;;
 #	OpenBSD) l=$(netstat -an |grep '^raw .*[0-9*]\.'$proto' [ ]* \*\.\*') ;;
 #	Darwin) case "$(uname -r)" in
@@ -1239,7 +1324,7 @@ waitip6proto () {
 #	SunOS)   l=$(netstat -an -f inet -P raw |grep '.*[1-9*]\.'$proto' [ ]*Idle') ;;
 #	HP-UX)   l=$(netstat -an |grep '^raw        0      0  .*[0-9*]\.'$proto' .* \*\.\* ') ;;
 #	OSF1)    l=$(/usr/sbin/netstat -an |grep '^raw        0      0  .*[0-9*]\.'$proto' [ ]*\*\.\*') ;;
- 	*)       #l=$(netstat -an |egrep -i 'raw6? .*[0-9*][:.]'$proto' ') ;;
+	*)       #l=$(netstat -an |$GREP_E -i 'raw6? .*[0-9*][:.]'$proto' ') ;;
 		 relsleep 5;  return 0 ;;
 	esac
 	[ \( \( $logic -ne 0 \) -a -n "$l" \) -o \
@@ -1387,7 +1472,7 @@ waitudp4port () {
 	   else
 	       l=$(netstat -a -n -u -l |grep '^udp .* .*[0-9*]:'$port' [ ]*0\.0\.0\.0:\*')
 	   fi ;;
-	FreeBSD) l=$(netstat -an |egrep '^udp46? .*[0-9*]\.'$port' .* \*\.\*') ;;
+	FreeBSD) l=$(netstat -an |$GREP_E '^udp46? .*[0-9*]\.'$port' .* \*\.\*') ;;
 	NetBSD)  l=$(netstat -an |grep '^udp .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
 	OpenBSD) l=$(netstat -an |grep '^udp .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
 	Darwin) case "$(uname -r)" in
@@ -1511,7 +1596,7 @@ waitudplite4port () {
 		l=$(netstat -a -n -U -l |grep '^udpl .* .*[0-9*]:'$port' [ ]*0\.0\.0\.0:\*')
 		#fi
 		;;
-	    FreeBSD) l=$(netstat -an |egrep '^udpl46? .*[0-9*]\.'$port' .* \*\.\*') ;;
+	    FreeBSD) l=$(netstat -an |$GREP_E '^udpl46? .*[0-9*]\.'$port' .* \*\.\*') ;;
 	    NetBSD)  l=$(netstat -an |grep '^udpl .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
 	    OpenBSD) l=$(netstat -an |grep '^udpl .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
 	    #Darwin) case "$(uname -r)" in
@@ -1560,12 +1645,12 @@ waittcp6port () {
 		   l=$($SS -6 -n -t -l |grep "^LISTEN .*:$port\>")
 		   #l=$($SS -6 -n -t -l |grep "^tcp6* .*:$port\>")
 	       else
-		   l=$(netstat -an |grep -E '^tcp6? .* [0-9a-f:%]*:'$port' .* LISTEN')
+		   l=$(netstat -an |$GREP_E '^tcp6? .* [0-9a-f:%]*:'$port' .* LISTEN')
 	       fi ;;
-	FreeBSD) l=$(netstat -an |egrep -i 'tcp(6|46) .*[0-9*][:.]'$port' .* listen') ;;
+	FreeBSD) l=$(netstat -an |$GREP_E -i 'tcp(6|46) .*[0-9*][:.]'$port' .* listen') ;;
 	NetBSD)  l=$(netstat -an |grep '^tcp6 .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
 	OpenBSD) l=$(netstat -an |grep -i 'tcp6 .*[0-9*][:.]'$port' .* listen') ;;
-	Darwin)  l=$(netstat -an |egrep '^tcp4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+ +LISTEN') ;;
+	Darwin)  l=$(netstat -an |$GREP_E '^tcp4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+ +LISTEN') ;;
 	AIX)	 l=$(netstat -an |grep '^tcp[6 ]       0      0 .*[*0-9]\.'$port' .* LISTEN$') ;;
 	SunOS)   l=$(netstat -an -f inet6 -P tcp |grep '.*[1-9*]\.'$port' .*\* [ ]* 0 .* LISTEN') ;;
 	#OSF1)    l=$(/usr/sbin/netstat -an |grep '^tcp6       0      0  .*[0-9*]\.'$port' [ ]*\*\.\* [ ]*LISTEN') /*?*/;;
@@ -1609,12 +1694,12 @@ waitudp6port () {
 	       # the output format when writing to pipe
 	       l=$($SS -6 -u -l -n |grep "^UNCONN.*:$port\>")
 	   else
-	       l=$(netstat -an |grep -E '^udp6? .* .*[0-9*:%]:'$port' [ ]*:::\*')
+	       l=$(netstat -an |$GREP_E '^udp6? .* .*[0-9*:%]:'$port' [ ]*:::\*')
 	   fi ;;
-	FreeBSD) l=$(netstat -an |egrep '^udp(6|46) .*[0-9*]\.'$port' .* \*\.\*') ;;
+	FreeBSD) l=$(netstat -an |$GREP_E '^udp(6|46) .*[0-9*]\.'$port' .* \*\.\*') ;;
 	NetBSD)  l=$(netstat -an |grep '^udp6 .* \*\.'$port' [ ]* \*\.\*') ;;
     	OpenBSD) l=$(netstat -an |grep '^udp6 .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
-	Darwin)  l=$(netstat -an |egrep '^udp4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+') ;;
+	Darwin)  l=$(netstat -an |$GREP_E '^udp4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+') ;;
 	AIX)	 l=$(netstat -an |grep '^udp[6 ]       0      0 .*[*0-9]\.'$port' .* \*\.\*[ ]*$') ;;
 	SunOS)   l=$(netstat -an -f inet6 -P udp |grep '.*[1-9*]\.'$port' [ ]*Idle') ;;
 	#HP-UX)   l=$(netstat -an |grep '^udp        0      0  .*[0-9*]\.'$port' ') ;;
@@ -1698,13 +1783,13 @@ waitudplite6port () {
 		if ! netstat -nU >/dev/null 2>&1; then
                     return 0    # speculative
 		fi
-		l=$(netstat -an |grep -E '^udpl6? .* .*[0-9*:%]:'$port' [ ]*:::\*')
+		l=$(netstat -an |$GREP_E '^udpl6? .* .*[0-9*:%]:'$port' [ ]*:::\*')
 		#fi
 		;;
-	    FreeBSD) l=$(netstat -an |egrep '^udpl(6|46) .*[0-9*]\.'$port' .* \*\.\*') ;;
+	    FreeBSD) l=$(netstat -an |$GREP_E '^udpl(6|46) .*[0-9*]\.'$port' .* \*\.\*') ;;
 	    NetBSD)  l=$(netstat -an |grep '^udpl6 .* \*\.'$port' [ ]* \*\.\*') ;;
 	    OpenBSD) l=$(netstat -an |grep '^udpl6 .*[0-9*]\.'$port' [ ]* \*\.\*') ;;
-	    Darwin)  l=$(netstat -an |egrep '^udpl4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+') ;;
+	    Darwin)  l=$(netstat -an |$GREP_E '^udpl4?6 +[0-9]+ +[0-9]+ +[0-9a-z:%*]+\.'$port' +[0-9a-z:%*.]+') ;;
 	    #AIX)        l=$(netstat -an |grep '^udp[6 ]       0      0 .*[*0-9]\.'$port' .* \*\.\*[ ]*$') ;;
 	    #SunOS)   l=$(netstat -an -f inet6 -P udp |grep '.*[1-9*]\.'$port' [ ]*Idle') ;;
 	    #HP-UX)   l=$(netstat -an |grep '^udp        0      0  .*[0-9*]\.'$port' ') ;;
@@ -6021,7 +6106,7 @@ testptywaitslave () {
 printf "test $F_n $TEST... " $N
 #    set -vx
 # first generate a pty, then a socket
-($TRACE $SOCAT $opts -lpsocat1 PTY,$PTYTYPE,pty-wait-slave,pty-interval=$V,link="$tp" UNIX-LISTEN:"$ts" 2>"$te1"; rm -f "$tp") 2>/dev/null &
+($TRACE $SOCAT $opts -lpsocat1 PTY,$PTYTYPE,pty-wait-slave,pty-interval=$val_t,link="$tp" UNIX-LISTEN:"$ts" 2>"$te1"; rm -f "$tp") 2>/dev/null &
 pid=$!
 waitfile "$tp" 1 100
 # if pty was non-blocking, the socket is active, and socat1 will term
@@ -8609,21 +8694,29 @@ echo "$da" |$CMD2 2>>"${te}2" |grep -v XXXX >>"$tf"
 rc2="$?"
 kill "$pid1" 2>/dev/null; wait;
 if [ "$rc2" -ne 0 ]; then
-    $PRINTF "$FAILED: $TRACE $SOCAT:\n"
+    $PRINTF "$FAILED (rc2=$rc2):\n"
     echo "$CMD1 &"
+    cat "${te}1" >&2
     echo "$CMD2"
-    cat "${te}1"
-    cat "${te}2"
+    cat "${te}2" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 elif ! echo "$da" | sed 's/XXXX/YYYY/'|diff - "$tf" >"$tdiff"; then
-    $PRINTF "$FAILED\n"
-    cat "$tdiff"
+    $PRINTF "$FAILED (diff)\n"
+    echo "$CMD1 &"
+    cat "${te}1" >&2
+    echo "$CMD2"
+    cat "${te}2" >&2
+    echo "// diff:" >&2
+    cat "$tdiff" >&2
     numFAIL=$((numFAIL+1))
     listFAIL="$listFAIL $N"
 else
     $PRINTF "$OK\n"
-    if [ -n "$debug" ]; then cat $te; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+	if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
     listOK="$listOK $N"
 fi
@@ -8702,10 +8795,10 @@ elif ! echo "$da" |diff - "$tf" >"$tdiff"; then
     listFAIL="$listFAIL $N"
 else
    $PRINTF "$OK\n"
-    if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
-    if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
-    if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+    if [ "$VERBOSE" ]; then echo "$CMD1 &"; fi
     if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+    if [ "$VERBOSE" ]; then echo "$CMD2"; fi
+    if [ "$DEBUG" ];   then cat "${te}2" >&2; fi
     numOK=$((numOK+1))
     listOK="$listOK $N"
 fi
@@ -10198,7 +10291,7 @@ IP6  IP6  [::1]     PROTO ipv6-unicast-hops=35 ipv6-recvhoplimit IPV6_HOPLIMIT  
 IP6  IP6  [::1]     PROTO ipv6-tclass=0xaa     ipv6-recvtclass   IPV6_TCLASS    tclass    root x000000aa
 #UNIX UNIX $td/test\$N.server - ,               so-timestamp      SCM_TIMESTAMP  timestamp user timestamp
 "
-# this one fails, appearently due to a Linux weakness:
+# This one fails, apparently due to a Linux weakness:
 # UNIX so-timestamp
 
 
@@ -10386,7 +10479,7 @@ if [ "$rc1" -ne 0 ]; then
     cat "${te}1"
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-#elif ! egrep "^export SOCAT_$SCM_ENVNAME=[\"']?$SCM_VALUE[\"']?\$" ${tf} >/dev/null; then
+#elif ! $GREP_E "^export SOCAT_$SCM_ENVNAME=[\"']?$SCM_VALUE[\"']?\$" ${tf} >/dev/null; then
 #elif ! eval echo "$TRACE $SOCAT_\$SCM_VALUE" |diff - "${tf}" >/dev/null; then
 elif ! expr "$(cat "$tf")" : "$SCM_VALUE\$" >/dev/null; then
     $PRINTF "$FAILED\n"
@@ -11247,10 +11340,16 @@ N=$((N+1))
 
 
 if type openssl >/dev/null 2>&1; then
-    OPENSSL_METHOD=$(openssl s_client -help 2>&1 |egrep -e '-tls1_[012]' |sed -e 's/.*\(-tls1_[012]\).*/\1/' |sort |tail -n 1)
-    #OPENSSL_METHOD=$(openssl s_client -help 2>&1 |egrep -o -e '-tls1(_[012])?' |sort |tail -n 1)
+    OPENSSL_METHOD=$(openssl s_client -help 2>&1 |$GREP_E -e '-tls1_[012]' |sed -e 's/.*\(-tls1_[012]\).*/\1/' |sort |tail -n 1)
+    #OPENSSL_METHOD=$(openssl s_client -help 2>&1 |$GREP_E -o -e '-tls1(_[012])?' |sort |tail -n 1)
     [ -z "$OPENSSL_METHOD" ] && OPENSSL_METHOD="-tls1" 	# just so
 fi
+
+# Old versions have DTLS hang, new versions cannot by client renegotiation, ...
+OPENSSL_VERSION="$(openssl version)"
+OPENSSL_VERSION="${OPENSSL_VERSION#* }"
+OPENSSL_VERSION="${OPENSSL_VERSION%%[ -]*}"
+[ "$DEFS" ] && echo "OPENSSL_VERSION=\"$OPENSSL_VERSION\"" >&2
 
 # socat up to 1.7.1.1 (and 2.0.0-b3) terminated with error when an openssl peer
 # performed a renegotiation. Test if this is fixed.
@@ -11268,6 +11367,11 @@ elif ! testfeats openssl >/dev/null; then
     listCANT="$listCANT $N"
 elif ! type openssl >/dev/null 2>&1; then
     $PRINTF "test $F_n $TEST... ${YELLOW}openssl executable not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! [[ $(echo $OPENSSL_VERSION |awk '{print($2);}') =~ [01].* ]]; then
+    # openssl s_client apparently provides renegotiation only up to version 1.2
+    $PRINTF "test $F_n $TEST... ${YELLOW}not with OpenSSL $OPENSSL_VERSION${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 elif ! testfeats tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
@@ -11289,7 +11393,7 @@ printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 waittcp4port $PORT 1
-(echo "R"; sleep 1; echo "$da"; sleep 1) |$CMD1 2>"${te}1" |fgrep "$da" >"${tf}1"
+(echo "R"; sleep 1; echo "$da"; sleep 1) |$CMD1 2>"${te}1" |$GREP_F "$da" >"${tf}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
 if echo "$da" |diff - ${tf}1 >"$tdiff"; then
@@ -11345,6 +11449,11 @@ elif ! type openssl >/dev/null 2>&1; then
     $PRINTF "test $F_n $TEST... ${YELLOW}openssl executable not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+elif ! [[ $(echo $OPENSSL_VERSION |awk '{print($2);}') =~ [01].* ]]; then
+    # openssl s_client apparently provides renegotiation only up to version 1.2
+    $PRINTF "test $F_n $TEST... ${YELLOW}not with OpenSSL $OPENSSL_VERSION${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 elif ! testfeats tcp ip4 >/dev/null || ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}TCP/IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
@@ -11364,7 +11473,7 @@ printf "test $F_n $TEST... " $N
 eval "$CMD0 >/dev/null 2>\"${te}0\" &"
 pid0=$!
 waittcp4port $PORT 1
-(echo "R"; sleep 2) |$CMD1 2>"${te}1" |fgrep "$da" >"${tf}1"
+(echo "R"; sleep 2) |$CMD1 2>"${te}1" |$GREP_F "$da" >"${tf}1"
 rc1=$?
 kill $pid0 2>/dev/null; wait
 if echo "$da" |diff - ${tf}1 >"$tdiff"; then
@@ -12856,14 +12965,10 @@ N=$((N+1))
 OPENSSL_METHODS_OBSOLETE="SSL3 SSL23"
 OPENSSL_METHODS_EXPECTED="TLS1 TLS1.1 TLS1.2 DTLS1 DTLS1.2"
 
-# the OPENSSL_METHOD_DTLS1 test hangs sometimes, probably depending on the openssl version.
-OPENSSL_VERSION="$(openssl version)"
-OPENSSL_VERSION="${OPENSSL_VERSION#* }"
-OPENSSL_VERSION="${OPENSSL_VERSION%%-*}"
+# The OPENSSL_METHOD_DTLS1 test hangs sometimes, probably depending on the openssl version.
 OPENSSL_VERSION_GOOD=1.0.2 	# this is just a guess.
 				# known bad:  1.0.1e
 				# known good: 1.0.2j
-
 
 # test if the obsolete SSL methods can be used with OpenSSL
 for method in $OPENSSL_METHODS_OBSOLETE; do
@@ -13987,7 +14092,8 @@ elif ! type openssl >/dev/null 2>&1; then
     $PRINTF "test $F_n $TEST... ${YELLOW}openssl executable not found${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [[ $(openssl version |awk '{print($2);}') =~ 0.9.8[a-c] ]]; then
+elif [[ $(openssl version |awk '{print($2);}') =~ 0.9.8[a-ce] ]]; then
+    # also on NetBSD-4 with openssl-0.9.8e
     $PRINTF "test $F_n $TEST... ${YELLOW}openssl s_client might hang${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -14737,7 +14843,8 @@ elif ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [[ $(openssl version |awk '{print($2);}') =~ 0.9.8[a-c] ]]; then
+elif [[ $(openssl version |awk '{print($2);}') =~ 0.9.8[a-ce] ]]; then
+    # also on NetBSD-4 with openssl-0.9.8e
     $PRINTF "test $F_n $TEST... ${YELLOW}openssl s_client might hang${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -14812,7 +14919,8 @@ elif ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif [[ $(openssl version |awk '{print($2);}') =~ 0.9.8[a-c] ]]; then
+elif [[ $(openssl version |awk '{print($2);}') =~ 0.9.8[a-ce] ]]; then
+    # also on NetBSD-4 with openssl-0.9.8e
     $PRINTF "test $F_n $TEST... ${YELLOW}openssl s_client might hang${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -15639,7 +15747,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts TCP4-LISTEN:$PORT,reuseaddr EXEC:'$FILAN -s',nofork"
+CMD0="$TRACE $SOCAT $opts -t $T4 TCP4-LISTEN:$PORT,reuseaddr EXEC:'$FILAN -s',nofork"
 CMD1="$TRACE $SOCAT $opts - TCP4:localhost:$PORT"
 printf "test $F_n $TEST... " $N
 eval "$CMD0" >/dev/null 2>"${te}0" &
@@ -17182,7 +17290,21 @@ NAME=SOCKETPAIR_STREAM
 case "$TESTS" in
 *%$N%*|*%functions%*|*%stdio%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: stdio and internal socketpair with stream"
-testecho "$N" "$TEST" "STDIO" "SOCKETPAIR" "$opts"
+if ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "STDIO SOCKETPAIR" \
+		  "STDIO SOCKETPAIR" \
+		  "" \
+		  "" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    testecho "$N" "$TEST" "STDIO" "SOCKETPAIR" "$opts"
+fi
 esac
 N=$((N+1))
 
@@ -17190,7 +17312,21 @@ NAME=SOCKETPAIR_DATAGRAM
 case "$TESTS" in
 *%$N%*|*%functions%*|*%stdio%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: stdio and internal socketpair with datagram"
-testecho "$N" "$TEST" "STDIO" "SOCKETPAIR,socktype=2" "$opts"
+if ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "STDIO SOCKETPAIR" \
+		  "STDIO SOCKETPAIR" \
+		  "" \
+		  "" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    testecho "$N" "$TEST" "STDIO" "SOCKETPAIR,socktype=2" "$opts"
+fi
 esac
 N=$((N+1))
 
@@ -17198,7 +17334,21 @@ NAME=SOCKETPAIR_SEQPACKET
 case "$TESTS" in
 *%$N%*|*%functions%*|*%stdio%*|*%socketpair%*|*%$NAME%*)
 TEST="$NAME: stdio and internal socketpair with seqpacket"
-testecho "$N" "$TEST" "STDIO" "SOCKETPAIR,socktype=$SOCK_SEQPACKET" "$opts"
+if ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "STDIO SOCKETPAIR" \
+		  "STDIO SOCKETPAIR" \
+		  "" \
+		  "" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    testecho "$N" "$TEST" "STDIO" "SOCKETPAIR,socktype=$SOCK_SEQPACKET" "$opts"
+fi
 esac
 N=$((N+1))
 
@@ -17804,6 +17954,11 @@ elif ! A=$(testaddrs STDIO SHELL PTY); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+elif [ "$SHELL" = /bin/ksh ]; then
+    # on NetBSD-9.3 this test kills test.sh script...
+    $PRINTF "test $F_n $TEST... ${YELLOW}/bin/ksh might kill test.sh${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 else
     testecho "$N" "$TEST" "" "SHELL:$CAT,pty,$PTYOPTS,$PTYOPTS2" "$opts" "$val_t"
 fi
@@ -17864,11 +18019,17 @@ TEST="$NAME: sigint option with SYSTEM"
 # setsid is required so the initial SIGINT is not delivered to the sub process.
 if ! eval $NUMCOND; then :;
 # Remove unneeded checks, adapt lists of the remaining ones
-elif ! F=$(testfeats STDIO SYSTEM PIPE); then
+elif [ "$UNAME" = "NetBSD" ]; then
+    # On NetBSD-4.0 and NetBSD-9.3 this test hangs (signal has no effect)
+    # (other versions not tried)
+    $PRINTF "test $F_n $TEST... ${YELLOW}might hang on $UNAME${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! F=$(testfeats STDIO SYSTEM SOCKETPAIR); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
-elif ! A=$(testaddrs STDIO SYSTEM PIPE); then
+elif ! A=$(testaddrs STDIO SYSTEM SOCKETPAIR); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
@@ -17988,8 +18149,10 @@ N=$((N+1))
 # Some of the following tests need absolute path of Socat
 case "$SOCAT" in
     /*) absSOCAT="$SOCAT" ;;
-    *) absSOCAT="$PWD/$SOCAT" ;;
+    */*) absSOCAT="$PWD/$SOCAT" ;;
+    *) absSOCAT="$(type -p "$SOCAT")" ;;
 esac
+[ "$DEFS" ] && echo "absSOCAT=\"$absSOCAT\"" >&2
 
 # Test the chdir option, in particular if chdir with the first address
 # (CREATE) does not affect pwd of second address, i.e. original pwd is
@@ -18336,6 +18499,10 @@ TEST="$NAME: Option unix-bind-tempname"
 if ! eval $NUMCOND; then :;
 elif [[ $CLI_ =~ ABSTRACT-* ]] && ! feat=$(testfeats abstract-unixsocket); then
     $PRINTF "test $F_n $TEST... ${YELLOW}$feat not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+elif ! o=$(testoptions unix-bind-tempname) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
@@ -19335,7 +19502,7 @@ else
     newport tcp4
     PORT1=$PORT
     CMD0="$TRACE $SOCAT $opts -lp server TCP-LISTEN:$PORT0 PIPE"
-    CMD1="./socat-mux.sh TCP-LISTEN:$PORT1 TCP-CONNECT:$LOCALHOST:$PORT0"
+    CMD1="./socat-mux.sh $opts TCP-LISTEN:$PORT1 TCP-CONNECT:$LOCALHOST:$PORT0"
     CMD2="$TRACE $SOCAT $opts -lp client STDIO TCP:$LOCALHOST:$PORT1"
     da_a="test$N $(date) $RANDOM"
     da_b="test$N $(date) $RANDOM"

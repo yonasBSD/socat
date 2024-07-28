@@ -9,6 +9,8 @@ Testing:
 	test.sh: many hardcoded sleep values were replaced by much shorter
 	values tuned to performance of the platform.
 
+	test.sh -D for output of platform/system specific defines (variables)
+
 ####################### V 1.8.0.0
 
 Security:
