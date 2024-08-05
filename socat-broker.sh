@@ -4,15 +4,15 @@
 
 # Shell script to perform group communications, sometimes called brokering.
 # It starts a Socat instance that forks a child process for each
-# connected client; the clients communicate via IPv4 broadcast
+# connected client; the child processes communicate via IPv4 broadcast
 
 # Examples:
 
 #   socat-broker.sh TCP-L:1234
-# Now connect with an arbitrary number of clients like TCP:<server>:1234
+# Now connect with any number of clients like TCP:<server>:1234
 
 #   socat-broker.sh SSL-L:1234,cert=server.pem,cafile=clients.crt
-# Now connect with an arbitrary number of clients like SSL:<server>:1234,cafile=server.cert=clients.pem
+# Now connect with an arbitrary number of clients like SSL:<server>:1234,cafile=server,cert=clients.pem
 
 ECHO="echo -e"
 

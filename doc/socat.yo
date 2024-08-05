@@ -3282,7 +3282,7 @@ label(OPTION_OPENSSL_METHOD)dit(bf(tt(method=<ssl-method>)))
    dit(tt(TLS1)) Select TLS protocol version 1.
    dit(tt(TLS1.1)) Select TLS protocol version 1.1.
    dit(tt(TLS1.2)) Select TLS protocol version 1.2.
-   When this option is not provided OpenSSL negotiates the mothod with its
+   When this option is not provided OpenSSL negotiates the method with its
    peer.
    enddit()
 label(OPTION_OPENSSL_MIN_PROTO_VERSION)dit(bf(tt(min-proto-version)))
@@ -4466,16 +4466,16 @@ mancommand(\.nf)
 mancommand(\fBsocat --experimental -u \\)
 mancommand(\.RS)
 mancommand(\fBPOSIXMQ-RECV:/queue1,fork,max-children=3 \\ 
-	SYSTEM:"robot.sh"\fP)
+	SYSTEM:"worker.sh"\fP)
 
 mancommand(\.RE)
 mancommand(\.fi)
 
 htmlcommand(<hr><div class="shell">socat --experimental -u &#x5C;
     POSIXMQ-RECV:/queue1,fork,max-children=3 &#x5C;
-    SYSTEM:"robot.sh"</div>)
+    SYSTEM:"worker.sh"</div>)
 
-Receives messages (packets) from POSIX message queue and, for each messages,
+Receives messages (packets) from POSIX message queue and, for each message,
 forks a sub process that reads and processes the message. At most 3 sub
 processes are allowed at the same time.
 
