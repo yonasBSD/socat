@@ -714,6 +714,11 @@ void socat_version(FILE *fd) {
 #else
    fputs("  #undef WITH_RETRY\n", fd);
 #endif
+#ifdef WITH_DEVTESTS
+   fprintf(fd, "  #define WITH_DEVTESTS %d\n", WITH_DEVTESTS);
+#else
+   fputs("  #undef WITH_DEVTESTS\n", fd);
+#endif
 #ifdef WITH_MSGLEVEL
    fprintf(fd, "  #define WITH_MSGLEVEL %d /*%s*/\n", WITH_MSGLEVEL,
 	   &"debug\0\0\0info\0\0\0\0notice\0\0warn\0\0\0\0error\0\0\0fatal\0\0\0"[WITH_MSGLEVEL<<3]);

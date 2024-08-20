@@ -161,6 +161,208 @@ int Res_init(void) {
 #endif /* HAVE_RESOLV_H */
 
 
+#if WITH_DEVTESTS
+
+/* Have a couple of hard coded sockaddr records, to be copied and adapted when
+   needed */
+
+static bool devtests_inited = false;
+
+static struct sockaddr_in sockaddr_localhost_4 = {
+#if HAVE_STRUCT_SOCKADDR_SALEN
+	sizeof(struct sockaddr_in),
+#endif
+	AF_INET, /*htons*/0, { 0 }
+};
+
+static struct sockaddr_in6 sockaddr_localhost_6 = {
+#if HAVE_STRUCT_SOCKADDR_SALEN
+	sizeof(struct sockaddr_in6),
+#endif
+	AF_INET6, /*htons*/0, 0, { { { 0 } } }, 0
+};
+
+static struct addrinfo addrinfo_localhost_4 = {
+	0,  AF_INET,  0,  0,
+	sizeof(struct sockaddr_in),
+	(struct sockaddr *)&sockaddr_localhost_4,
+	NULL,
+	NULL
+} ;
+
+static struct addrinfo addrinfo_localhost_6 = {
+	0,  AF_INET6,  0,  0,
+	sizeof(struct sockaddr_in6),
+	(struct sockaddr *)&sockaddr_localhost_6,
+	NULL,
+	NULL
+} ;
+
+static struct addrinfo addrinfo_localhost_4_6[2] =
+   {
+    {
+	0,  AF_INET,  0,  0,
+	sizeof(sockaddr_localhost_4),
+	NULL, 	/* memdup(sockaddr_localhost_4) */
+	NULL,
+	NULL 	/* &addrinfo_localhost_4_6[1] */
+    },
+    {
+	0,  AF_INET6,  0,  0,
+	sizeof(sockaddr_localhost_6),
+	NULL, 	/* memdup(sockaddr_localhost_6) */
+	NULL,
+	NULL
+    },
+   } ;
+
+static struct addrinfo addrinfo_localhost_6_4[2] =
+   {
+    {
+	0,  AF_INET6,  0,  0,
+	sizeof(sockaddr_localhost_6),
+	NULL, 	/* memdup(sockaddr_localhost_6) */
+	NULL,
+	NULL, 	/* &addrinfo_localhost_6_4[1] */
+    },
+    {
+	0,  AF_INET,  0,  0,
+	sizeof(sockaddr_localhost_4),
+	NULL, 	/* memdup(sockaddr_localhost_4) */
+	NULL,
+	NULL },
+   } ;
+
+/* We keep track of the copied records because they must not be paaed to
+   freeaddrinfo() */
+#define MAX_HARDCODED_RECORDS 16
+static struct addrinfo *keep_hardcoded_records[MAX_HARDCODED_RECORDS];
+static int count_hardcoded_records;
+
+/* returns 0 on success, EAI_NODATA when no matching af, or
+   EAI_NONAME when node did not match the special names */
+static int xioip_getaddrinfo_devtests(
+	const char *node,
+	const char *service,
+	int family,
+	int socktype,
+	int protocol,
+	struct addrinfo **res,
+	const int ai_flags[2])
+{
+   if (!devtests_inited) {
+      devtests_inited = true;
+      sockaddr_localhost_4.sin_addr.s_addr = htonl((127<<24)+1); 	/* 127.0.0.1 */
+#if WITH_IP6
+      xioip6_pton("::1", &sockaddr_localhost_6.sin6_addr, 0);
+#endif
+   }
+   if (node == NULL) {
+      ;
+#if WITH_IP4
+   } else if (!strcmp(node, "localhost-4")
+	      || !strcmp(node, "localhost-4-6") && family == AF_INET
+	      || !strcmp(node, "localhost-6-4") && family == AF_INET
+#if !WITH_IP6
+	      || !strcmp(node, "localhost-4-6")
+	      || !strcmp(node, "localhost-6-4")
+#endif /* !WITH_IP6 */
+	      ) {
+      if (family == AF_INET6)
+	 return EAI_NODATA;
+      *res = memdup(&addrinfo_localhost_4, sizeof(addrinfo_localhost_4));
+      (*res)->ai_socktype = socktype;
+      (*res)->ai_protocol = protocol;
+      (*res)->ai_addr = memdup(&sockaddr_localhost_4, sizeof(sockaddr_localhost_4));
+      ((struct sockaddr_in *)((*res)->ai_addr))->sin_port = (service?htons(atoi(service)):0);
+      keep_hardcoded_records[count_hardcoded_records++] = *res;
+      return 0;
+#endif /* WITH_IP4 */
+
+#if WITH_IP6
+   } else if (!strcmp(node, "localhost-6")
+	      || !strcmp(node, "localhost-4-6") && family == AF_INET6
+	      || !strcmp(node, "localhost-6-4") && family == AF_INET6
+#if !WITH_IP4
+	      || !strcmp(node, "localhost-4-6")
+	      || !strcmp(node, "localhost-6-4")
+#endif /* !WITH_IP4 */
+	      ) {
+      if (family == AF_INET)
+	 return EAI_NODATA;
+      *res = memdup(&addrinfo_localhost_6, sizeof(addrinfo_localhost_6));
+      (*res)->ai_socktype = socktype;
+      (*res)->ai_protocol = protocol;
+      (*res)->ai_addr = memdup(&sockaddr_localhost_6, sizeof(sockaddr_localhost_6));
+      ((struct sockaddr_in6 *)((*res)->ai_addr))->sin6_port =
+	 (service?htons(atoi(service)):0);
+      keep_hardcoded_records[count_hardcoded_records++] = *res;
+      return 0;
+#endif /* !WITH_IP6 */
+
+#if WITH_IP4 && WITH_IP6
+   } else if (!strcmp(node, "localhost-4-6")) {
+      /* here we come only when both WITH_IP4,WITH_IP6, and family not 4 or 6 */
+      *res = memdup(&addrinfo_localhost_4_6, sizeof(addrinfo_localhost_4_6));
+      (*res)[0].ai_socktype = socktype;
+      (*res)[0].ai_protocol = protocol;
+      (*res)[0].ai_addr = memdup(&sockaddr_localhost_4, sizeof(sockaddr_localhost_4));
+      ((struct sockaddr_in  *)((*res)[0].ai_addr))->sin_port =
+	 (service?htons(atoi(service)):0);
+      (*res)[0].ai_next = &(*res)[1];
+      (*res)[1].ai_socktype = socktype;
+      (*res)[1].ai_protocol = protocol;
+      (*res)[1].ai_addr = memdup(&sockaddr_localhost_6, sizeof(sockaddr_localhost_6));
+      ((struct sockaddr_in6 *)((*res)[1].ai_addr))->sin6_port =
+	 (service?htons(atoi(service)):0);
+      keep_hardcoded_records[count_hardcoded_records++] = *res;
+      return 0;
+#endif /* WITH_IP4 && WITH_IP6 */
+
+#if WITH_IP4 && WITH_IP6
+   } else if (!strcmp(node, "localhost-6-4")) {
+      /* here we come only when both WITH_IP4,WITH_IP6, and family not 4,6 */
+      *res = memdup(&addrinfo_localhost_6_4, sizeof(addrinfo_localhost_6_4));
+      (*res)[0].ai_socktype = socktype;
+      (*res)[0].ai_protocol = protocol;
+      (*res)[0].ai_addr = memdup(&sockaddr_localhost_6, sizeof(sockaddr_localhost_6));
+      ((struct sockaddr_in6 *)((*res)[0].ai_addr))->sin6_port =
+	 (service?htons(atoi(service)):0);
+      (*res)[0].ai_next = &(*res)[1];
+      (*res)[1].ai_socktype = socktype;
+      (*res)[1].ai_protocol = protocol;
+      (*res)[1].ai_addr = memdup(&sockaddr_localhost_4, sizeof(sockaddr_localhost_4));
+      ((struct sockaddr_in  *)((*res)[1].ai_addr))->sin_port =
+	 service?htons(atoi(service)):0;
+      keep_hardcoded_records[count_hardcoded_records++] = *res;
+      return 0;
+#endif /* WITH_IP4 && WITH_IP6 */
+
+   }
+   if (count_hardcoded_records == MAX_HARDCODED_RECORDS)
+      --count_hardcoded_records; 	/* more records will leak memory */
+
+   return EAI_NONAME;
+}
+
+/* Checks if res is a devtests construct, returns 0 if so,
+   or 1 otherwise */
+static int xioip_freeaddrinfo_devtests(
+	struct addrinfo *res)
+{
+   int i;
+   for (i=0; i<16; ++i) {
+      if (res == keep_hardcoded_records[i]) {
+	 free(res);
+	 keep_hardcoded_records[i] = NULL;
+	 return 0;
+      }
+   }
+   return 1;
+}
+#endif /* WITH_DEVTESTS */
+
+
 /* the ultimate(?) socat resolver function
  node: the address to be resolved; supported forms:
    1.2.3.4 (IPv4 address)
@@ -171,7 +373,7 @@ int Res_init(void) {
  family: PF_INET, PF_INET6, or PF_UNSPEC permitting both
  socktype: SOCK_STREAM, SOCK_DGRAM, ...
  protocol: IPPROTO_UDP, IPPROTO_TCP
- sau: an uninitialized storage for the resulting socket address
+ res: a pointer to an uninitialized ptr var for the resulting socket address
  returns: STAT_OK, STAT_RETRYLATER, STAT_NORETRY, prints message
 */
 int xiogetaddrinfo(const char *node, const char *service,
@@ -186,8 +388,11 @@ int xiogetaddrinfo(const char *node, const char *service,
 #endif
    int error_num;
 
+   Debug8("xiogetaddrinfo(node=\"%s\", service=\"%s\", family=%d, socktype=%d, protoco=%d, ai_flags={0x%04x/0x%04x} }, res=%p",
+	  node?node:"NULL", service?service:"NULL", family, socktype, protocol,
+	  ai_flags?ai_flags[0]:0, ai_flags?ai_flags[1]:0, res);
    if (service && service[0]=='\0') {
-      Error("empty port/service");
+      Error("xiogetaddrinfo(): empty port and service");
    }
 
 #if LATER
@@ -201,6 +406,48 @@ int xiogetaddrinfo(const char *node, const char *service,
    }
 #endif /* WITH_VSOCK */
 #endif /* LATER */
+
+#if WITH_DEVTESTS
+   if (node != NULL && strchr(node, '.') &&
+       (!strcmp(strchr(node, '.'), ".dest-unreach.net") ||
+	!strcmp(strchr(node, '.'), ".dest-unreach.net."))) {
+      char *hname = strdup(node);
+
+      Info("dest-unreach.net domain handled specially");
+      if (hname == NULL)
+	 return EAI_MEMORY;
+      if (hname[strlen(hname)-1] == '.')
+	 hname[strlen(hname)-1] = '\0';
+      *strchr(hname, '.') = '\0';
+      error_num =
+	 xioip_getaddrinfo_devtests(hname, service, family, socktype, protocol,
+				    res, ai_flags);
+      if (error_num == EAI_NONAME) {
+	 Warn("dest-unreach.net domain name does not resolve specially");
+	 /* Pass through to libc resolver */
+      } else if (error_num != 0) {
+	 Error7("getaddrinfo(\"%s\", \"%s\", {0x%02x,%d,%d,%d}, {}): %s",
+		node?node:"NULL", service?service:"NULL",
+		hints.ai_flags, hints.ai_family,
+		hints.ai_socktype, hints.ai_protocol,
+		(error_num == EAI_SYSTEM)?
+		strerror(errno):gai_strerror(error_num));
+	 return error_num;
+      } else { 	/* ok */
+#if WITH_MSGLEVEL <= E_DEBUG
+	 struct addrinfo *record;
+	 record = *res;
+	 while (record) {
+	    char buff[256/*!*/];
+	    sockaddr_info(record->ai_addr, record->ai_addrlen, buff, sizeof(buff));
+	    Debug5("getaddrinfo() -> flags=0x%02x family=%d socktype=%d protocol=%d addr=%s", record->ai_flags, record->ai_family, record->ai_socktype, record->ai_protocol, buff);
+	    record = record->ai_next;
+	 }
+#endif /* WITH_MSGLEVEL <= E_DEBUG */
+	 return error_num;
+      }
+   }
+#endif /* WITH_DEVTESTS */
 
    /* the resolver functions might handle numeric forms of node names by
       reverse lookup, that's not what we want.
@@ -407,6 +654,11 @@ int xiogetaddrinfo(const char *node, const char *service,
 }
 
 void xiofreeaddrinfo(struct addrinfo *res) {
+#if WITH_DEVTESTS
+   if (!xioip_freeaddrinfo_devtests(res)) {
+      return;
+   }
+#endif
 #if HAVE_GETADDRINFO
    freeaddrinfo(res);
 #else

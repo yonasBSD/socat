@@ -942,6 +942,15 @@ AC_ARG_ENABLE(retry, [  --disable-retry         disable retry support],
 	       esac],
 	       [AC_DEFINE(WITH_RETRY) AC_MSG_RESULT(yes)])
 
+AC_MSG_CHECKING(whether to include devtests support)
+AC_ARG_ENABLE(devtests, [  --enable-devtests          enable devtests support],
+	      [case "$enableval" in
+	       yes) AC_DEFINE(WITH_DEVTESTS) AC_MSG_RESULT(yes);;
+	       *)  AC_MSG_RESULT(no) ;;
+	       esac],
+	       [AC_MSG_RESULT(no)])
+
+
 AC_MSG_CHECKING(included message level)
 AC_ARG_ENABLE(msglevel, [  --enable-msglevel=N     set max verbosity to debug,info,notice,warn,error,fatal],
 	      [case "$enableval" in
@@ -964,6 +973,7 @@ AC_ARG_ENABLE(default-ipv, [  --enable-default-ipv=N     set default/preferred I
 	       *) AC_DEFINE(WITH_DEFAULT_IPV, '0') AC_MSG_RESULT("0");;
 	       esac],
 	       [AC_DEFINE(WITH_DEFAULT_IPV, '0') AC_MSG_RESULT("0")])
+
 
 #AC_SUBST(V_INCL)
 

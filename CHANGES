@@ -64,6 +64,12 @@ Building:
 	Thanks to Hongxu Jia for providing an inital patch.
 
 Testing:
+	Added the optional DEVTESTS feature for developer tests with controlled
+	name resolution to both IPv4 and IPV6 addresses: configure Socat with
+	--enable-devtests, this provides internal resolution of domain
+	dest-unreach.net with host names: localhost-4, localhost-6,
+	localhost-4-6, and localhost-6-4
+
 	test.sh: lots of corrections and improvements
 
 	test.sh: many hardcoded sleep values were replaced by much shorter

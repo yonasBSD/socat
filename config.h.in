@@ -748,10 +748,10 @@
 #undef WITH_LIBWRAP
 #undef HAVE_TCPD_H
 #undef HAVE_LIBWRAP
-
 #undef WITH_SYCLS
 #undef WITH_FILAN
 #undef WITH_RETRY
+#undef WITH_DEVTESTS
 
 #undef WITH_MSGLEVEL
 

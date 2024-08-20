@@ -15759,8 +15759,8 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -t $T4 TCP4-LISTEN:$PORT,reuseaddr EXEC:'$FILAN -s',nofork"
-CMD1="$TRACE $SOCAT $opts - TCP4:localhost:$PORT"
+CMD0="$TRACE $SOCAT $opts TCP4-LISTEN:$PORT,reuseaddr EXEC:'$FILAN -s',nofork"
+CMD1="$TRACE $SOCAT $opts -t $T4 - TCP4:localhost:$PORT"
 printf "test $F_n $TEST... " $N
 eval "$CMD0" >/dev/null 2>"${te}0" &
 pid0=$!
@@ -19442,7 +19442,8 @@ else
     $CMD0 >/dev/null 2>"${te}0" &
     pid0=$!
     waittcp4port $tp
-    echo "$da" |$CMD1 >"${tf}1" 2>"${te}1"
+    # NetBSD-9 seems to need massive delay
+    { echo "$da"; relsleep 100; } |$CMD1 >"${tf}1" 2>"${te}1"
     rc1=$?
     kill $pid0 2>/dev/null
     wait 2>/dev/null
@@ -19913,6 +19914,27 @@ fi # NUMCOND
  ;;
 esac
 N=$((N+1))
+
+
+# DEVTESTS IPv4/IPv6 resolver tests: just manually:
+
+# Prepare:
+#socat TCP4-LISTEN:12345,reuseaddr,fork PIPE
+# These must succeed:
+#echo AAAA |socat - TCP4:localhost-4.dest-unreach.net:12345
+#echo AAAA |socat - TCP4:localhost-4-6.dest-unreach.net:12345
+#echo AAAA |socat - TCP4:localhost-6-4.dest-unreach.net:12345
+
+# Prepare:
+#socat TCP6-LISTEN:12345,reuseaddr,fork PIPE
+# These must succeed:
+#echo AAAA |socat - TCP6:localhost-6.dest-unreach.net:12345
+#echo AAAA |socat - TCP6:localhost-6-4.dest-unreach.net:12345
+#echo AAAA |socat - TCP6:localhost-4-6.dest-unreach.net:12345
+
+# These must fail with No address associated with hostname
+#socat - TCP4:localhost-6.dest-unreach.net:12345
+#socat - TCP6:localhost-4.dest-unreach.net:12345
 
 
 # end of common tests
