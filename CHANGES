@@ -11,6 +11,11 @@ Corrections:
 	Added Socat option -0 to allow version 1.8.0.0 behaviour (no preferred
 	IP version).
 
+	UDP-SENDTO, UDPLITE-SENDTO, and IP-SENDTO addresses now select an IPv4
+	address in case the server name resolves to both IPv4 and IPv6
+	addresses.
+	Tests: V1800_*_SENDTO_RESOLV_6_4
+
 	Guard applyopts_termios_value() with WITH_TERMIOS.
 	Thanks to Kush Upadhyay from Amazon Bottlerocket team for providing the
 	patch.

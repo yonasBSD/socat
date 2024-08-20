@@ -230,18 +230,24 @@ int
 	   bool *lowport,
 	   int socktype) {
    uint16_t port;
-   int result;
+   int rc;
 
    retropt_socket_pf(opts, pf);
 
    if (hostname != NULL || portname != NULL) {
-    if ((result =
-	xiogetaddrinfo(hostname, portname,
-		       *pf, socktype, protocol,
-		       themlist, ai_flags))
-       != STAT_OK) {
-      return STAT_NORETRY;	/*! STAT_RETRYLATER? */
-    }
+      rc = xiogetaddrinfo(hostname, portname, *pf, socktype, protocol,
+			  themlist, ai_flags);
+      if (rc == EAI_AGAIN) {
+	 Warn4("_xioopen_ipapp_prepare(node=\"%s\", service=\"%s\", pf=%d, ...): %s",
+	       hostname?hostname:"NULL", portname?portname:"NULL",
+	       *pf, gai_strerror(rc));
+	 return STAT_RETRYLATER;
+      } else if (rc != 0) {
+	 Error4("_xioopen_ipapp_prepare(node=\"%s\", service=\"%s\", pf=%d, ...): %s",
+		hostname?hostname:"NULL", portname?portname:"NULL",
+		*pf, (rc == EAI_SYSTEM)?strerror(errno):gai_strerror(rc));
+	 return STAT_NORETRY;	/*! STAT_RETRYLATER? */
+      }
    }
 
    applyopts(NULL, -1, opts, PH_EARLY);

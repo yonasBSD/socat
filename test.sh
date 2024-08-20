@@ -13543,7 +13543,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 newport udp6
-CMD0="$TRACE $SOCAT $opts UDP6-RECV:$PORT,ipv6-join-group=[ff02::2]:$MCINTERFACE /dev/null"
+CMD0="$TRACE $SOCAT $opts -T 0.001 -u UDP6-RECV:$PORT,ipv6-join-group=[ff02::2]:$MCINTERFACE /dev/null"
 printf "test $F_n $TEST... " $N
 $CMD0 >/dev/null 2>"${te}0"
 rc0=$?
@@ -17011,6 +17011,10 @@ elif ! A=$(testaddrs TCP-CONNECT GOPEN); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Address $A not available in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
+elif ! o=$(testoptions ai-addrconfig) >/dev/null; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option $o not available in $SOCAT${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
 elif ! runsip4 >/dev/null; then
     $PRINTF "test $F_n $TEST... ${YELLOW}IPv4 not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
@@ -17858,7 +17862,6 @@ TEST="$NAME: sigint option with SHELL"
 # Send the parent a SIGINT; when the child gets SIGINT too (vs.SIGTERM)
 # the test succeeded
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! F=$(testfeats STDIO SHELL PIPE); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
@@ -18028,7 +18031,6 @@ TEST="$NAME: sigint option with SYSTEM"
 # the test succeeded
 # setsid is required so the initial SIGINT is not delivered to the sub process.
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif [ "$UNAME" = "NetBSD" ]; then
     # On NetBSD-4.0 and NetBSD-9.3 this test hangs (signal has no effect)
     # (other versions not tried)
@@ -18696,7 +18698,6 @@ TEST="$NAME: f-setpipe-sz on STDIN"
 # Start Socat in a shell pipe and have it calling Filan via EXEC and nofork
 # Check Filan output if pipe size of its input pipe is modified.
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! $(type true >/dev/null 2>&1); then
     $PRINTF "test $F_n $TEST... ${YELLOW}true not available${NORMAL}\n" $N
     numCANT=$((numCANT+1))
@@ -18763,7 +18764,6 @@ TEST="$NAME: f-setpipe-sz on EXEC with pipes"
 # Start Socat calling Filan via EXEC and pipes and f-setpipe-sz
 # Check Filan output if pipe size of both pipes is modified.
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! F=$(testfeats STDIO EXEC); then
     $PRINTF "test $F_n $TEST... ${YELLOW}Feature $F not configured in $SOCAT${NORMAL}\n" $N
     numCANT=$((numCANT+1))
@@ -18885,7 +18885,6 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udplite%*|*%$NAME%*)
 TEST="$NAME: echo via connection to UDP-Lite V4 socket"
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -18953,7 +18952,6 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udplite%*|*%$NAME%*)
 TEST="$NAME: echo via connection to UDP-Lite V4 socket"
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -19021,7 +19019,6 @@ case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%ipapp%*|*%udplite%*|*%$NAME%*)
 TEST="$NAME: echo via connection to UDP-Lite V4 socket"
 if ! eval $NUMCOND; then :;
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -19338,7 +19335,6 @@ TEST="$NAME: test socat-chain.sh with SOCKS4 over UNIX-socket"
 # Run a socks4 server on UNIX-listen
 # Connect with socat-chain.sh; check if data transfer is correct
 if ! eval $NUMCOND; then :
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -19410,7 +19406,6 @@ TEST="$NAME: test socat-chain.sh with SSL over PTY"
 # open the PTY with socat-chain.sh using SSL;
 # check if data transfer is correct
 if ! eval $NUMCOND; then :
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -19492,7 +19487,6 @@ TEST="$NAME: test the socat-mux.sh script"
 # Connect with two clients to mux, send different data records from both.
 # Check if both clients received both records in order.
 if ! eval $NUMCOND; then :
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -19604,7 +19598,6 @@ TEST="$NAME: test the socat-broker.sh script"
 # Connect with two clients, send different data records from both.
 # Check if both client received both records in order.
 if ! eval $NUMCOND; then :
-# Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
 		  "" \
 		  "" \
@@ -20194,6 +20187,75 @@ IP-DATAGRAM:1.2.3.4      ip4      PROTO .                    range=127.0.0.1/8
 IP-DATAGRAM:1.2.3.4      ip4      PROTO .                    bind=127.0.0.1
 "
 
+
+# Test if datagram SENDTO to a server name that resolves to IPv6 first and IPv4
+# as second address, binding to an IPv4 address, uses IPv4
+# This failed in Socat 1.8.0.0
+while read ADDR protov IPPORT _; do
+if [ -z "$ADDR" ] || [[ "$ADDR" == \#* ]]; then continue; fi
+FEATS=
+ADDR_="$(echo $ADDR |tr - _)" 	# UDP_SENDTO
+PROTO="${ADDR%%-*}" 		# UDP
+proto=$(tolower $PROTO) 	# udp
+FEATS="$FEATS $PROTO"
+NAME="$(echo "V1800_${ADDR_}_RESOLV_6_4" |sed 's/:[.0-8]*//')"
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%ip4%*|*%$protov%*|*%$proto%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test regression of $ADDR with IPv6,4 and binding to IPv4"
+# Start a SENDTO command to (internal) test name localhost-6-4.dest-unreach.net
+# and bind to an IPv4 address, and terminate immediately.
+# When no error occurs the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds \
+		  "" \
+		  "$([ $IPPORT = PROTO ] && echo root)" \
+		  "" \
+		  "$FEATS DEVTESTS IP4" \
+		  "$ADDR GOPEN" \
+		  "bind" \
+		  "$protov" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    case X$IPPORT in
+	XPORT)  newport $(tolower $PROTO); _PORT=$PORT ;;
+	XPROTO) echo "IPPROTO=\"$IPPROTO\""
+		_PORT=$IPPROTO ;;
+    esac
+    CMD0="$TRACE $SOCAT $opts -u /dev/null $ADDR:localhost-6-4.dest-unreach.net:$_PORT,bind=127.0.0.1"
+    printf "test $F_n $TEST... " $N
+    $CMD0 2>"${te}0" </dev/null
+    rc0=$?
+    if [ "$rc0" -ne 0 ]; then
+	$PRINTF "$FAILED (rc0=$rc0)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
+    fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+done <<<"
+UDP-SENDTO               udp4     PORT
+UDPLITE-SENDTO           udplite4 PORT
+IP-SENDTO                ip4      PROTO
+"
 
 # end of common tests
 

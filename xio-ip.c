@@ -516,8 +516,11 @@ int xiogetaddrinfo(const char *node, const char *service,
 	   continue;
 	}
       if ((error_num = Getaddrinfo(node, service, &hints, res)) != 0) {
-	 if (*res != NULL)
-	    freeaddrinfo(*res);
+	 Warn7("getaddrinfo(\"%s\", \"%s\", {0x%02x,%d,%d,%d}, {}): %d",
+		node?node:"NULL", service?service:"NULL",
+		hints.ai_flags, hints.ai_family,
+		hints.ai_socktype, hints.ai_protocol,
+		error_num);
 	 if (numnode)
 	    free(numnode);
 
@@ -664,7 +667,7 @@ void xiofreeaddrinfo(struct addrinfo *res) {
 }
 
 /* A simple resolver interface that just returns one address,
-   the first found by calling xiogetaddrinfo().
+   the first found by calling xiogetaddrinfo(), but ev.respects preferred_ip;
    pf may be AF_INET, AF_INET6, or AF_UNSPEC;
    on failure logs error message;
    returns STAT_OK, STAT_RETRYLATER, STAT_NORETRY
@@ -683,13 +686,11 @@ int xioresolve(const char *node, const char *service,
    if (rc == EAI_AGAIN) {
       Warn3("xioresolve(node=\"%s\", pf=%d, ...): %s",
 	     node?node:"NULL", pf, gai_strerror(rc));
-      xiofreeaddrinfo(res);
       return STAT_RETRYLATER;
    } else if (rc != 0) {
       Error3("xioresolve(node=\"%s\", pf=%d, ...): %s",
 	     node?node:"NULL", pf,
 	     (rc == EAI_SYSTEM)?strerror(errno):gai_strerror(rc));
-      xiofreeaddrinfo(res);
       return STAT_NORETRY;
    }
    if (res == NULL) {
