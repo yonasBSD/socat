@@ -4969,6 +4969,7 @@ EOF
 
 #0 if ! sed 's/.*\r//g' "$tpo" |diff -q "$tr" - >/dev/null 2>&1; then
 #0 if ! sed 's/.*'"$($ECHO '\r\c')"'/</g' "$tpo" |diff -q "$tr" - >/dev/null 2>&1; then
+kill $pid 2>/dev/null	# necc on OpenBSD
 wait
 if ! tr "$($ECHO '\r \c')" "% " <$tpo |sed 's/%$//g' |sed 's/.*%//g' |diff "$tr" - >"$tdiff" 2>&1; then
     $PRINTF "$FAILED: $TRACE $SOCAT:\n"
@@ -4985,7 +4986,6 @@ else
     numOK=$((numOK+1))
     listOK="$listOK $N"
 fi
-kill $pid 2>/dev/null	# necc on OpenBSD
 wait
 MICROS=$SAVEMICS
 TERM="$SAVETERM"
@@ -19339,7 +19339,7 @@ elif ! cond=$(checkconds \
 		  "" \
 		  "" \
 		  "" \
-		  "IP4 TCP LISTEN STDIO UNIX" \
+		  "IP4 TCP LISTEN STDIO UNIX SOCKS4" \
 		  "TCP4-LISTEN PIPE STDIN STDOUT TCP4 UNIX UNIX-LISTEN" \
 		  "so-reuseaddr" \
 		  "tcp4 unix" ); then
@@ -20234,7 +20234,7 @@ else
     rc0=$?
     if [ "$rc0" -ne 0 ]; then
 	$PRINTF "$FAILED (rc0=$rc0)\n"
-	echo "$CMD0 &"
+	echo "$CMD0"
 	cat "${te}0" >&2
 	numFAIL=$((numFAIL+1))
 	listFAIL="$listFAIL $N"
@@ -20256,6 +20256,89 @@ UDP-SENDTO               udp4     PORT
 UDPLITE-SENDTO           udplite4 PORT
 IP-SENDTO                ip4      PROTO
 "
+
+# Test if CONNECT to a server name that resolves to IPv6 first and IPv4
+# as second address, when binding to an IPv4 address, uses IPv4
+# This failed in Socat 1.8.0.0
+while read ADDR protov IPPORT _; do
+if [ -z "$ADDR" ] || [[ "$ADDR" == \#* ]]; then continue; fi
+FEATS=
+ADDR_="$(echo $ADDR |tr - _)" 	# TCP_CONNECT
+PROTO="${ADDR%%[-:]*}" 		# TCP
+proto=$(tolower $PROTO) 	# tcp
+FEATS="$FEATS $PROTO"
+NAME="$(echo "V1800_${ADDR_}_CONNECT_6_4" |sed 's/:[.0-8]*//')"
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%ip4%*|*%$protov%*|*%$proto%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test regression of $ADDR with IPv6,4 and binding to IPv4"
+# Run an appropriate server address in background.
+# Start a CONNECT command to (internal) test name localhost-6-4.dest-unreach.net
+# and bind to an IPv4 address, connect, terminate immediately.
+# When no error occurs the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "$FEATS DEVTESTS IP4" \
+		  "$ADDR GOPEN" \
+		  "bind" \
+		  "$protov" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    case X$IPPORT in
+	XPORT)  newport $(tolower $PROTO); _PORT=$PORT ;;
+	XPROTO) echo "IPPROTO=\"$IPPROTO\""
+		_PORT=$IPPROTO ;;
+    esac
+    CMD0="$TRACE $SOCAT $opts ${ADDR%%-*}-LISTEN:$_PORT,pf=ip4 PIPE"
+    CMD1="$TRACE $SOCAT $opts /dev/null $ADDR:localhost-6-4.dest-unreach.net:$_PORT,bind=127.0.0.1"
+    printf "test $F_n $TEST... " $N
+    $CMD0 2>"${te}0" </dev/null &
+    pid0=$!
+    wait${protov}port $PORT 1
+    $CMD1 2>"${te}1" </dev/null
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$FAILED (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
+    fi
+fi # NUMCOND
+ ;;
+esac
+PORT=$((PORT+1))
+N=$((N+1))
+done <<<"
+TCP-CONNECT                tcp4      PORT
+SCTP-CONNECT               sctp4     PORT
+DCCP-CONNECT               dccp4     PORT
+#PENSSL                    tcp4      PORT
+#OCKS4:127.0.0.1           tcp4      PORT
+#OCKS4A:127.0.0.1          tcp4      PORT
+#OCKS5:127.0.0.1:1080      tcp4      PORT
+#ROXY::127.0.0.1           tcp4      PORT
+"
+
 
 # end of common tests
 

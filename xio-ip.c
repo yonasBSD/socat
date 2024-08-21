@@ -363,7 +363,7 @@ static int xioip_freeaddrinfo_devtests(
 #endif /* WITH_DEVTESTS */
 
 
-/* the ultimate(?) socat resolver function
+/* A socat resolver function
  node: the address to be resolved; supported forms:
    1.2.3.4 (IPv4 address)
    [::2]   (IPv6 address)
@@ -376,7 +376,7 @@ static int xioip_freeaddrinfo_devtests(
  res: a pointer to an uninitialized ptr var for the resulting socket address
  returns: STAT_OK, STAT_RETRYLATER, STAT_NORETRY, prints message
 */
-int xiogetaddrinfo(const char *node, const char *service,
+int _xiogetaddrinfo(const char *node, const char *service,
 		   int family, int socktype, int protocol,
 		   struct addrinfo **res, const int ai_flags[2]) {
    char *numnode = NULL;
@@ -388,11 +388,11 @@ int xiogetaddrinfo(const char *node, const char *service,
 #endif
    int error_num;
 
-   Debug8("xiogetaddrinfo(node=\"%s\", service=\"%s\", family=%d, socktype=%d, protoco=%d, ai_flags={0x%04x/0x%04x} }, res=%p",
+   Debug8("_xiogetaddrinfo(node=\"%s\", service=\"%s\", family=%d, socktype=%d, protoco=%d, ai_flags={0x%04x/0x%04x} }, res=%p",
 	  node?node:"NULL", service?service:"NULL", family, socktype, protocol,
 	  ai_flags?ai_flags[0]:0, ai_flags?ai_flags[1]:0, res);
    if (service && service[0]=='\0') {
-      Error("xiogetaddrinfo(): empty port and service");
+      Error("_xiogetaddrinfo(): empty port and service");
       return EAI_NONAME;
    }
 
@@ -620,7 +620,7 @@ int xiogetaddrinfo(const char *node, const char *service,
 	 return STAT_RETRYLATER;
       }
       if (host->h_addrtype != family) {
-	 Error2("xiogetaddrinfo(): \"%s\" does not resolve to %s",
+	 Error2("_xiogetaddrinfo(): \"%s\" does not resolve to %s",
 		node, family==PF_INET?"IP4":"IP6");
       } else {
 	 switch (family) {
@@ -653,7 +653,97 @@ int xiogetaddrinfo(const char *node, const char *service,
    return 0;
 }
 
-void xiofreeaddrinfo(struct addrinfo *res) {
+/* Sort the records of an addrinfo list themp (as returned by getaddrinfo),
+   return the sorted list in the array ai_sorted (takes at most n entries
+   including the terminating NULL)
+   Returns 0 on success. */
+int _xio_sort_ip_addresses(
+	struct addrinfo *themlist,
+	struct addrinfo **ai_sorted)
+{
+	struct addrinfo *themp;
+	int i;
+	int ipv[3];
+	int ipi = 0;
+
+	/* Make a simple array of IP version preferences */
+	switch (xioparms.preferred_ip) {
+	case '0':
+		ipv[0] = PF_UNSPEC;
+		ipv[1] = -1;
+		break;
+	case '4':
+		ipv[0] = PF_INET;
+		ipv[1] = PF_INET6;
+		ipv[2] = -1;
+		break;
+	case '6':
+		ipv[0] = PF_INET6;
+		ipv[1] = PF_INET;
+		ipv[2] = -1;
+		break;
+	default:
+		Error("INTERNAL: undefined preferred_ip value");
+		return -1;
+	}
+
+	/* Create the sorted list */
+	ipi = 0;
+	i = 0;
+	while (ipv[ipi] >= 0) {
+		themp = themlist;
+		while (themp != NULL) {
+			if (ipv[ipi] == PF_UNSPEC) {
+				ai_sorted[i] = themp;
+				++i;
+			} else if (ipv[ipi] == themp->ai_family) {
+				ai_sorted[i] = themp;
+				++i;
+			}
+			themp = themp->ai_next;
+		}
+		++ipi;
+	}
+	ai_sorted[i] = NULL;
+	return 0;
+}
+
+/* Wrapper around _xiogetaddrinfo() (which is a wrapper arount getaddrinfo())
+   that sorts the results according to xioparms.preferred_ip when family is
+   AF_UNSPEC; it returns an array of record pointers instead of a list! */
+int xiogetaddrinfo(const char *node, const char *service,
+		   int family, int socktype, int protocol,
+		   struct addrinfo ***ai_sorted, const int ai_flags[2]) {
+   struct addrinfo *res;
+   struct addrinfo **_ai_sorted;
+   struct addrinfo *aip;
+   int ain;
+   int rc;
+
+   rc = _xiogetaddrinfo(node, service, family, socktype, protocol, &res,
+			ai_flags);
+   if (rc != 0)
+      return rc;
+
+   /* Sort results - first, count records for mem allocation */
+   aip = res;
+   ain = 0;
+   while (aip != NULL) {
+      ++ain;
+      aip = aip->ai_next;
+   }
+   _ai_sorted = Calloc((ain+2), sizeof(struct addrinfo *));
+   if (_ai_sorted == NULL)
+      return STAT_RETRYLATER;
+
+   /* Generate a list of addresses sorted by preferred ip version */
+   _xio_sort_ip_addresses(res, _ai_sorted);
+   _ai_sorted[ain+1] = res; 	/* save list past NULL for later freeing */
+   *ai_sorted = _ai_sorted;
+   return 0;
+}
+
+void _xiofreeaddrinfo(struct addrinfo *res) {
 #if WITH_DEVTESTS
    if (!xioip_freeaddrinfo_devtests(res)) {
       return;
@@ -666,6 +756,20 @@ void xiofreeaddrinfo(struct addrinfo *res) {
 #endif
 }
 
+void xiofreeaddrinfo(struct addrinfo **ai_sorted) {
+   int ain;
+   struct addrinfo *res;
+
+   /* Find the original *res from getaddrinfo past NULL */
+   ain = 0;
+   while (ai_sorted[ain] != NULL)
+      ++ain;
+   res = ai_sorted[ain+1];
+   _xiofreeaddrinfo(res);
+   free(ai_sorted);
+}
+
+
 /* A simple resolver interface that just returns one address,
    the first found by calling xiogetaddrinfo(), but ev.respects preferred_ip;
    pf may be AF_INET, AF_INET6, or AF_UNSPEC;
@@ -677,7 +781,7 @@ int xioresolve(const char *node, const char *service,
 	       union sockaddr_union *addr, socklen_t *addrlen,
 	       const int ai_flags[2])
 {
-   struct addrinfo *res = NULL;
+   struct addrinfo **res = NULL;
    struct addrinfo *aip;
    int rc;
 
@@ -699,17 +803,17 @@ int xioresolve(const char *node, const char *service,
       xiofreeaddrinfo(res);
       return STAT_NORETRY;
    }
-   if (res->ai_addrlen > *addrlen) {
+   if ((*res)->ai_addrlen > *addrlen) {
       Error3("xioresolve(node=\"%s\", addrlen="F_socklen", ...): "F_socklen" bytes required",
-	    node, *addrlen, res->ai_addrlen);
+	     node, *addrlen, (*res)->ai_addrlen);
       xiofreeaddrinfo(res);
       return STAT_NORETRY;
    }
-   if (res->ai_next != NULL) {
+   if ((*res)->ai_next != NULL) {
       Info4("xioresolve(node=\"%s\", service=%s%s%s, ...): More than one address found", node?node:"NULL", service?"\"":"", service?service:"NULL", service?"\"":"");
    }
 
-   aip = res;
+   aip = *res;
    if (ai_flags != NULL && ai_flags[0] & AI_PASSIVE && pf == PF_UNSPEC) {
       /* We select the first IPv6 address, if available,
 	 because this might accept IPv4 connections too */
@@ -719,7 +823,7 @@ int xioresolve(const char *node, const char *service,
 	 aip = aip->ai_next;
       }
       if (aip == NULL)
-	 aip = res;
+	 aip = *res;
    } else if (pf == PF_UNSPEC && xioparms.preferred_ip != '0') {
       int prefip = PF_UNSPEC;
       xioinit_ip(&prefip, xioparms.preferred_ip);
@@ -729,7 +833,7 @@ int xioresolve(const char *node, const char *service,
 	 aip = aip->ai_next;
       }
       if (aip == NULL)
-	 aip = res;
+	 aip = *res;
    }
 
    memcpy(addr, aip->ai_addr, aip->ai_addrlen);

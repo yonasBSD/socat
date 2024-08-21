@@ -39,12 +39,11 @@ int xioopen_ipapp_connect(
    int maxchildren = 0;
    union sockaddr_union us_sa,  *us = &us_sa;
    socklen_t uslen = sizeof(us_sa);
-   struct addrinfo *themlist, *themp;
+   struct addrinfo **themarr, *themp;
    char infobuff[256];
    bool needbind = false;
    bool lowport = false;
    int level;
-   struct addrinfo **ai_sorted;
    int i;
    int result;
 
@@ -78,7 +77,7 @@ int xioopen_ipapp_connect(
 
    if (_xioopen_ipapp_prepare(opts, &opts0, hostname, portname, &pf, ipproto,
 			      sfd->para.socket.ip.ai_flags,
-			      &themlist, us, &uslen, &needbind, &lowport,
+			      &themarr, us, &uslen, &needbind, &lowport,
 			      socktype) != STAT_OK) {
       return STAT_NORETRY;
    }
@@ -94,33 +93,22 @@ int xioopen_ipapp_connect(
       Info("starting connect loop");
    }
 
-   /* Count addrinfo entries */
-   themp = themlist;
-   i = 0;
-   while (themp != NULL) {
-      ++i;
-      themp = themp->ai_next;
-   }
-   ai_sorted = Calloc((i+1), sizeof(struct addrinfo *));
-   if (ai_sorted == NULL)
-      return STAT_RETRYLATER;
-   /* Generate a list of addresses sorted by preferred ip version */
-   _xio_sort_ip_addresses(themlist, ai_sorted);
-
    do {	/* loop over retries, and forks */
 
-      /* Loop over themlist - no, over ai_sorted */
+      /* Loop over themarr (which had been "ai_sorted") */
       result = STAT_RETRYLATER;
       i = 0;
-      themp = ai_sorted[i++];
+      themp = themarr[i++];
       while (themp != NULL) {
 	 Notice1("opening connection to %s",
 		 sockaddr_info(themp->ai_addr, themp->ai_addrlen,
 			       infobuff, sizeof(infobuff)));
 
 #if WITH_RETRY
-	 if (sfd->forever || sfd->retry || ai_sorted[i] != NULL) {
+	 if (sfd->forever || sfd->retry) {
 	    level = E_INFO;
+	 } else if (themarr[i] != NULL) {
+	    level = E_WARN;
          } else
 #endif /* WITH_RETRY */
 	    level = E_ERROR;
@@ -133,7 +121,7 @@ int xioopen_ipapp_connect(
 			  lowport, level);
        if (result == STAT_OK)
 	  break;
-       themp = ai_sorted[i++];
+       themp = themarr[i++];
        if (themp == NULL) {
 	  result = STAT_RETRYLATER;
        }
@@ -153,7 +141,7 @@ int xioopen_ipapp_connect(
 	 }
 #endif /* WITH_RETRY */
       default:
-	 free(ai_sorted);
+	 xiofreeaddrinfo(themarr);
 	 free(opts0);free(opts);
 	 return result;
       }
@@ -170,7 +158,7 @@ int xioopen_ipapp_connect(
 	    if (sfd->forever || --sfd->retry) {
 	       Nanosleep(&sfd->intervall, NULL); continue;
 	    }
-	    free(ai_sorted);
+	    xiofreeaddrinfo(themarr);
 	    free(opts0);
 	    return STAT_RETRYLATER;
 	 }
@@ -197,8 +185,7 @@ int xioopen_ipapp_connect(
       }
    } while (true);
    /* only "active" process breaks (master without fork, or child) */
-   free(ai_sorted);
-   xiofreeaddrinfo(themlist);
+   xiofreeaddrinfo(themarr);
 
    if ((result = _xio_openlate(sfd, opts)) < 0) {
 	   free(opts0);free(opts);
@@ -223,7 +210,7 @@ int
 	   int *pf,
 	   int protocol,
 	   const int ai_flags[2],
-	   struct addrinfo **themlist,
+	   struct addrinfo ***themarr,
 	   union sockaddr_union *us,
 	   socklen_t *uslen,
 	   bool *needbind,
@@ -236,7 +223,7 @@ int
 
    if (hostname != NULL || portname != NULL) {
       rc = xiogetaddrinfo(hostname, portname, *pf, socktype, protocol,
-			  themlist, ai_flags);
+			  themarr, ai_flags);
       if (rc == EAI_AGAIN) {
 	 Warn4("_xioopen_ipapp_prepare(node=\"%s\", service=\"%s\", pf=%d, ...): %s",
 	       hostname?hostname:"NULL", portname?portname:"NULL",
@@ -253,13 +240,13 @@ int
    applyopts(NULL, -1, opts, PH_EARLY);
 
    /* 3 means: IP address AND port accepted */
-   if (retropt_bind(opts, (*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family,
+   if (retropt_bind(opts, (*pf!=PF_UNSPEC)?*pf:(**themarr)->ai_family,
 		    socktype, protocol, (struct sockaddr *)us, uslen, 3,
 		    ai_flags)
        != STAT_NOACTION) {
       *needbind = true;
    } else {
-      switch ((*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family) {
+      switch ((*pf!=PF_UNSPEC)?*pf:(**themarr)->ai_family) {
 #if WITH_IP4
       case PF_INET:  socket_in_init(&us->ip4);  *uslen = sizeof(us->ip4); break;
 #endif /* WITH_IP4 */
@@ -271,7 +258,7 @@ int
    }
 
    if (retropt_2bytes(opts, OPT_SOURCEPORT, &port) >= 0) {
-      switch ((*pf!=PF_UNSPEC)?*pf:(*themlist)->ai_family) {
+      switch ((*pf!=PF_UNSPEC)?*pf:(**themarr)->ai_family) {
 #if WITH_IP4
       case PF_INET:  us->ip4.sin_port = htons(port); break;
 #endif /* WITH_IP4 */
@@ -396,61 +383,5 @@ int xioopen_ipapp_listen(
    return 0;
 }
 #endif /* WITH_IP4 && WITH_TCP && WITH_LISTEN */
-
-
-/* Sort the records of an addrinfo list themp (as returned by getaddrinfo),
-   return the sorted list in the array ai_sorted (takes at most n entries
-   including the terminating NULL)
-   Returns 0 on success. */
-int _xio_sort_ip_addresses(
-	struct addrinfo *themlist,
-	struct addrinfo **ai_sorted)
-{
-	struct addrinfo *themp;
-	int i;
-	int ipv[3];
-	int ipi = 0;
-
-	/* Make a simple array of IP version preferences */
-	switch (xioparms.preferred_ip) {
-	case '0':
-		ipv[0] = PF_UNSPEC;
-		ipv[1] = -1;
-		break;
-	case '4':
-		ipv[0] = PF_INET;
-		ipv[1] = PF_INET6;
-		ipv[2] = -1;
-		break;
-	case '6':
-		ipv[0] = PF_INET6;
-		ipv[1] = PF_INET;
-		ipv[2] = -1;
-		break;
-	default:
-		Error("INTERNAL: undefined preferred_ip value");
-		return -1;
-	}
-
-	/* Create the sorted list */
-	ipi = 0;
-	i = 0;
-	while (ipv[ipi] >= 0) {
-		themp = themlist;
-		while (themp != NULL) {
-			if (ipv[ipi] == PF_UNSPEC) {
-				ai_sorted[i] = themp;
-				++i;
-			} else if (ipv[ipi] == themp->ai_family) {
-				ai_sorted[i] = themp;
-				++i;
-			}
-			themp = themp->ai_next;
-		}
-		++ipi;
-	}
-	ai_sorted[i] = NULL;
-	return 0;
-}
 
 #endif /* WITH_TCP || WITH_UDP */

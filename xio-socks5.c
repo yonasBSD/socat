@@ -512,7 +512,7 @@ static int xioopen_socks5(
 	const char *socks_server, *target_name, *target_port, *socks_port;
 	union sockaddr_union us_sa, *us = &us_sa;
 	socklen_t uslen = sizeof(us_sa);
-	struct addrinfo *themlist, *themp;
+	struct addrinfo **themarr, *themp;
 	bool needbind = false;
 	bool lowport = false;
 	char infobuff[256];
@@ -542,7 +542,7 @@ static int xioopen_socks5(
 	result = _xioopen_ipapp_prepare(opts, &opts0, socks_server, socks_port,
 					&pf, ipproto,
 					sfd->para.socket.ip.ai_flags,
-					&themlist, us, &uslen,
+					&themarr, us, &uslen,
 					&needbind, &lowport, socktype);
 
 	Notice2("connecting to socks5 server %s:%s",
@@ -557,8 +557,8 @@ static int xioopen_socks5(
 		}
 #endif
 
-		/* loop over themlist */
-		themp = themlist;
+		/* loop over themarr */
+		themp = themarr[0];
 		while (themp != NULL) {
 			Notice1("opening connection to %s",
 				sockaddr_info(themp->ai_addr, themp->ai_addrlen,
@@ -584,11 +584,11 @@ static int xioopen_socks5(
 				}
 #endif
 			default:
-				xiofreeaddrinfo(themlist);
+				xiofreeaddrinfo(themarr);
 				return result;
 			}
 		}
-		xiofreeaddrinfo(themlist);
+		xiofreeaddrinfo(themarr);
 		applyopts(sfd, -1, opts, PH_ALL);
 
 		if ((result = _xio_openlate(sfd, opts)) < 0)
