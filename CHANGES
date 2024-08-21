@@ -72,6 +72,10 @@ Porting:
 	in sys/stropts.h
 	Thanks to Andy Fiddaman for sending a patch.
 
+	On latest Illumos, compilation failed due to new unexpected SO_PROTOCOL
+	implementation.
+	Thanks to Andy Fiddaman for sending a patch.
+
 Building:
 	Makefile.in: procan.o build requires srcdir prefix for explicit source
 	file.
