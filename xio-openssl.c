@@ -1456,7 +1456,10 @@ cont_out:
       sycSSL_CTX_set_verify(ctx,
 			    SSL_VERIFY_PEER| SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
 			    NULL);
-      Warn("OpenSSL: Warning: this implementation does not check CRLs");
+      if (first_child) {
+	 /* The first forked off process, print the warning only once */
+	 Warn("OpenSSL: Warning: this implementation does not check CRLs");
+      }
    } else {
       sycSSL_CTX_set_verify(ctx,
 			    SSL_VERIFY_NONE,
