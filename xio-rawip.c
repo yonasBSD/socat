@@ -66,7 +66,6 @@ static int xioopen_rawip_sendto(
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&pf, xioparms.preferred_ip);
    if ((result = _xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
 				       addrdesc->groups, &pf)) != STAT_OK) {
       return result;
@@ -159,7 +158,6 @@ static int xioopen_rawip_datagram(
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&pf, xioparms.preferred_ip);
    if ((result =
 	_xioopen_rawip_sendto(argv[1], argv[2], opts, xioflags, xxfd,
 			      addrdesc->groups, &pf)) != STAT_OK) {

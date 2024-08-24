@@ -318,6 +318,7 @@ int main(int argc, const char *argv[]) {
 	 socat_opts.lock.intervall.tv_nsec = 0;
 	 break;
 #if WITH_IP4 || WITH_IP6
+      case '0':
 #if WITH_IP4
       case '4':
 #endif
@@ -432,6 +433,13 @@ int main(int argc, const char *argv[]) {
    }
 #endif /* WITH_STATS */
 
+   /* Display important info, values may be set by:
+      ./configure --enable-default-ipv=0|4|6
+      env SOCAT_PREFERRED_RESOLVE_IP, SOCAT_DEFAULT_LISTEN_IP
+      options -0 -4 -6  */
+   Info1("default listen IP version is %c", xioparms.default_ip);
+   Info1("preferred resolve IP version is %c", xioparms.preferred_ip);
+
    result = socat(arg1[0], arg1[1]);
    if (result == EXIT_SUCCESS && engine_result != EXIT_SUCCESS) {
       result = engine_result; 	/* a signal handler reports failure */
@@ -481,6 +489,9 @@ void socat_usage(FILE *fd) {
    fputs("      -g     do not check option groups\n", fd);
    fputs("      -L <lockfile>  try to obtain lock, or fail\n", fd);
    fputs("      -W <lockfile>  try to obtain lock, or wait\n", fd);
+#if WITH_IP4 || WITH_IP6
+   fputs("      -0     do not prefer an IP version\n", fd);
+#endif
 #if WITH_IP4
    fputs("      -4     prefer IPv4 if version is not explicitly specified\n", fd);
 #endif

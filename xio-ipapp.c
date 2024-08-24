@@ -53,7 +53,6 @@ int xioopen_ipapp_connect(
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&pf, xioparms.default_ip);
    if (sfd->howtoend == END_UNSPEC)
       sfd->howtoend = END_SHUTDOWN;
 

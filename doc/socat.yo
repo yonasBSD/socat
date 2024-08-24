@@ -221,10 +221,13 @@ label(option_W)dit(bf(tt(-W))tt(<lockfile>))
    creates it and continues, unlinks lockfile on exit.
 label(option_4)dit(bf(tt(-4)))
    Use IP version 4 in case the addresses do not implicitly or explicitly
-   specify a version. Since version 1.8.0 the default is no preference.
+   specify a version. Since version 1.8.0.1 this is the default.
 label(option_6)dit(bf(tt(-6)))
    Use IP version 6 in case the addresses do not implicitly or explicitly
    specify a version.
+label(option_0)dit(bf(tt(-0)))
+   Do not prefer a particular IP version; this lets passive addresses (LISTEN,
+   RECV, ...) serve both versions on some platforms (not BSD).
 label(option_statistics)dit(bf(tt(--statistics)))
 dit(bf(tt(-S)))
    Logs transfer statistics (bytes and blocks counters for both directions)

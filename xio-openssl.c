@@ -274,7 +274,6 @@ static int xioopen_openssl_connect(
       return STAT_NORETRY;
    }
 
-   xioinit_ip(&pf, xioparms.default_ip);
    if (sfd->howtoend == END_UNSPEC)
       sfd->howtoend = END_SHUTDOWN;
    if (applyopts_single(sfd, opts, PH_INIT) < 0)

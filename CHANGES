@@ -1,5 +1,16 @@
 ﻿
 Corrections:
+	When no IP version was preferred by environment, option -4/-6, or
+	address option pf, Socat version 1.8.0.0 address TCP-LISTEN did not
+	accept TCP4 connections under BSD family operating systems, but only
+	TCP6. To regain previous behaviour, preferring IP version 4 is now the
+	default. This also fixes some other issues with bind and range options.
+	Thanks to Mike Andrews for reporting this issue.
+	Tests: LISTEN_4 LISTEN_6  V1800_*_RANGE  V1800_*_BIND
+
+	Added Socat option -0 to allow version 1.8.0.0 behaviour (no preferred
+	IP version).
+
 	Guard applyopts_termios_value() with WITH_TERMIOS.
 	Thanks to Kush Upadhyay from Amazon Bottlerocket team for providing the
 	patch.

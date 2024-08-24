@@ -107,7 +107,7 @@ case "X$val_t" in
 esac
 MICROS=${S}${uS}
 MICROS=${MICROS##0000}; MICROS=${MICROS##00}; MICROS=${MICROS##0}
-# changed below
+# changed below again
 
 _MICROS=$((MICROS+999999)); SECONDs="${_MICROS%??????}"
 [ -z "$SECONDs" ] && SECONDs=0
@@ -252,9 +252,10 @@ MCINTERFACE=$INTERFACE
 LOCALHOST=localhost 	# attention: on FreeBSD-10 localhost resolves primarily to IPv6
 LOCALHOST4=127.0.0.1
 LOCALHOST6="[::1]"
-#PROTO=$(awk '{print($2);}' /etc/protocols |sort -n |tail -n 1)
-#PROTO=$(($PROTO+1))
-PROTO=$((144+RANDOM/2048))
+#IPPROTO=$(awk '{print($2);}' /etc/protocols |sort -n |tail -n 1)
+#IPPROTO=$(($PROTO+1))
+IPPROTO=$((144+RANDOM/2048))
+[ "$DEFS" ] && echo "IPPROTO=\"$IPPROTO\"" >&2
 _PORT=12001
 SOURCEPORT=2002
 REUSEADDR=reuseaddr 	# use this with LISTEN addresses and bind options
@@ -2183,12 +2184,6 @@ esac
 N=$((N+1))
 
 
-case "$UNAME" in
-Linux)  IPPROTO=254 ;;
-Darwin) IPPROTO=255 ;;
-*)      IPPROTO=254 ;;	# just a guess
-esac
-
 NAME=RAWIP4SELF
 case "$TESTS" in
 *%$N%*|*%functions%*|*%ip4%*|*%rawip%*|*%root%*|*%$NAME%*)
@@ -2207,7 +2202,7 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-    testecho "$N" "$TEST" "" "ip4:127.0.0.1:$IPPROTO" "$opts"
+    testecho "$N" "$TEST" "" "IP4:127.0.0.1:$IPPROTO" "$opts"
 fi
 esac
 N=$((N+1))
@@ -2230,7 +2225,7 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-    testecho "$N" "$TEST" "" "ip:127.0.0.1:$IPPROTO" "$opts"
+    testecho "$N" "$TEST" "" "IP:127.0.0.1:$IPPROTO" "$opts"
 fi ;; # NUMCOND, feats
 esac
 N=$((N+1))
@@ -2253,7 +2248,7 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-    testecho "$N" "$TEST" "" "ip6:[::1]:$IPPROTO" "$opts"
+    testecho "$N" "$TEST" "" "IP6:[::1]:$IPPROTO" "$opts"
 fi ;; # NUMCOND, feats
 esac
 N=$((N+1))
@@ -2276,7 +2271,7 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-    testecho "$N" "$TEST" "" "ip:[::1]:$IPPROTO" "$opts"
+    testecho "$N" "$TEST" "" "IP:[::1]:$IPPROTO" "$opts"
 fi
 esac
 N=$((N+1))
@@ -2300,7 +2295,7 @@ elif [ "$UNAME" != Linux ]; then
 else
     newport tcp4 	# provide free port number in $PORT
     #ts="127.0.0.1:$tsl"
-    testecho "$N" "$TEST" "" "tcp:$SECONDADDR:$PORT,sp=$PORT,bind=$SECONDADDR,reuseaddr" "$opts"
+    testecho "$N" "$TEST" "" "TCP:$SECONDADDR:$PORT,sp=$PORT,bind=$SECONDADDR,reuseaddr" "$opts"
 fi
 esac
 N=$((N+1))
@@ -5189,8 +5184,8 @@ CMD2="$TRACE $SOCAT $opts -lpproxy -t$(reltime 10) TCP4-L:$PORT2,reuseaddr,bind=
 CMD3="$TRACE $SOCAT $opts -lpwrapper -t$(reltime 30) TCP4-L:$PORT3,reuseaddr,bind=$LOCALHOST,fork PROXY:$LOCALHOST:$LOCALHOST:$PORT4,pf=ip4,proxyport=$PORT2,resolve"
 # this is our double client in the protected network using SSL
 CMD4="$TRACE $SOCAT $opts -lp2client -t$(reltime 30) SSL:$LOCALHOST:$PORT3,retry=10,interval=$(reltime 10),cert=testcli.pem,cafile=testsrv.crt,verify,fork,$SOCAT_EGD TCP4:$LOCALHOST:$PORT1,forever,interval=$(reltime 1)"
-# this is the double server in the outside network
-CMD5="$TRACE $SOCAT $opts -lp2server -t$(reltime 40) TCP4-L:$PORT5,reuseaddr,bind=$LOCALHOST,backlog=3,fork SSL-L:$PORT4,pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt,retry=20,interval=$(reltime 5)"
+# This is the double server in the outside network; accept-timeout because it likes to remain hanging on BSD
+CMD5="$TRACE $SOCAT $opts -lp2server -t$(reltime 40) TCP4-L:$PORT5,reuseaddr,bind=$LOCALHOST,backlog=3,accept-timeout=4,fork SSL-L:$PORT4,pf=ip4,reuseaddr,bind=$LOCALHOST,$SOCAT_EGD,cert=testsrv.pem,cafile=testcli.crt,retry=20,interval=$(reltime 5)"
 # this is the outside client that wants to use the protected server
 CMD6="$TRACE $SOCAT $opts -lpclient -t$(reltime 60) - TCP4:$LOCALHOST:$PORT5,retry=3,interval=$(reltime 10)"
 printf "test $F_n $TEST... " $N
@@ -5219,7 +5214,8 @@ pid6_2=$!
 echo "$da3" |$CMD6 >${tf}_3 2>"${te}6_3" &
 pid6_3=$!
 wait $pid6_1 $pid6_2 $pid6_3
-kill $pid1 $pid2 $pid3 $pid4 $pid5 2>/dev/null
+kill $pid1 $pid2 $pid3 $pid4 $pid5 $(childpids $pid5) 2>/dev/null
+# (On BSDs a child of pid5 loves to hang)
 #
 (echo "$da1"; relsleep 2) |diff - "${tf}_1" >"${tdiff}1"
 (echo "$da2"; relsleep 2) |diff - "${tf}_2" >"${tdiff}2"
@@ -7037,7 +7033,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO; PROTO=$((PROTO+1))
+ts1p=$IPPROTO; #IPPROTO=$((IPPROTO+1))
 ts1a="127.0.0.1"
 ts1="$ts1a:$ts1p"
 ts2a="$SECONDADDR"
@@ -7094,7 +7090,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO; PROTO=$((PROTO+1))
+ts1p=$IPPROTO; #IPPROTO=$((IPPROTO+1))
 tsa="[::1]"
 ts1="$tsa:$ts1p"
 ts2="$tsa"
@@ -7300,7 +7296,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO; PROTO=$((PROTO+1))
+ts1p=$IPPROTO; #IPPROTO=$((IPPROTO+1))
 ts1a="127.0.0.1"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -7356,7 +7352,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO; PROTO=$((PROTO+1))
+ts1p=$IPPROTO; #IPPROTO=$((IPPROTO+1))
 ts1a="[::1]"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -7755,11 +7751,11 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     listCANT="$listCANT $N"
 else
 newport udp4 	# provide free port number in $PORT
-#testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr,fork" "" "range=$SECONDADDR/32" "IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT" "" "range=$SECONDADDR/32" "UDP4-RECV:$PORT!!IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
+#testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$IPPROTO,reuseaddr,fork" "" "range=$SECONDADDR/32" "IP4-SENDTO:127.0.0.1:$IPPROTO" 4 ip $IPPROTO 0
+testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$IPPROTO,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT" "" "range=$SECONDADDR/32" "UDP4-RECV:$PORT!!IP4-SENDTO:127.0.0.1:$IPPROTO" 4 ip $IPPROTO 0
 fi ;; # NUMCOND, feats, root
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 NAME=IP4RECVFROM_TCPWRAP
@@ -7781,12 +7777,12 @@ hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
 newport udp4 	# provide free port number in $PORT
-#testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$PROTO,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT" "" "tcpwrap-etc=$td" "UDP4-RECV:$PORT!!IP4-SENDTO:127.0.0.1:$PROTO" 4 ip $PROTO 0
+#testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$IPPROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "IP4-SENDTO:127.0.0.1:$IPPROTO" 4 ip $IPPROTO 0
+testserversec "$N" "$TEST" "$opts" "IP4-RECVFROM:$IPPROTO,reuseaddr!!UDP4-SENDTO:127.0.0.1:$PORT" "" "tcpwrap-etc=$td" "UDP4-RECV:$PORT!!IP4-SENDTO:127.0.0.1:$IPPROTO" 4 ip $IPPROTO 0
 fi # NUMCOND, feats, root
  ;;
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -7804,14 +7800,14 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PROTO1=$PROTO; PROTO=$((PROTO+1))
-PROTO2=$PROTO
-# we use the forward channel (PROTO1) for testing, and have a backward channel
-# (PROTO2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "ip4-recv:$PROTO1,reuseaddr!!ip4-sendto:127.0.0.1:$PROTO2" "" "range=$SECONDADDR/32" "ip4-recv:$PROTO2!!ip4-sendto:127.0.0.1:$PROTO1" 4 ip $PROTO1 0
+IPPROTO1=$IPPROTO; #IPPROTO=$((IPPROTO+1))
+IPPROTO2=$((IPPROTO+1))
+# we use the forward channel (IPPROTO1) for testing, and have a backward channel
+# (IPPROTO2) to get the data back, so we get the classical echo behaviour
+testserversec "$N" "$TEST" "$opts" "ip4-recv:$IPPROTO1,reuseaddr!!ip4-sendto:127.0.0.1:$IPPROTO2" "" "range=$SECONDADDR/32" "ip4-recv:$IPPROTO2!!ip4-sendto:127.0.0.1:$IPPROTO1" 4 ip $IPPROTO1 0
 fi ;; # NUMCOND, feats, root
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -7830,18 +7826,18 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PROTO1=$PROTO; PROTO=$((PROTO+1))
-PROTO2=$PROTO
+IPPROTO1=$IPPROTO; #IPPROTO=$((IPPROTO+1))
+IPPROTO2=$((IPPROTO+1))
 ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: $SECONDADDR" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-# we use the forward channel (PROTO1) for testing, and have a backward channel
-# (PROTO2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "ip4-recv:$PROTO1,reuseaddr!!ip4-sendto:127.0.0.1:$PROTO2" "" "tcpwrap-etc=$td" "ip4-recv:$PROTO2!!ip4-sendto:127.0.0.1:$PROTO1" 4 ip $PROTO1 0
+# we use the forward channel (IPPROTO1) for testing, and have a backward channel
+# (IPPROTO2) to get the data back, so we get the classical echo behaviour
+testserversec "$N" "$TEST" "$opts" "ip4-recv:$IPPROTO1,reuseaddr!!ip4-sendto:127.0.0.1:$IPPROTO2" "" "tcpwrap-etc=$td" "ip4-recv:$IPPROTO2!!ip4-sendto:127.0.0.1:$IPPROTO1" 4 ip $IPPROTO1 0
 fi ;; # NUMCOND, feats, root
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -7860,11 +7856,11 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     listCANT="$listCANT $N"
 else
 newport udp6 	# provide free port number in $PORT
-#testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr,fork" "" "range=[::2]/128" "IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr!!UDP6-SENDTO:[::1]:$PORT" "" "range=[::2]/128" "UDP6-RECV:$PORT!!IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
+#testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$IPPROTO,reuseaddr,fork" "" "range=[::2]/128" "IP6-SENDTO:[::1]:$IPPROTO" 6 ip $IPPROTO 0
+testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$IPPROTO,reuseaddr!!UDP6-SENDTO:[::1]:$PORT" "" "range=[::2]/128" "UDP6-RECV:$PORT!!IP6-SENDTO:[::1]:$IPPROTO" 6 ip $IPPROTO 0
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 NAME=IP6RECVFROM_TCPWRAP
@@ -7886,11 +7882,11 @@ hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
 newport udp6 	# provide free port number in $PORT
-#testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
-testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$PROTO,reuseaddr!!UDP6-SENDTO:[::1]:$PORT" "" "tcpwrap-etc=$td" "UDP6-RECV:$PORT!!IP6-SENDTO:[::1]:$PROTO" 6 ip $PROTO 0
+#testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$IPPROTO,reuseaddr,fork" "" "tcpwrap-etc=$td" "IP6-SENDTO:[::1]:$IPPROTO" 6 ip $IPPROTO 0
+testserversec "$N" "$TEST" "$opts" "IP6-RECVFROM:$IPPROTO,reuseaddr!!UDP6-SENDTO:[::1]:$PORT" "" "tcpwrap-etc=$td" "UDP6-RECV:$PORT!!IP6-SENDTO:[::1]:$IPPROTO" 6 ip $IPPROTO 0
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -7908,14 +7904,14 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PROTO1=$PROTO; PROTO=$((PROTO+1))
-PROTO2=$PROTO
-# we use the forward channel (PROTO1) for testing, and have a backward channel
-# (PROTO2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "ip6-recv:$PROTO1,reuseaddr!!ip6-sendto:[::1]:$PROTO2" "" "range=[::2]/128" "ip6-recv:$PROTO2!!ip6-sendto:[::1]:$PROTO1" 6 ip $PROTO1 0
+IPPROTO1=$IPPROTO; #IPPROTO=$((IPPROTO+1))
+IPPROTO2=$((IPPROTO+1))
+# we use the forward channel (IPPROTO1) for testing, and have a backward channel
+# (IPPROTO2) to get the data back, so we get the classical echo behaviour
+testserversec "$N" "$TEST" "$opts" "ip6-recv:$IPPROTO1,reuseaddr!!ip6-sendto:[::1]:$IPPROTO2" "" "range=[::2]/128" "ip6-recv:$IPPROTO2!!ip6-sendto:[::1]:$IPPROTO1" 6 ip $IPPROTO1 0
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 NAME=IP6RECV_TCPWRAP
@@ -7932,18 +7928,18 @@ elif [ $(id -u) -ne 0 -a "$withroot" -eq 0 ]; then
     numCANT=$((numCANT+1))
     listCANT="$listCANT $N"
 else
-PROTO1=$PROTO; PROTO=$((PROTO+1))
-PROTO2=$PROTO
+IPPROTO1=$IPPROTO; #IPPROTO=$((IPPROTO+1))
+IPPROTO2=$((IPPROTO+1))
 ha="$td/hosts.allow"
 hd="$td/hosts.deny"
 $ECHO "socat: [::2]" >"$ha"
 $ECHO "ALL: ALL" >"$hd"
-# we use the forward channel (PROTO1) for testing, and have a backward channel
-# (PROTO2) to get the data back, so we get the classical echo behaviour
-testserversec "$N" "$TEST" "$opts" "ip6-recv:$PROTO1,reuseaddr!!ip6-sendto:[::1]:$PROTO2" "" "tcpwrap-etc=$td" "ip6-recv:$PROTO2!!ip6-sendto:[::1]:$PROTO1" 6 ip $PROTO1 0
+# we use the forward channel (IPPROTO1) for testing, and have a backward channel
+# (IPPROTO2) to get the data back, so we get the classical echo behaviour
+testserversec "$N" "$TEST" "$opts" "ip6-recv:$IPPROTO1,reuseaddr!!ip6-sendto:[::1]:$IPPROTO2" "" "tcpwrap-etc=$td" "ip6-recv:$IPPROTO2!!ip6-sendto:[::1]:$IPPROTO1" 6 ip $IPPROTO1 0
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -8685,7 +8681,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO
+ts1p=$IPPROTO
 #ts1="$BCADDR/8:$ts1p"
 ts1="$BCADDR:$ts1p"
 ts2p=$ts1p
@@ -8734,7 +8730,7 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -8835,7 +8831,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO
+ts1p=$IPPROTO
 ts1a="$SECONDADDR"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -8872,7 +8868,7 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 if true; then
@@ -9032,7 +9028,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO
+ts1p=$IPPROTO
 ts1a="$SECONDADDR"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -9072,7 +9068,7 @@ else
 fi
 fi ;; # NUMCOND, feats
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -9841,7 +9837,7 @@ else
 tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
-ts1p=$PROTO; PROTO=$((PROTO+1))
+ts1p=$IPPROTO; #IPPROTO=$((IPPROTO+1))
 ts1a="127.0.0.1"
 ts1="$ts1a:$ts1p"
 da="test$N $(date) $RANDOM"
@@ -9877,7 +9873,7 @@ else
 fi
 fi ;; # NUMCOND, root
 esac
-PROTO=$((PROTO+1))
+#IPPROTO=$((IPPROTO+1))
 N=$((N+1))
 
 
@@ -10189,9 +10185,10 @@ case "X$IPPORT" in
     tsa="$ADDR:$PORT"	# test sendto address
     ;;
     "XPROTO")
-    tra="$PROTO"		# test recv address
-    tsa="$ADDR:$PROTO"	# test sendto address
-    PROTO=$((PROTO+1)) ;;
+    tra="$IPPROTO"		# test recv address
+    tsa="$ADDR:$IPPROTO"	# test sendto address
+    #IPPROTO=$((IPPROTO+1))
+    ;;
     *)
     tra="$(eval echo "$ADDR")"	# resolve $N
     tsa="$tra"
@@ -10448,9 +10445,10 @@ case "X$IPPORT" in
     tsa="$ADDR:$tra"	# test sendto address
     ;;
     "XPROTO")
-    tra="$PROTO"		# test recv address
-    tsa="$ADDR:$PROTO"	# test sendto address
-    PROTO=$((PROTO+1)) ;;
+    tra="$IPPROTO"		# test recv address
+    tsa="$ADDR:$IPPROTO"	# test sendto address
+    #IPPROTO=$((IPPROTO+1))
+    ;;
     *)
     tra="$(eval echo "$ADDR")"	# resolve $N
     tsa="$tra"
@@ -11878,7 +11876,7 @@ while read KEYW FEAT ADDR IPPORT; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 RUNS=$(tolower $KEYW)
 PROTO=$KEYW
-proto="$(echo "$PROTO" |tr A-Z a-z)"
+proto="$(tolower "$PROTO")"
 feat="$(tolower "$FEAT")"
 # test the max-children option on really connection oriented sockets
 NAME=${KEYW}MAXCHILDREN
@@ -11966,7 +11964,7 @@ while read KEYW FEAT SEL ADDR IPPORT SHUT; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 RUNS=$(tolower $KEYW)
 PROTO=$KEYW
-proto="$(echo "$PROTO" |tr A-Z a-z)"
+proto="$(tolower "$PROTO")"
 # test the max-children option on pseudo connected sockets
 NAME=${KEYW}MAXCHILDREN
 case "$TESTS" in
@@ -12513,7 +12511,7 @@ if [ -z "$addr" ] || [[ "$addr" == \#* ]]; then continue; fi
 # umask option
 ADDR=$(toupper $addr)
 ADDR_=${ADDR/-/_}
-PROTO=$(toupper $proto)
+#PROTO=$(toupper $proto)
 if [ "$diropt" = "." ]; then diropt=; fi
 if [ "$fileopt" = "." ]; then fileopt=; fi
 if [ "$addropts" = "." ]; then addropts=; fi
@@ -12808,7 +12806,7 @@ if [ -z "$addr" ] || [[ "$addr" == \#* ]]; then continue; fi
 # the file system entry at the end
 ADDR=$(toupper $addr)
 ADDR_=${ADDR/-/_}
-PROTO=$(toupper $proto)
+#PROTO=$(toupper $proto)
 if [ "$diropt" = "." ]; then diropt=; fi
 if [ "$fileopt" = "." ]; then fileopt=; fi
 if [ "$addropts" = "." ]; then addropts=; fi
@@ -14054,7 +14052,7 @@ da="test$N $(date) $RANDOM"
 init_openssl_s_server
 newport udp4
 CMD1="$TRACE openssl s_server $OPENSSL_S_SERVER_4 $OPENSSL_S_SERVER_DTLS -accept $PORT -quiet $OPENSSL_S_SERVER_NO_IGN_EOF -cert testsrv.pem"
-CMD="$TRACE $SOCAT $opts -T $(reltime 3) - OPENSSL-DTLS-CLIENT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD"
+CMD="$TRACE $SOCAT $opts -T $(reltime 3) - OPENSSL-DTLS-CLIENT:$LOCALHOST:$PORT,pf=ip4,verify=0,$SOCAT_EGD,so-rcvtimeo=2"
 printf "test $F_n $TEST... " $N
 ( relsleep 2; echo "$da"; relsleep 1 ) |$CMD1 2>"${te}1" &
 pid1=$!	# background process id
@@ -15956,7 +15954,7 @@ N=$((N+1))
 while read KEYW FEAT RUNS ADDR IPPORT; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 PROTO=$KEYW
-proto="$(echo "$PROTO" |tr A-Z a-z)"
+proto="$(tolower "$PROTO")"
 feat="$(tolower "$FEAT")"
 # test the fork option on really RECVFROM oriented sockets
 NAME=${KEYW}_FORK
@@ -16000,7 +15998,7 @@ tf="$td/test$N.stdout"
 te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
-CMD0="$TRACE $SOCAT $opts -t $(reltime 30) $PROTO-RECVFROM:$tsl,fork SYSTEM:'read t x; sleep \$t; echo \\\"\$x\\\" >>'\"$tf\""
+CMD0="$TRACE $SOCAT $opts -t $(reltime 30) $PROTO-RECVFROM:$tsl,fork,so-rcvtimeo=1 SYSTEM:'read t x; sleep \$t; echo \\\"\$x\\\" >>'\"$tf\""
 CMD1="$TRACE $SOCAT $opts -t $(reltime 30) - $PROTO-SENDTO:$tsc"
 printf "test $F_n $TEST... " $N
 eval $CMD0 </dev/null 2>"${te}0" &
@@ -16328,7 +16326,7 @@ te="$td/test$N.stderr"
 tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 newport tcp4
-CMD0="$TRACE $SOCAT $opts -lp server0 -r \"$td/test$N.\\\$PROGNAME-\\\$TIMESTAMP.\\\$MICROS-\\\$SERVER0_PEERADDR-\\\$\\\$.in.log\" -R \"$td/test$N.\\\$PROGNAME-\\\$TIMESTAMP.\\\$MICROS-\\\$SERVER0_PEERADDR-\\\$\\\$.out.log\" TCP4-LISTEN:$PORT,so-reuseaddr,fork PIPE"
+CMD0="$TRACE $SOCAT $opts -T 1 -lp server0 -r \"$td/test$N.\\\$PROGNAME-\\\$TIMESTAMP.\\\$MICROS-\\\$SERVER0_PEERADDR-\\\$\\\$.in.log\" -R \"$td/test$N.\\\$PROGNAME-\\\$TIMESTAMP.\\\$MICROS-\\\$SERVER0_PEERADDR-\\\$\\\$.out.log\" TCP4-LISTEN:$PORT,so-reuseaddr,fork PIPE"
 CMD1="$TRACE $SOCAT $opts - TCP4-CONNECT:$LOCALHOST:$PORT"
 printf "test $F_n $TEST... " $N
 eval "$CMD0" >/dev/null 2>"${te}0" &
@@ -18056,7 +18054,8 @@ tdiff="$td/test$N.diff"
 da="test$N $(date) $RANDOM"
 #CMD0="$TRACE $SOCAT $opts PIPE SYSTEM:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
 # -T is required on (only?) OpenBSD-4
-CMD0="$TRACE $SOCAT $opts -T 2 SOCKETPAIR SYSTEM:\"$SOCAT\ -dddd\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
+CMD0="$TRACE $SOCAT $opts -T 2 SOCKETPAIR SYSTEM:\"$SOCAT\ -dddd\ -lf\ ${te}1\ PIPE\ PIPE\",setsid,sigint"
+#CMD0="$TRACE $SOCAT $opts -T 2 SOCKETPAIR SYSTEM:\"$SOCAT\ -dddd\ -T\ 1\ -lf ${te}1\ PIPE\ PIPE\",setsid,sigint"
 printf "test $F_n $TEST... " $N
 eval $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
@@ -19195,7 +19194,7 @@ while read KEYW FEAT SEL ADDR IPPORT SHUT; do
 if [ -z "$KEYW" ] || [[ "$KEYW" == \#* ]]; then continue; fi
 RUNS=$(tolower $KEYW)
 PROTO=$KEYW
-proto="$(echo "$PROTO" |tr A-Z a-z)"
+proto="$(tolower "$PROTO")"
 # test the max-children option on pseudo connected sockets
 NAME=${KEYW}MAXCHILDREN
 case "$TESTS" in
@@ -19212,7 +19211,7 @@ elif ! cond=$(checkconds \
 		  "" \
 		  "" \
 		  "$FEAT IP${KEYW##*[A-Z]} FILE STDIO" \
-		  "FILE $PROTO-LISTEN STDIO $PROTO-CONNECT" \
+		  "FILE $PROTO-LISTEN STDIO $KEYW-CONNECT" \
 		  "$REUSEADDR o-trunc o-creat o-append fork max-children $SHUT" \
 		  "$RUNS" ); then
     $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
@@ -19937,6 +19936,265 @@ N=$((N+1))
 #socat - TCP6:localhost-4.dest-unreach.net:12345
 
 
+# Is option -0 available?
+opt0=
+if SOCAT_MAIN_WAIT= $SOCAT -h |grep -e '[[:space:]]-0[[:space:]]' >/dev/null; then
+    opt0=-0
+fi
+
+# Test if Socat TCP-L without special options and env accepts IPv4 connections.
+# This is traditional behaviour, but version 1.8.0.0 did this only on Linux.
+NAME=LISTEN_4
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip4%*|*%tcp4%*|*%listen%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: TCP-L with -0 accepts IPv4"
+# Start a listener with TCP-L, check if TCP4-CONNECT succeeds
+if ! eval $NUMCOND; then :
+elif [ -z "$opt0" -a $SOCAT_VERSION != 1.8.0.0 ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option -0 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP4 TCP LISTEN FILE" \
+		  "TCP-LISTEN TCP4-CONNECT FILE" \
+		  "" \
+		  "tcp4" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    opt0=
+    if SOCAT_MAIN_WAIT= $SOCAT -h |grep -e '[[:space:]]-0[[:space:]]' >/dev/null; then
+	opt0=-0
+    fi
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    newport tcp4
+    CMD0="$TRACE $SOCAT $opts -u $opt0 TCP-LISTEN:$PORT FILE:/dev/null"
+    CMD1="$TRACE $SOCAT $opts -u FILE:/dev/null TCP4-CONNECT:$LOCALHOST4:$PORT"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    relsleep 10
+    $CMD1 >"${tf}1" 2>"${te}1"
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+      case "$UNAME" in
+      FreeBSD|NetBSD|OpenBSD)
+	$PRINTF "${GREEN}FAILED${NORMAL} (by design not on BSD)\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1)) ;;
+      Linux)
+	$PRINTF "$FAILED (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME" ;;
+      *)
+	  $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+	  numCANT=$((numCANT+1))
+	  listCANT="$listCANT $N"
+	  namesCANT="$namesCANT $NAME" ;;
+      esac
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+# Test if Socat TCP-L without special options and env accepts IPv6 connections.
+# This is a nice-to-have behaviour, it might only work on Linux.
+NAME=LISTEN_6
+case "$TESTS" in
+*%$N%*|*%functions%*|*%ip6%*|*%tcp%*|*%listen%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: TCP-L with -0 accepts IPv6"
+# Start a listener with TCP-L, check if TCP6-CONNECT succeeds
+if ! eval $NUMCOND; then :
+elif [ -z "$opt0" -a $SOCAT_VERSION != 1.8.0.0 ]; then
+    $PRINTF "test $F_n $TEST... ${YELLOW}Option -0 not available${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+elif ! cond=$(checkconds \
+		  "" \
+		  "" \
+		  "" \
+		  "IP6 TCP LISTEN FILE" \
+		  "TCP-LISTEN TCP6-CONNECT FILE" \
+		  "" \
+		  "tcp6" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    newport tcp6
+    CMD0="$TRACE $SOCAT $opts -u $opt0 TCP-LISTEN:$PORT,ai-addrconfig=0 FILE:/dev/null"
+    CMD1="$TRACE $SOCAT $opts -u FILE:/dev/null TCP6-CONNECT:$LOCALHOST6:$PORT"
+    printf "test $F_n $TEST... " $N
+    $CMD0 >/dev/null 2>"${te}0" &
+    pid0=$!
+    relsleep 10
+    $CMD1 >"${tf}1" 2>"${te}1"
+    rc1=$?
+    kill $pid0 2>/dev/null; wait
+    if [ "$rc1" -ne 0 ]; then
+	$PRINTF "$FAILED (rc1=$rc1)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	echo "$CMD1"
+	cat "${te}1" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	if [ "$VERBOSE" ]; then echo "$CMD1"; fi
+	if [ "$DEBUG" ];   then cat "${te}1" >&2; fi
+	numOK=$((numOK+1))
+    fi
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+
+
+BIN_TIMEOUT=
+if type timeout >/dev/null 2>&1; then
+    BIN_TIMEOUT=timeout
+fi
+
+# Test regression in 1.8.0.0 of passive IP addresses without explicit IP version
+# with options range and bind using IPv4 addresses
+while read ADDR protov IPPORT ACCEPT_TIMEOUT option _; do
+if [ -z "$ADDR" ] || [[ "$ADDR" == \#* ]]; then continue; fi
+[ "$ACCEPT_TIMEOUT" = "." ] && ACCEPT_TIMEOUT=""
+FEATS=
+case "$ADDR" in *-LISTEN|*-L) FEATS=LISTEN ;; esac
+ADDR_="$(echo $ADDR |tr - _)"
+PROTO="${ADDR%%-*}"
+proto=$(tolower $PROTO)
+OPTION=$(toupper $option)
+FEATS="$FEATS $PROTO"
+case "$PROTO" in OPENSSL*|SSL*) PROTO=TCP ;; esac
+OPTKW="${OPTION%%=**}"
+#
+NAME="$(echo "V1800_${ADDR_}_${OPTION%%=*}" |sed 's/:[.0-8]*//')"
+case "$TESTS" in
+*%$N%*|*%functions%*|*%bugs%*|*%ip4%*|*%$protov%*|*$proto%*|*%socket%*|*%$NAME%*)
+TEST="$NAME: test regression of $ADDR with IPv4 $OPTKW"
+# Start a command with the given address and use bind or range with IPv4
+# address, terminate immediately. When no error occurs the test succeeded.
+if ! eval $NUMCOND; then :
+elif ! cond=$(checkconds \
+		  "" \
+		  "$([ $IPPORT = PROTO ] && echo root)" \
+		  "" \
+		  "$FEATS IP4 PIPE" \
+		  "$ADDR PIPE" \
+		  "${option%%=*}" \
+		  "$(tolower $PROTO)4 $(tolower $PROTO)6" ); then
+    $PRINTF "test $F_n $TEST... ${YELLOW}$cond${NORMAL}\n" $N
+    numCANT=$((numCANT+1))
+    listCANT="$listCANT $N"
+    namesCANT="$namesCANT $NAME"
+else
+    tf="$td/test$N.stdout"
+    te="$td/test$N.stderr"
+    tdiff="$td/test$N.diff"
+    da="test$N $(date) $RANDOM"
+    case X$IPPORT in
+	XPORT)  newport $(tolower $PROTO); _PORT=$PORT ;;
+	XPROTO) echo "IPPROTO=\"$IPPROTO\""
+		_PORT=$IPPROTO ;;
+    esac
+    CMD0="$TRACE $SOCAT $opts ${ADDR}:$_PORT,$option,$ACCEPT_TIMEOUT PIPE"
+    printf "test $F_n $TEST... " $N
+    if [ -z "$ACCEPT_TIMEOUT" ] && [ -z "$BIN_TIMEOUT" ]; then
+	$PRINTF "$CANT (would block)\n"
+	numCANT=$((numCANT+1))
+	listCANT="$listCANT $N"
+	namesCANT="$namesCANT $NAME"
+    else
+      if [ "$BIN_TIMEOUT" ]; then
+	$BIN_TIMEOUT 0.1 $CMD0 >/dev/null 2>"${te}0"
+      else
+	$CMD0 >/dev/null 2>"${te}0"
+      fi
+    rc0=$?
+    # rc0=124 is SIGALRM from timeout, is success
+    if [ "$rc0" -ne 0 -a "$rc0" -ne 124 ]; then
+	$PRINTF "$FAILED (rc0=$rc0)\n"
+	echo "$CMD0 &"
+	cat "${te}0" >&2
+	numFAIL=$((numFAIL+1))
+	listFAIL="$listFAIL $N"
+	namesFAIL="$namesFAIL $NAME"
+    else
+	$PRINTF "$OK\n"
+	if [ "$VERBOSE" ]; then echo "$CMD0 &"; fi
+	if [ "$DEBUG" ];   then cat "${te}0" >&2; fi
+	numOK=$((numOK+1))
+	listOK="$listOK $N"
+    fi
+    fi 	# not would block
+fi # NUMCOND
+ ;;
+esac
+N=$((N+1))
+done <<<"
+TCP-LISTEN               tcp4     PORT  accept-timeout=0.001 range=localhost:255.255.255.255
+TCP-LISTEN               tcp4     PORT  accept-timeout=0.001 bind=127.0.0.1  # works
+SCTP-LISTEN              sctp4    PORT  accept-timeout=0.001 range=localhost:255.255.255.255
+SCTP-LISTEN              sctp4    PORT  accept-timeout=0.001 bind=127.0.0.1  # works
+DCCP-LISTEN              dccp4    PORT  accept-timeout=0.001 range=localhost:255.255.255.255
+DCCP-LISTEN              dccp4    PORT  accept-timeout=0.001 bind=127.0.0.1  # works
+OPENSSL-LISTEN           tcp4     PORT  accept-timeout=0.001 range=localhost:255.255.255.255
+OPENSSL-LISTEN           tcp4     PORT  accept-timeout=0.001 bind=127.0.0.1  # works
+UDP-LISTEN               udp4     PORT  .                    range=127.0.0.1/8
+UDP-LISTEN               udp4     PORT  .                    bind=127.0.0.1
+UDP-RECVFROM             udp4     PORT  .                    range=127.0.0.1/8
+UDP-RECVFROM             udp4     PORT  .                    bind=127.0.0.1
+UDPLITE-LISTEN           udplite4 PORT  .                    range=127.0.0.1/8
+UDPLITE-LISTEN           udplite4 PORT  .                    bind=127.0.0.1
+UDPLITE-RECVFROM         udplite4 PORT  .                    range=127.0.0.1/8
+UDPLITE-RECVFROM         udplite4 PORT  .                    bind=127.0.0.1
+UDP-DATAGRAM:1.2.3.4     udp4     PORT  .                    range=127.0.0.1/8
+UDP-DATAGRAM:1.2.3.4     udp4     PORT  .                    bind=127.0.0.1
+UDPLITE-DATAGRAM:1.2.3.4 udplite4 PORT  .                    range=127.0.0.1/8
+UDPLITE-DATAGRAM:1.2.3.4 udplite4 PORT  .                    bind=127.0.0.1
+IP-DATAGRAM:1.2.3.4      ip4      PROTO .                    range=127.0.0.1/8
+IP-DATAGRAM:1.2.3.4      ip4      PROTO .                    bind=127.0.0.1
+"
+
+
 # end of common tests
 
 ##################################################################################
@@ -20081,7 +20339,7 @@ TEST="$NAME: give a one line description of test"
 if ! eval $NUMCOND; then :
 # Remove unneeded checks, adapt lists of the remaining ones
 elif ! cond=$(checkconds \
-		  "Linux,FreeBSD" \
+		  "Linux FreeBSD" \
 		  "root" \
 		  "nslookup" \
 		  "IP4 TCP LISTEN STDIO PIPE" \
