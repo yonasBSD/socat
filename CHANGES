@@ -1,4 +1,6 @@
 ﻿
+####################### V 1.8.0.1:
+
 Corrections:
 	When no IP version was preferred by environment, option -4/-6, or
 	address option pf, Socat version 1.8.0.0 address TCP-LISTEN did not
@@ -111,7 +113,7 @@ Documentation:
 	Fixed a lot of typos.
 	Thanks to Solomon Victorino for sending the patch.
 
-####################### V 1.8.0.0
+####################### V 1.8.0.0:
 
 Security:
 	Socats OpenSSL addresses do not (and never did) check certificate
