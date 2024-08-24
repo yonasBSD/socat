@@ -19,6 +19,7 @@
 #include "xio-socket.h"
 #include "xio-ip.h"
 #include "xio-ipapp.h"
+#include "xio-socks.h" 	/* _xioopen_opt_socksport() */
 
 #include "xio-socks5.h"
 
@@ -50,9 +51,9 @@
 
 static int xioopen_socks5(int argc, const char *argv[], struct opt *opts, int xioflags, xiofile_t *xxfd, const struct addrdesc *addrdesc);
 
-const struct addrdesc xioaddr_socks5_connect = { "SOCKS5-CONNECT", 1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_CONNECT, 0, 0 HELP(":<socks-server>:<socks-port>:<target-host>:<target-port>") };
+const struct addrdesc xioaddr_socks5_connect = { "SOCKS5-CONNECT", 1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_IP_SOCKS|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_CONNECT, 0, 0 HELP(":<socks-server>[:<socks-port>]:<target-host>:<target-port>") };
 
-const struct addrdesc xioaddr_socks5_listen  = { "SOCKS5-LISTEN",  1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_BIND,    0, 0 HELP(":<socks-server>:<socks-port>:<listen-host>:<listen-port>") };
+const struct addrdesc xioaddr_socks5_listen  = { "SOCKS5-LISTEN",  1+XIO_RDWR, xioopen_socks5, GROUP_FD|GROUP_SOCKET|GROUP_SOCK_IP4|GROUP_SOCK_IP6|GROUP_IP_TCP|GROUP_CHILD|GROUP_RETRY, SOCKS5_COMMAND_BIND,    0, 0 HELP(":<socks-server>[:<socks-port>]:<listen-host>:<listen-port>") };
 
 static const char * _xioopen_socks5_strerror(uint8_t r)
 {
@@ -521,15 +522,20 @@ static int xioopen_socks5(
 		Error1("%s: use option --experimental to acknowledge unmature state", argv[0]);
 		return STAT_NORETRY;
 	}
-	if (argc != 5) {
+	if (argc < 4 || argc > 5) {
 		xio_syntax(argv[0], 4, argc-1, addrdesc->syntax);
 		return STAT_NORETRY;
 	}
 
 	socks_server = argv[1];
-	socks_port = argv[2];
-	target_name = argv[3];
-	target_port = argv[4];
+	if (argc == 5) {
+		socks_port = argv[2];
+		target_name = argv[3];
+		target_port = argv[4];
+	} else {
+		target_name = argv[2];
+		target_port = argv[3];
+	}
 
 	if (sfd->howtoend == END_UNSPEC)
 		sfd->howtoend = END_SHUTDOWN;
@@ -538,6 +544,10 @@ static int xioopen_socks5(
 
 	retropt_int(opts, OPT_SO_TYPE, &socktype);
 	retropt_bool(opts, OPT_FORK, &dofork);
+
+	if (_xioopen_opt_socksport(opts, (char **)&socks_port) < 0) {
+		return STAT_NORETRY;
+	}
 
 	result = _xioopen_ipapp_prepare(opts, &opts0, socks_server, socks_port,
 					&pf, ipproto,

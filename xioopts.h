@@ -182,7 +182,7 @@ enum e_func {
 
 #define GROUP_IP_UDP	0x01000000 	/* not yet used? */
 #define GROUP_IP_TCP	0x02000000
-#define GROUP_IP_SOCKS4	0x04000000
+#define GROUP_IP_SOCKS	0x04000000	/* for socks4(a), socks5 */
 #define GROUP_OPENSSL	0x08000000
 
 #define GROUP_PROCESS	0x10000000	/* a process related option */

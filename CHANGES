@@ -60,6 +60,9 @@ Features:
 
 	Added option ai-all (sets AI_ALL flag of getaddrinfo() resolver)
 
+	Socks5 now also allows syntax without socks port, and supports option
+	socksport.
+
 Porting:
 	Changes for building and testing on NetBSD
 

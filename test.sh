@@ -226,7 +226,7 @@ if type ss >/dev/null 2>&1; then
 	unset SS
     fi
 fi
-[ "$DEFS" ] && echo " NETSTAT=\"$(type netstat)\""
+[ "$DEFS" ] && echo "NETSTAT=\"$(type netstat 2>/dev/null)\""
 
 # for some tests we need a network interface
 if type ip >/dev/null 2>&1; then
@@ -976,6 +976,8 @@ childprocess () {
 
 # return a list of child process pids [killchild]
 childpids () {
+    local recursive i
+    if [ "X$1" = "X-r" ]; then recursive=1; shift; fi
     case "$UNAME" in
     AIX)     l="$(ps -fade |grep "^........ ...... $(printf %6u $1)" |awk '{print($2);}')" ;;
     FreeBSD) l="$(ps -fl   |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$1[ ]" |awk '{print($2);}')" ;;
@@ -991,6 +993,11 @@ childpids () {
     *)       l="$(ps -fade |grep "^[^ ][^ ]*[ ][ ]*[0-9][0-9]*[ ][ ]*$(printf %5u $1) " |awk '{print($2);}')" ;;    esac
     if [ -z "$l" ]; then
 	return 1;
+    fi
+    if [ "$recursive" ]; then
+	for i in $l; do
+	    l="$l $(childpids -r $i)"
+	done
     fi
     echo "$l"
     return 0
@@ -18062,7 +18069,9 @@ printf "test $F_n $TEST... " $N
 eval $CMD0 >/dev/null 2>"${te}0" &
 pid0=$!
 sleep 1
-kill -INT $(childpids $pid0) 2>/dev/null
+#echo childpids:    $(childpids    $pid0)
+#echo childpids -r: $(childpids -r $pid0)
+kill -INT $(childpids -r $pid0) 2>/dev/null
 wait 2>/dev/null
 if grep -q " W waitpid..: child .* exited with status 130" "${te}0"; then
     $PRINTF "$OK\n"

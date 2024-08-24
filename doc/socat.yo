@@ -1110,6 +1110,7 @@ label(ADDRESS_SOCKS5_CONNECT)dit(bf(tt(SOCKS5-CONNECT:<socks-server>:<socks-port
    This address type is experimental.nl()
    Option groups: link(FD)(GROUP_FD), link(SOCKET)(GROUP_SOCKET), link(IP4)(GROUP_IP4), link(IP6)(GROUP_IP6), link(TCP)(GROUP_TCP), link(CHILD)(GROUP_CHILD), link(RETRY)(GROUP_RETRY)nl()
    Useful options:
+   link(socksport)(OPTION_SOCKSPORT),
    link(sourceport)(OPTION_SOURCEPORT),
    link(pf)(OPTION_PROTOCOL_FAMILY),
    link(retry)(OPTION_RETRY)nl()
