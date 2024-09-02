@@ -5,6 +5,7 @@
 /* this file contains the source for tcpwrapper handling stuff */
 
 #include "xiosysincludes.h"
+
 #if WITH_LIBWRAP
 #include "tcpd.h"
 #endif
@@ -27,7 +28,9 @@ const struct optdesc opt_tcpwrap_hosts_deny_table  = { "tcpwrap-hosts-deny-table
 
 /* they are declared only externally with libwrap and would be unresolved
    without these definitions */
+#ifndef __FreeBSD__
 int allow_severity=10, deny_severity=10;
+#endif
 
 /* returns 0 if option was found and could be applied
    returns 1 if option was not found

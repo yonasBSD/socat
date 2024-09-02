@@ -6,6 +6,12 @@
 
 #include "xiosysincludes.h"
 
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#endif
+
 #if WITH_DCCP
 
 #include "xioopen.h"
@@ -13,6 +19,10 @@
 #include "xio-ip4.h"
 #include "xio-ipapp.h"
 #include "xio-dccp.h"
+
+#ifndef SOCK_DCCP
+#define SOCK_DCCP 6
+#endif
 
 /****** DCCP addresses ******/
 
