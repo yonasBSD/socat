@@ -12,6 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build source code
-      run: gcc -Wall -Werror -Wextra -pedantic -std=gnu89 */*.c */*/*.c */*/*/*.c -o socat
+      run: cd src ; gcc -Wall -Werror -Wextra -pedantic -std=gnu89 */*.c */*/*.c */*/*/*.c -o socat
     - name: Run build
       run: ./socat
