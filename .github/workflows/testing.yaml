@@ -12,6 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build source code
-      run: cd src ; gcc -Wall -Werror -Wextra -pedantic *.c -o socat
+      run: cd src ; cp ../build/* . ; aclocal ; autoconf ; automake --add-missing ; ./configure ; make
     - name: Run build
       run: ./src/socat
