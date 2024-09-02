@@ -1,0 +1,17 @@
+name: Testing
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-execute:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build source code
+      run: gcc -Wall -Werror -Wextra -pedantic -std=gnu89 */*.c */*/*.c */*/*/*.c -o socat
+    - name: Run build
+      run: ./socat
