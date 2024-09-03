@@ -34,7 +34,7 @@ flexible, simple and almost comprehensive (UNIX) byte stream connector.
 
 ## Packages
 
-before bothering with compilers, dependencies and include files, you might
+Before bothering with compilers, dependencies and include files, you might
 try to get a binary distribution that matches your platform. Have a look at 
 the projects home page for actual information regarding socat binary 
 distributions.
@@ -70,17 +70,17 @@ If gcc (or a compiler with similar front end) is not available, the configure
 script might fail to determine some features
 
 If you have problems with the OpenSSL library, you can apply the option
-"--disable-openssl" to configure.
+`--disable-openssl` to configure.
 
 If you have problems with the readline library or (n)curses, you can apply the
-option "--disable-readline" to configure.
+option `--disable-readline` to configure.
 
 If you have problems with the tcp wrappers library, you can apply the option
-"--disable-libwrap" to configure.
+`--disable-libwrap` to configure.
 
 If you still get errors or a tremendous amount of warnings you can exclude 
 the features for system call tracing and file descriptor analyzing by
-applying the options "--disable-sycls --disable-filan" to configure.
+applying the options `--disable-sycls --disable-filan` to configure.
 
 You still need the functions vsnprintf and snprintf that are in the GNU libc,
 but might not be available with some proprietary libc's.
@@ -104,8 +104,10 @@ instead of /usr/local/...
 
 If configure does not find a header file or library but you know where it is,
 you can specify additional search locations, e.g.:
+```sh
    export LIBS="-L$HOME/lib"
    export CPPFLAGS="-I$HOME/include"
+```
 before running configure and make.
 
 For other operating systems, if socat does not compile without errors, refer to
@@ -113,7 +115,7 @@ the file PORTING.
 
 
 ## Platform specifics
-### Debian (Ubuntu, ...)
+### Debian / Ubuntu
 
 - libssl-dev
 
@@ -121,51 +123,52 @@ the file PORTING.
 ### Redhat
 
 Install the following packages before building socat:
-  tcp_wrappers-devel
-  readline-devel
-  openssl-devel
+
+- tcp_wrappers-devel
+- readline-devel
+- openssl-devel
 
 On RedHat Linux 9.0, including openssl/ssl.h might fail due to problems with
 the krb5-devel package. configure reacts with disabling openssl integration. 
 To solve this issue, help cpp to find the krb5.h include file:
-CPPFLAGS="-I/usr/kerberos/include" ./configure
+`CPPFLAGS="-I/usr/kerberos/include" ./configure`
 
 
 ### AIX
 
 The flock() prototype is not available but the function is. Thus, to enable the
 socat flock options, run configure and then change in config.h the line 
-/* #undef HAVE_FLOCK */
+`/* #undef HAVE_FLOCK */`
 to
-#define HAVE_FLOCK 1
+`#define HAVE_FLOCK 1`
 and continue the build process.
 
 When using the OpenSSL rpm provided by IBM, configure might need the 
 environment variable setting:
-LIBS="-L/opt/freeware/lib"
+`LIBS="-L/opt/freeware/lib"`
 
 When using the OpenSSL bundle provided by IBM, egd needs to be installed too
 to get enough entropy.
 
 socat compiles not only with gcc, but also with xlc. Just adapt the Makefile:
 replace gcc by /usr/vac/bin/xlc and remove gcc specific options 
-"-Wall -Wno-parentheses".
+`-Wall -Wno-parentheses`.
 
 When linking with the OpenSSL library provided by IBM, errors may occur:
-ld: 0711-317 ERROR: Undefined symbol: .__umoddi3
+`ld: 0711-317 ERROR: Undefined symbol: .__umoddi3`
 In this case, you need to link with libgcc or compile libcrypt yourself using
-xlc, or disable SSL (in config.h, undefine WITH_OPENSSL and recompile)
+xlc, or disable SSL (in `config.h`, undefine `WITH_OPENSSL` and recompile)
 
-The score of test.sh can be improved by uncommenting MISCDELAY=1 in this
+The score of test.sh can be improved by uncommenting `MISCDELAY=1` in this
 script.
 
 
 ### Solaris
 
 If libreadline or libssl are in a directory not searched by the loader per
-default, e.g. /opt/sfw/lib, you must add this directory to $LD_LIBRARY_PATH,
+default, e.g. `/opt/sfw/lib`, you must add this directory to `$LD_LIBRARY_PATH`,
 for running both configure and the socat executables, e.g.:
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/sfw/lib
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/sfw/lib`
 
 For some shell scripts, it is preferable to have /usr/xpg4/bin at a prominent
 position in $PATH.
