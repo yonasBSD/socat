@@ -154,8 +154,8 @@ environment variable setting:
 When using the OpenSSL bundle provided by IBM, egd needs to be installed too
 to get enough entropy.
 
-socat compiles not only with gcc, but also with xlc. Just adapt the Makefile:
-replace gcc by /usr/vac/bin/xlc and remove gcc specific options 
+socat compiles not only with gcc, but also with xlc. Just adapt the `Makefile`:
+replace `gcc` by `/usr/vac/bin/xlc` and remove gcc specific options 
 `-Wall -Wno-parentheses`.
 
 When linking with the OpenSSL library provided by IBM, errors may occur:
