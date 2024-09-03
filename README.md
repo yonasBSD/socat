@@ -6,7 +6,7 @@ channels. Each of these data channels may be a file, pipe, device (serial line
 etc. or a pseudo terminal), a socket (UNIX, IP4, IP6 - raw, UDP, TCP), an
 SSL socket, proxy CONNECT connection, a file descriptor (stdin etc.), the GNU
 line editor (readline), a program, or a combination of two of these. 
-These modes include generation of "listening" sockets, named pipes, and pseudo
+These modes include generation of listening sockets, named pipes, and pseudo
 terminals.
 
 socat can be used, e.g., as TCP port forwarder (one-shot or daemon), as an
@@ -22,7 +22,7 @@ basic socket options like bind address, advanced socket options like IP source
 routing, linger, TTL, TOS (type of service), or TCP performance tuning.
 
 More capabilities, like daemon mode with forking, client address check,
-"tail -f" mode, some stream data processing (line terminator conversion),
+`tail -f` mode, some stream data processing (line terminator conversion),
 choosing sockets, pipes, or ptys for interprocess communication, debug and
 trace options, logging to syslog, stderr or file, and last but not least
 precise error messages make it a versatile tool for many different purposes.
