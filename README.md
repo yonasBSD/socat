@@ -1,6 +1,5 @@
 
-about
------
+# socat
 
 socat is a relay for bidirectional data transfer between two independent data
 channels. Each of these data channels may be a file, pipe, device (serial line
@@ -33,8 +32,7 @@ now, there does not seem to exists another tool that provides such a generic,
 flexible, simple and almost comprehensive (UNIX) byte stream connector.
 
 
-packages
---------
+## Packages
 
 before bothering with compilers, dependencies and include files, you might
 try to get a binary distribution that matches your platform. Have a look at 
@@ -42,24 +40,22 @@ the projects home page for actual information regarding socat binary
 distributions.
 
 
-platforms
----------
+## Platforms
 
 socat 1.8.0 has been compiled and more or less successfully tested under the
 following operating systems:
 
-Debian 4 on x86_64
-FreeBSD 10 on amd64
-OpenBSD 7.2 on amd64
-OpenIndiana 2021-04 on i386 with gcc
-Ubuntu 10.04 on i386
-Ubuntu 12..24
-Rocky 9
-Cygwin 10.0
+- Debian 4 on x86_64
+- FreeBSD 10 on amd64
+- OpenBSD 7.2 on amd64
+- OpenIndiana 2021-04 on i386 with gcc
+- Ubuntu 10.04 on i386
+- Ubuntu 12..24
+- Rocky 9
+- Cygwin 10.0
 
 
-install
--------
+## Install
 
 Get the tarball and extract it:
 	tar xzf socat.tar.gz
@@ -116,14 +112,13 @@ For other operating systems, if socat does not compile without errors, refer to
 the file PORTING.
 
 
-platform specifics - Debian (Ubuntu, ...)
------------------------------------------
+## Platform specifics
+### Debian (Ubuntu, ...)
 
-libssl-dev
+- libssl-dev
 
 
-platform specifics - redhat
----------------------------
+### Redhat
 
 Install the following packages before building socat:
   tcp_wrappers-devel
@@ -136,8 +131,7 @@ To solve this issue, help cpp to find the krb5.h include file:
 CPPFLAGS="-I/usr/kerberos/include" ./configure
 
 
-platform specifics - aix
-------------------------
+### AIX
 
 The flock() prototype is not available but the function is. Thus, to enable the
 socat flock options, run configure and then change in config.h the line 
@@ -166,8 +160,7 @@ The score of test.sh can be improved by uncommenting MISCDELAY=1 in this
 script.
 
 
-platform specifics - solaris
-----------------------------
+### Solaris
 
 If libreadline or libssl are in a directory not searched by the loader per
 default, e.g. /opt/sfw/lib, you must add this directory to $LD_LIBRARY_PATH,
@@ -184,8 +177,7 @@ After running ./configure, edit Makefile and replace "-D_GNU_SOURCE" with
 "-D_XPG4_2 -D__EXTENSIONS__" and run make
 
 
-platform specifics - hp-ux
---------------------------
+### HP-UX
 
 Ancillary messages cannot be compiled in with socat: both struct msghdr and
 struct cmsghdr are required. Compiling with -D_XOPEN_SOURCE_EXTENDED provides
@@ -207,8 +199,7 @@ With UDP sockets it seems to happen that the select() call reports available
 data (or EOF) but a subsequent read() call hangs.
 
 
-platform specifics - tru64
---------------------------
+### Tru64
 
 When the use of the readline address fails with an error like:
 socat: /sbin/loader: Fatal Error: Reference to unresolvable symbol "tgetent" in ".../libreadline.so.4"
@@ -218,8 +209,7 @@ remove the "-static" occurrence in Makefile
 $ make
 
 
-documentation
--------------
+## Documentation
 
 These files reside in the doc subdirectory:
 
@@ -238,8 +228,7 @@ of yodl had been discontinued by its author
 http://yodl.sourceforge.net/ though). For socat, the revival version 3.03 is used,
 
 
-license
--------
+## License
 
 socat is distributed under the terms of the GNU GPLv2;
 except for install-sh, which is copyright MIT, with its own license;
@@ -271,8 +260,7 @@ this exception statement from your version.
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-contact
--------
+## Contact
 
 For questions, bug reports, ideas, contributions etc. please contact
 socat@dest-unreach.org
