@@ -174,21 +174,22 @@ default, e.g. `/opt/sfw/lib`, you must add this directory to `$LD_LIBRARY_PATH`,
 for running both configure and the socat executables, e.g.:
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/sfw/lib`
 
-For some shell scripts, it is preferable to have /usr/xpg4/bin at a prominent
-position in $PATH.
+For some shell scripts, it is preferable to have `/usr/xpg4/bin` at a prominent
+position in `$PATH`.
 
 With the default compiler define _GNU_SOURCE, the CMSG_* macros are not
 available, and therefore ancillary messages cannot be used. To enable these try
 the following:
-After running ./configure, edit Makefile and replace "-D_GNU_SOURCE" with
-"-D_XPG4_2 -D__EXTENSIONS__" and run make
+
+After running `./configure`, edit Makefile and replace `"-D_GNU_SOURCE"` with
+`"-D_XPG4_2 -D__EXTENSIONS__"` and run `make`
 
 
 ### HP-UX
 
 Ancillary messages cannot be compiled in with socat: both struct msghdr and
-struct cmsghdr are required. Compiling with -D_XOPEN_SOURCE_EXTENDED provides
-struct msghdr but disables struct cmsghdr while -D_OPEN_SOURCE disables struct
+struct cmsghdr are required. Compiling with `-D_XOPEN_SOURCE_EXTENDED` provides
+struct msghdr but disables struct cmsghdr while `-D_OPEN_SOURCE` disables struct
 msghdr but disables struct cmsghdr. Please contact socat development if you
 know a solution.
 
@@ -196,14 +197,14 @@ Shutting down the write channel of a UNIX domain socket does not seem to
 trigger an EOF on the peer socket. This makes problems with the exec and
 system addresses.
 
-This OS provides the type "long long", but not the strtoll() function to read
+This OS provides the type `"long long"`, but not the `strtoll()` function to read
 data into a long long variable.
 
 UNIX domain sockets are only supported with SOCK_STREAM, not with datagrams
-(see man 7 unix).
+(see `man 7 unix`).
 
-With UDP sockets it seems to happen that the select() call reports available
-data (or EOF) but a subsequent read() call hangs.
+With UDP sockets it seems to happen that the `select()` call reports available
+data (or EOF) but a subsequent `read()` call hangs.
 
 
 ### Tru64
