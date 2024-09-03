@@ -1,5 +1,5 @@
-
 # socat
+[![Testing](https://github.com/yonasBSD/socat/actions/workflows/testing.yaml/badge.svg)](https://github.com/yonasBSD/socat/actions/workflows/testing.yaml)
 
 socat is a relay for bidirectional data transfer between two independent data
 channels. Each of these data channels may be a file, pipe, device (serial line
