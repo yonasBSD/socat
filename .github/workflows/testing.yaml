@@ -11,7 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build source code
-      run: mkdir b ; cd b ; cp ../build/* . ; aclocal ; cmake .. ; make
-    - name: Run build
-      run: ./src/socat
+    - name: Test in FreeBSD
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        prepare: |
+          pkg install -y ninja cmake
+
+        run: |
+          pwd
+          ls -lah
+          whoami
+          env
+          freebsd-version
+          cd src ; cp ../build/* . ; aclocal ; autoconf ; ./configure
+          cd .. ; mkdir b ; cd b ; cmake -G Ninja .. ; ninja
+          ./socat -V
