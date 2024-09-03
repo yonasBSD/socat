@@ -58,12 +58,14 @@ following operating systems:
 ## Install
 
 Get the tarball and extract it:
-	tar xzf socat.tar.gz
-	cd socat-1.8.0.1
-	./configure
-	make
-	su
-	make install	# installs socat, filan, and procan in /usr/local/bin
+```sh
+tar xzf socat.tar.gz
+cd socat-1.8.0.1
+./configure
+make
+su
+make install	# installs socat, filan, and procan in /usr/local/bin
+```
 
 For compiling socat, gcc (or clang) is recommended.
 If gcc (or a compiler with similar front end) is not available, the configure
