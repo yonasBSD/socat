@@ -118,7 +118,14 @@ if(READLINE_FOUND)
 endif(READLINE_FOUND)
 
 include_directories(/usr/local/include)
-target_link_libraries(socat -lwrap)
-target_link_libraries(socat -lutil)
-target_link_libraries(socat -lcrypto)
-target_link_libraries(socat -lssl)
+
+find_package(OpenSSL REQUIRED)
+
+message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
+
+include_directories(${OPENSSL_INCLUDE_DIR})
+target_link_libraries(socat ${OPENSSL_LIBRARIES})
+
+target_link_libraries(socat wrap)
+target_link_libraries(socat util)
