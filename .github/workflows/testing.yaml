@@ -16,7 +16,7 @@ jobs:
       with:
         usesh: true
         prepare: |
-          pkg install -y ninja cmake openssl
+          pkg install -y ninja cmake openssl autoconf autotools
 
         run: |
           pwd
