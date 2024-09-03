@@ -74,9 +74,7 @@ static void socat_unlock(void);
 static int socat_newchild(void);
 static void socat_print_stats(void);
 
-static const char socatversion[] =
-#include "./VERSION"
-      ;
+static const char socatversion[] = "1.9";
 static const char timestamp[] = BUILD_DATE;
 
 const char copyright_socat[] = "socat by Gerhard Rieger and contributors - see www.dest-unreach.org";
