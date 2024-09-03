@@ -89,26 +89,28 @@ but might not be available with some proprietary libc's.
 
 The configure script looks for headers and libraries of openssl, readline, and
 tcp wrappers in the OS'es standard places and in the subdirectories include/
-and lib/ of the following places: 
-   /sw/
-   /usr/local/
-   /opt/freeware/
-   /usr/sfw/
+and lib/ of the following places:
+```
+/sw/
+/usr/local/
+/opt/freeware/
+/usr/sfw/
+```
 and for openssl also in:
-   /usr/local/ssl/
+   `/usr/local/ssl/`
 In case of unexpected behaviour it is important to understand that configure
 first searches for the appropriate include file and then expects to find the
 library in the associated lib directory. That means, when e.g. a OpenSSL
 installation resides under /usr/local and there is a symbolic link from
-/usr/include/ssl/ssl.h to /usr/local/ssl/include/ssl/ssl.h, configure will find
-the /usr/include/... header and will therefore expect libssl in /usr/lib
-instead of /usr/local/...
+`/usr/include/ssl/ssl.h` to `/usr/local/ssl/include/ssl/ssl.h`, configure will find
+the `/usr/include/...` header and will therefore expect libssl in /usr/lib
+instead of `/usr/local/...`
 
 If configure does not find a header file or library but you know where it is,
 you can specify additional search locations, e.g.:
 ```sh
-   export LIBS="-L$HOME/lib"
-   export CPPFLAGS="-I$HOME/include"
+export LIBS="-L$HOME/lib"
+export CPPFLAGS="-I$HOME/include"
 ```
 before running configure and make.
 
